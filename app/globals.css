@@ -1,26 +1,126 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f9;
+  --foreground: #14181f;
+  --surface: #ffffff;
+  --surface-muted: #f0f2f5;
+  --border: #e3e6eb;
+  --sidebar-bg: #111726;
+  --sidebar-fg: #cbd3e1;
+  --sidebar-fg-active: #ffffff;
+  --sidebar-accent: #2563eb;
+
+  /* Status palette (fixed severity meaning — never reused for series identity) */
+  --status-good: #0ca30c;
+  --status-warning: #b8790f;
+  --status-serious: #c05a36;
+  --status-critical: #d03b3b;
+  --status-neutral: #6b7280;
+
+  /* Chart chrome */
+  --chart-surface: #fcfcfb;
+  --chart-ink-primary: #0b0b0b;
+  --chart-ink-secondary: #52514e;
+  --chart-ink-muted: #898781;
+  --chart-gridline: #e1e0d9;
+  --chart-series-1: #2a78d6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-fg-active: var(--sidebar-fg-active);
+  --color-sidebar-accent: var(--sidebar-accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b0d12;
+    --foreground: #e7e9ee;
+    --surface: #14171d;
+    --surface-muted: #1a1e26;
+    --border: #262b34;
+
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #e66767;
+    --status-neutral: #8b93a1;
+
+    --chart-surface: #1a1a19;
+    --chart-ink-primary: #ffffff;
+    --chart-ink-secondary: #c3c2b7;
+    --chart-ink-muted: #898781;
+    --chart-gridline: #2c2c2a;
+    --chart-series-1: #3987e5;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.badge-good {
+  color: var(--status-good);
+  background: color-mix(in srgb, var(--status-good) 14%, var(--surface));
+}
+.badge-warning {
+  color: var(--status-warning);
+  background: color-mix(in srgb, var(--status-warning) 16%, var(--surface));
+}
+.badge-serious {
+  color: var(--status-serious);
+  background: color-mix(in srgb, var(--status-serious) 16%, var(--surface));
+}
+.badge-critical {
+  color: var(--status-critical);
+  background: color-mix(in srgb, var(--status-critical) 14%, var(--surface));
+}
+.badge-neutral {
+  color: var(--status-neutral);
+  background: color-mix(in srgb, var(--status-neutral) 14%, var(--surface));
+}
+.badge-info {
+  color: var(--chart-series-1);
+  background: color-mix(in srgb, var(--chart-series-1) 14%, var(--surface));
+}
+
+.form-error {
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--status-critical);
+  background: color-mix(in srgb, var(--status-critical) 10%, var(--surface));
+}
+
+.text-critical {
+  color: var(--status-critical);
 }
