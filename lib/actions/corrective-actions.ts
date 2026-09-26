@@ -9,7 +9,7 @@ import {
   getFinding,
   updateCorrectiveActionStatus,
 } from "@/lib/db";
-import type { CorrectiveActionStatus } from "@/lib/types";
+import type { CorrectiveActionStatus, HazardCategory, RiskLevel } from "@/lib/types";
 
 export async function createCorrectiveActionAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -27,20 +27,24 @@ export async function createCorrectiveActionAction(formData: FormData) {
     throw new Error("Missing required corrective action fields.");
   }
 
+  const finding = findingId ? getFinding(findingId) : undefined;
+
   dbCreateCorrectiveAction({
     projectId,
-    source: findingId ? "finding" : "manual",
-    findingId,
+    source: finding ? "finding" : "manual",
+    findingId: finding?.id,
+    category: (finding?.hazardCategory ?? "Housekeeping") as HazardCategory,
+    priority: (finding?.riskLevel ?? "medium") as RiskLevel,
+    location: finding?.location,
     description,
     assignedToId,
     dueDate,
   });
 
-  if (findingId) {
-    const finding = getFinding(findingId);
-    if (finding) revalidatePath(`/inspections/${finding.inspectionId}`);
-  }
+  if (finding) revalidatePath(`/inspections/${finding.inspectionId}`);
   revalidatePath("/corrective-actions");
+  revalidatePath("/review");
+  revalidatePath("/dashboard");
   revalidatePath(`/projects/${projectId}`);
 }
 
@@ -68,4 +72,5 @@ export async function updateCorrectiveActionStatusAction(formData: FormData) {
   updateCorrectiveActionStatus(id, status);
 
   revalidatePath("/corrective-actions");
+  revalidatePath("/dashboard");
 }

@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
-import { getCompany, listInspectionsForProject, listProjects } from "@/lib/db";
-import { Card } from "@/components/ui/card";
+import { getCompany, getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
+import { hazardBreakdown, projectHealth, weeklySeries } from "@/lib/metrics";
+import { timeAgo } from "@/lib/format";
+import { ScoreRing } from "@/components/viz/score-ring";
+import { Sparkline } from "@/components/viz/sparkline";
 import { RiskBadge } from "@/components/ui/badges";
+import { IconArrowRight, IconMapPin } from "@/components/ui/icons";
 
-function riskLevelFromScore(score: number) {
-  if (score >= 70) return "critical" as const;
-  if (score >= 50) return "high" as const;
-  if (score >= 30) return "medium" as const;
-  return "low" as const;
-}
+const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();
@@ -19,46 +18,69 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Projects</h1>
-        <p className="mt-1 text-sm text-foreground/60">
-          Every project {company?.name} is tracking independently of the GC&apos;s records.
-        </p>
+        <p className="eyebrow">{company?.name}</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Projects</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {projects.map((project) => {
-          const inspections = listInspectionsForProject(project.id);
+          const h = projectHealth(project);
+          const series = weeklySeries(project.id, 12);
+          const top = hazardBreakdown(project.id)[0];
+          const last = listInspectionsForProject(project.id)[0];
           return (
-            <Link key={project.id} href={`/projects/${project.id}`}>
-              <Card className="h-full transition-colors hover:border-sidebar-accent">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-sm font-semibold">{project.name}</h2>
-                    <p className="mt-1 text-xs text-foreground/50">
-                      {project.projectNumber} · {project.location}
+            <Link key={project.id} href={`/projects/${project.id}`} className="card group overflow-hidden transition-shadow hover:shadow-lg">
+              <div className="hero p-5" style={{ borderRadius: 0 }}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
+                      <IconMapPin width={12} height={12} />
+                      {project.location} · {project.projectNumber}
                     </p>
+                    <h2 className="mt-1.5 text-lg font-semibold leading-snug">{project.name}</h2>
+                    <p className="mt-1 text-xs text-white/60">{project.client}</p>
                   </div>
-                  <RiskBadge level={riskLevelFromScore(project.riskScore)} />
+                  <ScoreRing score={h.score} level={h.level} size={84} stroke={8} onDark />
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <dt className="text-foreground/50">GC / Client</dt>
-                    <dd className="font-medium">{project.client}</dd>
+                <div className="mt-4">
+                  <div className="mb-1 flex justify-between text-[11px] text-white/60">
+                    <span>Construction progress</span>
+                    <span className="font-semibold text-white">{project.percentComplete}%</span>
                   </div>
-                  <div>
-                    <dt className="text-foreground/50">Status</dt>
-                    <dd className="font-medium capitalize">{project.status.replace("_", " ")}</dd>
+                  <div className="h-1.5 rounded-full bg-white/10">
+                    <div className="h-1.5 rounded-full bg-white/80" style={{ width: `${project.percentComplete}%` }} />
                   </div>
-                  <div>
-                    <dt className="text-foreground/50">Started</dt>
-                    <dd className="font-medium">{project.startDate}</dd>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 border-b border-border px-5 py-4 text-center">
+                {[
+                  { v: h.openActions, l: "open actions" },
+                  { v: h.overdue, l: "overdue", warn: h.overdue > 0 },
+                  { v: h.pendingReviews, l: "to review" },
+                  { v: project.headcount, l: "on site" },
+                ].map((s) => (
+                  <div key={s.l}>
+                    <p className={`text-xl font-semibold ${s.warn ? "tone-critical" : ""}`}>{s.v}</p>
+                    <p className="text-[11px] text-foreground/45">{s.l}</p>
                   </div>
-                  <div>
-                    <dt className="text-foreground/50">Inspections</dt>
-                    <dd className="font-medium">{inspections.length}</dd>
-                  </div>
-                </dl>
-              </Card>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-4 px-5 py-4">
+                <div className="min-w-0 text-xs text-foreground/55">
+                  <p className="flex items-center gap-2">
+                    <RiskBadge level={h.level} />
+                    <span className="font-medium text-foreground">{levelLabel[h.level]}</span>
+                  </p>
+                  {top && <p className="mt-2 truncate">Top issue: <span className="font-medium text-foreground">{top.category}</span> ({top.count})</p>}
+                  {last && <p className="mt-0.5 truncate">Last inspection {timeAgo(new Date(last.submittedAt).getTime())} · {getTemplate(last.templateId)?.name}</p>}
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Sparkline values={series.map((p) => p.raised)} width={96} height={34} />
+                  <IconArrowRight width={16} height={16} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />
+                </div>
+              </div>
             </Link>
           );
         })}

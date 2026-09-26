@@ -3,147 +3,330 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import {
-  getProject,
   getTemplate,
   getUser,
+  getProject,
+  listCertifications,
   listCorrectiveActionsForProject,
+  listGcNotices,
   listInspectionsForProject,
   listTemplates,
+  listFindings,
 } from "@/lib/db";
-import { Card, CardHeader } from "@/components/ui/card";
 import {
-  CorrectiveActionStatusBadge,
-  InspectionStatusBadge,
-  RiskBadge,
-} from "@/components/ui/badges";
+  activityFeed,
+  certStatus,
+  hazardBreakdown,
+  heatmap,
+  hotspots,
+  insights,
+  isActionOverdue,
+  passRate,
+  projectHealth,
+  weeklySeries,
+} from "@/lib/metrics";
+import { shortDate, timeAgo } from "@/lib/format";
+import { ScoreRing } from "@/components/viz/score-ring";
+import { TrendChart } from "@/components/viz/trend-chart";
+import { HeatMap } from "@/components/viz/heat-map";
+import { BreakdownBars } from "@/components/ui/breakdown-bars";
+import { Avatar } from "@/components/ui/avatar";
+import { CorrectiveActionStatusBadge, InspectionStatusBadge, RiskBadge } from "@/components/ui/badges";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { InsightCard } from "@/components/dashboard/insight-card";
+import { IconArrowRight, IconBolt, IconMapPin } from "@/components/ui/icons";
+
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "inspections", label: "Inspections" },
+  { id: "actions", label: "Actions" },
+  { id: "coordination", label: "Coordination" },
+  { id: "crew", label: "Crew" },
+] as const;
+
+const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
+const noticeTone = { open: "badge-warning", acknowledged: "badge-info", resolved: "badge-good" } as const;
 
 export default async function ProjectDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { projectId } = await params;
+  const { tab = "overview" } = await searchParams;
   const project = getProject(projectId);
   if (!project) notFound();
 
   const user = await getCurrentUser();
-  const capabilities = getCapabilities(user.role);
-
-  const inspections = listInspectionsForProject(projectId).sort((a, b) =>
-    a.date < b.date ? 1 : -1
-  );
-  const correctiveActions = listCorrectiveActionsForProject(projectId);
+  const caps = getCapabilities(user.role);
+  const h = projectHealth(project);
   const templates = listTemplates();
-
-  const riskLevel =
-    project.riskScore >= 70
-      ? ("critical" as const)
-      : project.riskScore >= 50
-        ? ("high" as const)
-        : project.riskScore >= 30
-          ? ("medium" as const)
-          : ("low" as const);
+  const inspections = listInspectionsForProject(projectId);
+  const actions = listCorrectiveActionsForProject(projectId);
+  const notices = listGcNotices().filter((n) => n.projectId === projectId);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-foreground/50">
-            {project.projectNumber} · {project.location}
-          </p>
-          <h1 className="text-xl font-semibold">{project.name}</h1>
-          <p className="mt-1 text-sm text-foreground/60">GC / Client: {project.client}</p>
+      <section className="hero p-6 md:p-7">
+        <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="min-w-0">
+            <Link href="/projects" className="text-xs font-medium text-white/60 hover:text-white">← All projects</Link>
+            <p className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
+              <IconMapPin width={12} height={12} />
+              {project.location} · {project.projectNumber} · {project.client}
+            </p>
+            <h1 className="mt-1.5 text-3xl font-semibold leading-tight tracking-tight">{project.name}</h1>
+            <div className="mt-4 max-w-sm">
+              <div className="mb-1 flex justify-between text-[11px] text-white/60">
+                <span>Construction progress</span>
+                <span className="font-semibold text-white">{project.percentComplete}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/10">
+                <div className="h-1.5 rounded-full bg-white/80" style={{ width: `${project.percentComplete}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              {[
+                { v: h.openActions, l: "open" },
+                { v: h.overdue, l: "overdue" },
+                { v: h.pendingReviews, l: "to review" },
+              ].map((s) => (
+                <div key={s.l}>
+                  <p className="text-3xl font-semibold leading-none">{s.v}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/55">{s.l}</p>
+                </div>
+              ))}
+            </div>
+            <div className="text-center">
+              <ScoreRing score={h.score} level={h.level} size={112} stroke={10} onDark label={levelLabel[h.level]} />
+            </div>
+          </div>
         </div>
-        <RiskBadge level={riskLevel} />
-      </div>
+      </section>
 
-      {capabilities.canSubmitInspections && (
-        <Card>
-          <CardHeader
-            title="Start a new inspection"
-            description="Pick a template — evidence and AI analysis requirements are configured per template"
-          />
-          <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex gap-1 rounded-xl bg-surface p-1 ring-1 ring-border">
+          {TABS.map((t) => (
+            <Link
+              key={t.id}
+              href={`/projects/${projectId}?tab=${t.id}`}
+              className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                tab === t.id ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+        {caps.canSubmitInspections && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-foreground/50">
+              <IconBolt width={14} height={14} />
+              Start
+            </span>
             {templates.map((t) => (
               <Link
                 key={t.id}
                 href={`/projects/${projectId}/inspections/new?templateId=${t.id}`}
-                className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:border-sidebar-accent hover:text-sidebar-accent"
+                className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium ring-1 ring-border transition-colors hover:bg-sidebar-accent hover:text-white hover:ring-sidebar-accent"
               >
-                {t.name}
+                {t.name.replace(" Inspection", "").replace(" Pre-Use", "")}
               </Link>
             ))}
           </div>
-        </Card>
+        )}
+      </div>
+
+      {tab === "overview" && <Overview projectId={projectId} />}
+
+      {tab === "inspections" && (
+        <section className="card overflow-hidden">
+          <ul className="divide-y divide-border">
+            {inspections.slice(0, 40).map((i) => {
+              const inspector = getUser(i.inspectorId);
+              const rate = passRate(i);
+              return (
+                <li key={i.id}>
+                  <Link href={`/inspections/${i.id}`} className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-surface-muted">
+                    {inspector && <Avatar person={inspector} size={32} />}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{getTemplate(i.templateId)?.name}</p>
+                      <p className="text-xs text-foreground/50">
+                        {i.location.level} {i.location.zone} · {inspector?.firstName} {inspector?.lastName} · {timeAgo(new Date(i.submittedAt).getTime())}
+                      </p>
+                    </div>
+                    <span className="hidden text-sm font-semibold md:block">{rate}%</span>
+                    {i.findingIds.length > 0 && <span className="badge badge-serious">{i.findingIds.length}</span>}
+                    <InspectionStatusBadge status={i.status} />
+                    <IconArrowRight width={15} height={15} className="text-foreground/25" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
-      <Card>
-        <CardHeader
-          title="Inspections"
-          description={`${inspections.length} logged for this project`}
-        />
-        {inspections.length === 0 ? (
-          <p className="text-sm text-foreground/50">No inspections yet.</p>
-        ) : (
+      {tab === "actions" && (
+        <section className="card overflow-hidden">
           <ul className="divide-y divide-border">
-            {inspections.map((i) => {
-              const template = getTemplate(i.templateId);
-              const inspector = getUser(i.inspectorId);
+            {actions.slice(0, 40).map((a) => {
+              const owner = getUser(a.assignedToId);
+              const late = isActionOverdue(a);
               return (
-                <li key={i.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div>
-                    <Link
-                      href={`/inspections/${i.id}`}
-                      className="text-sm font-medium hover:underline"
-                    >
-                      {template?.name}
-                    </Link>
+                <li key={a.id} className="flex items-center gap-4 px-5 py-3.5">
+                  {owner && <Avatar person={owner} size={32} />}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{a.description.split(" — ")[0]}</p>
                     <p className="text-xs text-foreground/50">
-                      {i.date} · {inspector?.firstName} {inspector?.lastName}
+                      {owner?.firstName} {owner?.lastName}
+                      {a.location ? ` · ${a.location.level} ${a.location.zone}` : ""} ·{" "}
+                      <span className={late ? "font-semibold text-critical" : ""}>due {shortDate(a.dueDate)}</span>
                     </p>
                   </div>
-                  <InspectionStatusBadge status={i.status} />
+                  <RiskBadge level={a.priority} />
+                  <CorrectiveActionStatusBadge status={a.status} />
                 </li>
               );
             })}
           </ul>
-        )}
-      </Card>
+        </section>
+      )}
 
-      <Card>
-        <CardHeader
-          title="Corrective Actions"
-          description={`${correctiveActions.length} tracked for this project`}
-          action={
-            <Link
-              href="/corrective-actions"
-              className="text-xs font-medium text-sidebar-accent"
-            >
-              Manage all
-            </Link>
-          }
-        />
-        {correctiveActions.length === 0 ? (
-          <p className="text-sm text-foreground/50">No corrective actions yet.</p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {correctiveActions.map((ca) => {
-              const assignee = getUser(ca.assignedToId);
-              return (
-                <li key={ca.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium">{ca.description}</p>
-                    <p className="text-xs text-foreground/50">
-                      {assignee?.firstName} {assignee?.lastName} · Due {ca.dueDate}
-                    </p>
-                  </div>
-                  <CorrectiveActionStatusBadge status={ca.status} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
+      {tab === "coordination" && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {notices.length === 0 && <p className="text-sm text-foreground/50">No coordination notices for this project.</p>}
+          {notices.map((n) => (
+            <section key={n.id} className="card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="eyebrow">{n.trade}</p>
+                  <h3 className="mt-1 text-sm font-semibold leading-snug">{n.issue}</h3>
+                </div>
+                <span className={`badge capitalize ${noticeTone[n.status]}`}>{n.status}</span>
+              </div>
+              <p className="mt-2 text-sm text-foreground/60">Impact: {n.impact}</p>
+              {n.gcResponse && (
+                <p className="mt-3 rounded-lg bg-surface-muted p-3 text-sm">
+                  <span className="font-medium">GC response:</span> {n.gcResponse}
+                </p>
+              )}
+              <p className="mt-3 flex items-center justify-between text-xs text-foreground/45">
+                <span>Raised by {getUser(n.raisedById)?.firstName} {getUser(n.raisedById)?.lastName}</span>
+                <span>{shortDate(n.raisedAt)} · {n.priority} priority</span>
+              </p>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {tab === "crew" && <Crew crewIds={project.crewIds} />}
     </div>
   );
+
+  function Overview({ projectId: pid }: { projectId: string }) {
+    const series = weeklySeries(pid, 12);
+    const heat = heatmap(pid);
+    const spots = hotspots(pid, 3);
+    const hazards = hazardBreakdown(pid).slice(0, 5);
+    const feed = activityFeed(8, pid);
+    const ins = insights(pid);
+    const pending = listFindings().filter((f) => f.projectId === pid && f.reviewerDecision === "pending").length;
+    void pending;
+
+    return (
+      <div className="space-y-5">
+        {ins.length > 0 && (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {ins.slice(0, 2).map((i) => (
+              <InsightCard key={i.id} insight={i} />
+            ))}
+          </div>
+        )}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+          <section className="card p-5 lg:col-span-3">
+            <h2 className="mb-3 text-sm font-semibold">Findings raised vs. actions closed</h2>
+            <TrendChart points={series} />
+          </section>
+          <section className="card p-5 lg:col-span-2">
+            <h2 className="mb-4 text-sm font-semibold">What is going wrong</h2>
+            <BreakdownBars items={hazards.map((x) => ({ label: x.category, value: x.count, tone: "info" as const }))} />
+          </section>
+        </div>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+          <section className="card p-5 lg:col-span-3">
+            <h2 className="mb-4 text-sm font-semibold">Where findings are happening</h2>
+            <HeatMap levels={heat.levels} zones={heat.zones} cells={heat.cells} max={heat.max} />
+            {spots.length > 0 && (
+              <ol className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
+                {spots.map((s, idx) => (
+                  <li key={`${s.level}${s.zone}`} className="flex items-center gap-3">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-foreground/60">{idx + 1}</span>
+                    <span className="flex-1"><span className="font-medium">{s.level} {s.zone}</span><span className="text-foreground/50"> · mostly {s.dominant.toLowerCase()}</span></span>
+                    <span className="font-semibold">{s.count}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+          <section className="card p-5 lg:col-span-2">
+            <h2 className="mb-4 text-sm font-semibold">Recent activity</h2>
+            <ActivityFeed events={feed} />
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  function Crew({ crewIds }: { crewIds: string[] }) {
+    const now = Date.now();
+    const certs = listCertifications();
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {crewIds.map((id) => {
+          const person = getUser(id);
+          if (!person) return null;
+          const mine = certs.filter((c) => c.userId === id);
+          const expired = mine.filter((c) => certStatus(c.expiresOn, now) === "expired").length;
+          const expiring = mine.filter((c) => certStatus(c.expiresOn, now) === "expiring").length;
+          return (
+            <section key={id} className="card p-5">
+              <div className="flex items-center gap-3">
+                <Avatar person={person} size={42} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{person.firstName} {person.lastName}</p>
+                  <p className="truncate text-xs text-foreground/50">{person.title}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {mine.map((c) => {
+                  const s = certStatus(c.expiresOn, now);
+                  return (
+                    <span
+                      key={c.id}
+                      title={`${c.type} · expires ${shortDate(c.expiresOn)}`}
+                      className={`badge ${s === "current" ? "badge-good" : s === "expiring" ? "badge-warning" : "badge-critical"}`}
+                    >
+                      {c.type.replace(" (NFPA 70E)", "").replace(" Authorized", "").replace(" / CPR", "")}
+                    </span>
+                  );
+                })}
+              </div>
+              {(expired > 0 || expiring > 0) && (
+                <p className="mt-3 text-xs text-foreground/50">
+                  {expired > 0 && <span className="font-medium tone-critical">{expired} expired</span>}
+                  {expired > 0 && expiring > 0 && " · "}
+                  {expiring > 0 && <span className="font-medium tone-warning">{expiring} expiring</span>}
+                </p>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    );
+  }
 }

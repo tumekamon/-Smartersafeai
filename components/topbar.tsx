@@ -12,10 +12,10 @@ const ROLE_LABELS: Record<User["role"], string> = {
   CLIENT_VIEWER: "Client Viewer",
 };
 
-export function Topbar({ user }: { user: User }) {
+export function Topbar({ user, pendingReviews = 0 }: { user: User; pendingReviews?: number }) {
   return (
     <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:px-6">
-      <MobileNav role={user.role} />
+      <MobileNav role={user.role} pendingReviews={pendingReviews} />
       <div className="flex items-center gap-3">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-foreground/60">
           <IconUser width={16} height={16} />

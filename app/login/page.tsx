@@ -1,8 +1,24 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listUsers } from "@/lib/db";
-import { LoginForm } from "@/components/login-form";
-import { IconCheckShield } from "@/components/ui/icons";
+import { LoginForm, type DemoAccount } from "@/components/login-form";
+import { EvidenceScene } from "@/components/viz/evidence-scene";
+import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
+
+const ROLE_LABELS = {
+  ADMIN: "Admin",
+  SAFETY_DIRECTOR: "Safety Director",
+  SAFETY_MANAGER: "Safety Manager",
+  SUPERVISOR: "Supervisor",
+  WORKER: "Field Worker",
+  CLIENT_VIEWER: "Client Viewer",
+} as const;
+
+function hueFor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+  return h;
+}
 
 export default async function LoginPage() {
   const session = await getSession();
@@ -10,44 +26,76 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
-  const teamUsers = listUsers();
+  const accounts: DemoAccount[] = listUsers()
+    .filter((u) => u.featured)
+    .map((u) => ({
+      id: u.id,
+      name: `${u.firstName} ${u.lastName}`,
+      role: ROLE_LABELS[u.role],
+      email: u.email,
+      initials: `${u.firstName[0]}${u.lastName[0]}`,
+      hue: hueFor(u.id),
+    }));
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-accent text-white">
-            <IconCheckShield width={19} height={19} />
+    <div className="grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]">
+      <section className="hero relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14" style={{ borderRadius: 0 }}>
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
+            style={{ background: "linear-gradient(135deg, #2f6df6, #7a5cff)" }}
+          >
+            <IconCheckShield width={21} height={21} />
           </span>
           <div>
-            <p className="text-sm font-semibold">SmartSafe AI</p>
-            <p className="text-xs text-foreground/50">Safety Intelligence Platform</p>
+            <p className="text-base font-semibold">SmartSafe AI</p>
+            <p className="text-xs text-white/55">Safety Intelligence Platform</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-          <h1 className="mb-1 text-lg font-semibold">Sign in</h1>
-          <p className="mb-5 text-sm text-foreground/60">
-            BESCO Electric — UK Markey Cancer Center project team.
+        <div className="max-w-xl">
+          <span className="ai-chip">
+            <IconSparkle width={12} height={12} />
+            AI-assisted, human-decided
+          </span>
+          <h1 className="mt-5 text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
+            See the hazard before it becomes an incident.
+          </h1>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-white/65">
+            Field photos and inspections become flagged hazards, safety-professional decisions and verified fixes, in one place.
           </p>
-          <LoginForm />
+          <div className="mt-8 overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl">
+            <EvidenceScene
+              scene="panel"
+              title="Missing GFCI protection"
+              confidence={0.91}
+              risk="high"
+              fileName="IMG_2184.jpg"
+              capturedAt={new Date().toISOString()}
+              location="L3 · East"
+            />
+          </div>
         </div>
 
-        <details className="mt-4 rounded-lg border border-border bg-surface-muted p-3 text-xs text-foreground/60">
-          <summary className="cursor-pointer font-medium text-foreground/80">
-            Team accounts
-          </summary>
-          <ul className="mt-2 space-y-1">
-            {teamUsers.map((u) => (
-              <li key={u.id} className="flex justify-between gap-2">
-                <span>{u.email}</span>
-                <span className="text-foreground/40">{u.role.replaceAll("_", " ")}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 border-t border-border pt-2 text-foreground/40">Password: demo1234</p>
-        </details>
-      </div>
+        <p className="text-xs text-white/40">BESCO Electric · UK Markey Cancer Center project team</p>
+      </section>
+
+      <section className="flex items-center justify-center bg-background px-5 py-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
+              style={{ background: "linear-gradient(135deg, #2f6df6, #7a5cff)" }}
+            >
+              <IconCheckShield width={19} height={19} />
+            </span>
+            <p className="text-sm font-semibold">SmartSafe AI</p>
+          </div>
+          <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
+          <p className="mb-7 mt-1 text-sm text-foreground/60">Choose a role to explore, or sign in with your work account.</p>
+          <LoginForm accounts={accounts} />
+        </div>
+      </section>
     </div>
   );
 }

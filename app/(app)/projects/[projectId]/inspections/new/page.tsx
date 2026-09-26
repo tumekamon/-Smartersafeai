@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { getProject, listTemplates } from "@/lib/db";
 import { InspectionForm } from "@/components/inspection-form";
-import { Card } from "@/components/ui/card";
 
 export default async function NewInspectionPage({
   params,
@@ -22,17 +22,16 @@ export default async function NewInspectionPage({
     redirect(`/projects/${projectId}`);
   }
 
-  const templates = listTemplates();
-
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <p className="text-xs font-medium text-foreground/50">{project.name}</p>
-        <h1 className="text-xl font-semibold">New Inspection</h1>
+        <Link href={`/projects/${projectId}`} className="text-xs font-medium text-sidebar-accent">
+          ← {project.shortName}
+        </Link>
+        <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">New inspection</h1>
+        <p className="mt-1 text-sm text-foreground/60">{project.name}</p>
       </div>
-      <Card>
-        <InspectionForm projectId={projectId} templates={templates} initialTemplateId={templateId} />
-      </Card>
+      <InspectionForm project={project} templates={listTemplates()} initialTemplateId={templateId} />
     </div>
   );
 }

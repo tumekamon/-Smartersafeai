@@ -7,7 +7,7 @@ import { navItemsForRole } from "@/components/sidebar";
 import { IconMenu } from "@/components/ui/icons";
 import type { UserRole } from "@/lib/types";
 
-export function MobileNav({ role }: { role: UserRole }) {
+export function MobileNav({ role, pendingReviews = 0 }: { role: UserRole; pendingReviews?: number }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const items = navItemsForRole(role);
@@ -24,7 +24,7 @@ export function MobileNav({ role }: { role: UserRole }) {
       </button>
       {open && (
         <div className="absolute left-0 top-10 z-20 w-56 rounded-lg border border-border bg-surface p-1.5 shadow-lg">
-          {items.map(({ href, label, Icon }) => {
+          {items.map(({ href, label, Icon, badgeKey }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
@@ -36,7 +36,10 @@ export function MobileNav({ role }: { role: UserRole }) {
                 }`}
               >
                 <Icon width={16} height={16} />
-                {label}
+                <span className="flex-1">{label}</span>
+                {badgeKey === "review" && pendingReviews > 0 && (
+                  <span className="rounded-full bg-ai px-2 py-0.5 text-[11px] font-semibold text-white">{pendingReviews}</span>
+                )}
               </Link>
             );
           })}
