@@ -11,6 +11,7 @@ import type {
   Finding,
   GcNotice,
   HazardProfile,
+  Incident,
   Inspection,
   InspectionTemplate,
   Permit,
@@ -36,6 +37,7 @@ export type Store = {
   ppeItems: PpeItem[];
   assets: Asset[];
   gcNotices: GcNotice[];
+  incidents: Incident[];
 };
 
 const DAY = 86_400_000;
@@ -1041,6 +1043,68 @@ export function buildSeed(now: Date): Store {
     { id: "gc_09", projectId: "p_louisville", trade: "Site Utilities", issue: "Trench left open overnight near BESCO material laydown", impact: "Fall and access hazard", priority: "high", status: "acknowledged", raisedAt: iso(at(5, 7)), raisedById: "u_grace", gcResponse: "Barricades and lighting added; trench backfill Monday." },
   ];
 
+  // Incident log ----------------------------------------------------------------
+  const incidents: Incident[] = [
+    {
+      id: "inc_01",
+      projectId: "p_markey",
+      type: "near_miss",
+      description: "Suspended load swung unexpectedly near L4 West as a crew member walked beneath the pick path.",
+      location: { level: "L4", zone: "West" },
+      involvedUserIds: ["u_marcus"],
+      immediateAction: "Work paused; pick path re-flagged and a spotter assigned before the lift resumed.",
+      oshaRecordable: false,
+      lostTimeDays: 0,
+      status: "closed",
+      reportedById: "u_amon",
+      reportedAt: iso(at(9, 11)),
+      closedAt: iso(at(8, 15)),
+    },
+    {
+      id: "inc_02",
+      projectId: "p_markey",
+      type: "first_aid",
+      description: "Minor laceration to the hand while stripping conductor in the B1 South electrical room; treated on site.",
+      location: { level: "B1", zone: "South" },
+      involvedUserIds: ["u_kevin"],
+      immediateAction: "Wound cleaned and bandaged by the site first-aid attendant; cut-resistant glove use reviewed with the crew.",
+      oshaRecordable: false,
+      lostTimeDays: 0,
+      status: "closed",
+      reportedById: "u_justus",
+      reportedAt: iso(at(5, 14)),
+      closedAt: iso(at(5, 16)),
+    },
+    {
+      id: "inc_03",
+      projectId: "p_lex_medical",
+      type: "recordable",
+      description: "Fall from a two-step platform ladder while pulling cable overhead on L2; twisted ankle.",
+      location: { level: "L2", zone: "North" },
+      involvedUserIds: ["u_omar"],
+      immediateAction: "Worker assessed by site medic and sent for evaluation. Ladder inspected and cleared; toolbox talk on ladder setup scheduled.",
+      oshaRecordable: true,
+      lostTimeDays: 2,
+      status: "investigating",
+      reportedById: "u_luis",
+      reportedAt: iso(at(3, 9)),
+    },
+    {
+      id: "inc_04",
+      projectId: "p_louisville",
+      type: "property_damage",
+      description: "Forklift backed into a temporary panel enclosure staged in the laydown yard, denting the cabinet.",
+      location: { level: "Site", zone: "Laydown" },
+      involvedUserIds: ["u_tanya"],
+      immediateAction: "Enclosure tagged out and inspected before re-energizing; forklift travel lane re-marked.",
+      oshaRecordable: false,
+      lostTimeDays: 0,
+      status: "open",
+      reportedById: "u_grace",
+      reportedAt: iso(at(1, 16)),
+    },
+  ];
+
   return {
     companies,
     users,
@@ -1054,5 +1118,6 @@ export function buildSeed(now: Date): Store {
     ppeItems,
     assets,
     gcNotices,
+    incidents,
   };
 }

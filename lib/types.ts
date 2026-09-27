@@ -212,6 +212,25 @@ export type Asset = {
   projectId: string;
 };
 
+export type IncidentType = "near_miss" | "first_aid" | "recordable" | "property_damage" | "illness";
+export type IncidentStatus = "open" | "investigating" | "closed";
+
+export type Incident = {
+  id: string;
+  projectId: string;
+  type: IncidentType;
+  description: string;
+  location: SiteLocation;
+  involvedUserIds: string[];
+  immediateAction: string;
+  oshaRecordable: boolean;
+  lostTimeDays: number;
+  status: IncidentStatus;
+  reportedById: string;
+  reportedAt: string;
+  closedAt?: string;
+};
+
 export type GcNoticePriority = "low" | "medium" | "high";
 export type GcNoticeStatus = "open" | "acknowledged" | "resolved";
 

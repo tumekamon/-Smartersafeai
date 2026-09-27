@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import type { UserRole } from "@/lib/types";
 import {
+  IconAlertTriangle,
   IconCheckShield,
   IconClipboardCheck,
   IconFileCheck,
@@ -30,6 +31,7 @@ export function navItemsForRole(role: UserRole): NavItem[] {
       { href: "/dashboard", label: "My Day", Icon: IconGrid },
       { href: "/projects", label: "Sites", Icon: IconFolder },
       { href: "/corrective-actions", label: "My Tasks", Icon: IconClipboardCheck },
+      { href: "/incidents", label: "Incidents", Icon: IconAlertTriangle },
     ];
   }
   if (role === "CLIENT_VIEWER") {
@@ -38,6 +40,7 @@ export function navItemsForRole(role: UserRole): NavItem[] {
       { href: "/projects", label: "Projects", Icon: IconFolder },
       { href: "/corrective-actions", label: "Corrective Actions", Icon: IconClipboardCheck },
       { href: "/compliance", label: "Compliance", Icon: IconFileCheck },
+      { href: "/incidents", label: "Incidents", Icon: IconAlertTriangle },
     ];
   }
   const items: NavItem[] = [{ href: "/dashboard", label: "Command Center", Icon: IconGrid }];
@@ -46,6 +49,7 @@ export function navItemsForRole(role: UserRole): NavItem[] {
     { href: "/projects", label: "Projects", Icon: IconFolder },
     { href: "/inspections", label: "Inspections", Icon: IconInbox },
     { href: "/corrective-actions", label: "Corrective Actions", Icon: IconClipboardCheck },
+    { href: "/incidents", label: "Incidents", Icon: IconAlertTriangle },
     { href: "/compliance", label: "Compliance", Icon: IconFileCheck }
   );
   if (role === "ADMIN") items.push({ href: "/settings", label: "Settings", Icon: IconSettings });

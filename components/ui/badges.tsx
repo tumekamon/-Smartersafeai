@@ -1,5 +1,7 @@
 import type {
   CorrectiveActionStatus,
+  IncidentStatus,
+  IncidentType,
   InspectionStatus,
   ReviewerDecision,
   RiskLevel,
@@ -64,4 +66,34 @@ const inspectionStatusTone: Record<InspectionStatus, Tone> = {
 
 export function InspectionStatusBadge({ status }: { status: InspectionStatus }) {
   return <Badge tone={inspectionStatusTone[status]} label={status} />;
+}
+
+const incidentStatusTone: Record<IncidentStatus, Tone> = {
+  open: "warning",
+  investigating: "info",
+  closed: "good",
+};
+
+export function IncidentStatusBadge({ status }: { status: IncidentStatus }) {
+  return <Badge tone={incidentStatusTone[status]} label={status} />;
+}
+
+const incidentTypeLabels: Record<IncidentType, string> = {
+  near_miss: "Near miss",
+  first_aid: "First aid",
+  recordable: "Recordable",
+  property_damage: "Property damage",
+  illness: "Illness",
+};
+
+const incidentTypeTone: Record<IncidentType, Tone> = {
+  near_miss: "info",
+  first_aid: "warning",
+  recordable: "serious",
+  property_damage: "neutral",
+  illness: "serious",
+};
+
+export function IncidentTypeBadge({ type }: { type: IncidentType }) {
+  return <Badge tone={incidentTypeTone[type]} label={incidentTypeLabels[type]} />;
 }

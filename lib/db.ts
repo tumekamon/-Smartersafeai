@@ -13,6 +13,8 @@ import type {
   Finding,
   GcNotice,
   HazardProfile,
+  Incident,
+  IncidentStatus,
   Inspection,
   InspectionTemplate,
   Permit,
@@ -484,4 +486,52 @@ export function listAssets(companyId: string): Asset[] {
 export function listGcNotices(companyId: string): GcNotice[] {
   const ids = projectIdsForCompany(companyId);
   return newestFirst(store.gcNotices.filter((g) => ids.has(g.projectId)), "raisedAt");
+}
+
+// --- Incidents ---
+
+export function listIncidents(companyId: string): Incident[] {
+  const ids = projectIdsForCompany(companyId);
+  return newestFirst(store.incidents.filter((i) => ids.has(i.projectId)), "reportedAt");
+}
+
+export function getIncident(id: string): Incident | undefined {
+  return store.incidents.find((i) => i.id === id);
+}
+
+export function createIncident(input: {
+  projectId: string;
+  type: Incident["type"];
+  description: string;
+  location: SiteLocation;
+  involvedUserIds: string[];
+  immediateAction: string;
+  oshaRecordable: boolean;
+  lostTimeDays: number;
+  reportedById: string;
+}): Incident {
+  const incident: Incident = {
+    id: nextId("inc"),
+    projectId: input.projectId,
+    type: input.type,
+    description: input.description,
+    location: input.location,
+    involvedUserIds: input.involvedUserIds,
+    immediateAction: input.immediateAction,
+    oshaRecordable: input.oshaRecordable,
+    lostTimeDays: input.lostTimeDays,
+    status: "open",
+    reportedById: input.reportedById,
+    reportedAt: new Date().toISOString(),
+  };
+  store.incidents.push(incident);
+  return incident;
+}
+
+export function updateIncidentStatus(id: string, status: IncidentStatus): Incident | undefined {
+  const incident = getIncident(id);
+  if (!incident) return undefined;
+  incident.status = status;
+  if (status === "closed") incident.closedAt = new Date().toISOString();
+  return incident;
 }
