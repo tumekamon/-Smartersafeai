@@ -27,7 +27,7 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { ComplianceStrip } from "@/components/dashboard/compliance-strip";
 import { ProjectSwitcher } from "@/components/dashboard/project-switcher";
 import { RiskBadge } from "@/components/ui/badges";
-import { IconArrowRight, IconMapPin } from "@/components/ui/icons";
+import { IconArrowRight, IconMapPin, IconSparkle, IconClock, IconCheck } from "@/components/ui/icons";
 
 const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
 
@@ -70,7 +70,6 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
   const overdue = actions.filter((a) => isActionOverdue(a)).length;
   const pending = findings.filter((f) => f.reviewerDecision === "pending").length;
   const closure = closureStats(projectId);
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   const attention = attentionQueue(8, projectId);
   const aiInsights = insights(projectId);
@@ -83,20 +82,29 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow flex items-center gap-2">
-            <span className="live-dot" />
-            Command center · {today}
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-semibold tracking-tight">
             {greeting()}, {user.firstName}
           </h1>
-          <p className="mt-1 text-sm text-foreground/60">
-            {pending > 0
-              ? `${pending} AI finding${pending === 1 ? "" : "s"} waiting for your review${overdue ? ` and ${overdue} corrective action${overdue === 1 ? "" : "s"} overdue` : ""}.`
-              : overdue
-                ? `${overdue} corrective action${overdue === 1 ? "" : "s"} overdue.`
-                : "Everything is on track."}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {pending > 0 && (
+              <span className="badge badge-serious text-[11px] py-1 px-2.5">
+                <IconSparkle width={13} height={13} />
+                {pending} pending review{pending === 1 ? "" : "s"}
+              </span>
+            )}
+            {overdue > 0 && (
+              <span className="badge badge-critical text-[11px] py-1 px-2.5">
+                <IconClock width={13} height={13} />
+                {overdue} overdue action{overdue === 1 ? "" : "s"}
+              </span>
+            )}
+            {pending === 0 && overdue === 0 && (
+              <span className="badge badge-good text-[11px] py-1 px-2.5">
+                <IconCheck width={13} height={13} />
+                All clear
+              </span>
+            )}
+          </div>
         </div>
         <ProjectSwitcher projects={projects} selectedId={projectId} />
       </div>
@@ -130,12 +138,9 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
       </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section className="card p-5 lg:col-span-3">
+        <section className="card p-6 lg:col-span-3">
           <div className="mb-1 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">Needs your attention</h2>
-              <p className="text-xs text-foreground/50">Ranked by severity and age</p>
-            </div>
+            <h2 className="text-sm font-semibold">Needs your attention</h2>
             {pending > 0 && (
               <Link href="/review" className="rounded-full bg-ai-soft px-3 py-1 text-xs font-semibold text-ai">
                 Open review queue ({pending})
@@ -153,34 +158,23 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section className="card p-5 lg:col-span-3">
-          <div className="mb-3">
-            <h2 className="text-sm font-semibold">Findings raised vs. actions closed</h2>
-            <p className="text-xs text-foreground/50">Last 12 weeks{project ? ` · ${project.shortName}` : " · all sites"}</p>
-          </div>
+        <section className="card p-6 lg:col-span-3">
+          <h2 className="mb-3 text-sm font-semibold">Findings vs. closures</h2>
           <TrendChart points={series} />
         </section>
 
-        <section className="card p-5 lg:col-span-2">
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold">What is going wrong</h2>
-            <p className="text-xs text-foreground/50">Confirmed findings by category, last 30 days</p>
-          </div>
+        <section className="card p-6 lg:col-span-2">
+          <h2 className="mb-4 text-sm font-semibold">What is going wrong</h2>
           <BreakdownBars items={hazards.map((h) => ({ label: h.category, value: h.count, tone: "info" as const }))} />
         </section>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section className="card p-5 lg:col-span-3">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-sm font-semibold">
-                <IconMapPin width={15} height={15} className="text-foreground/50" />
-                Where findings are happening
-              </h2>
-              <p className="text-xs text-foreground/50">Findings by level and zone, last 30 days</p>
-            </div>
-          </div>
+        <section className="card p-6 lg:col-span-3">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+            <IconMapPin width={15} height={15} className="text-foreground/50" />
+            Where findings are happening
+          </h2>
           <div className={heatTargets.length > 1 ? "grid gap-6 md:grid-cols-3" : ""}>
             {heatTargets.map((p) => {
               const h = heatmap(p.id);
@@ -218,11 +212,8 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
           )}
         </section>
 
-        <section className="card p-5 lg:col-span-2">
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold">Live activity</h2>
-            <p className="text-xs text-foreground/50">Inspections, AI flags, reviews and closures</p>
-          </div>
+        <section className="card p-6 lg:col-span-2">
+          <h2 className="mb-4 text-sm font-semibold">Live activity</h2>
           <ActivityFeed events={feed} />
         </section>
       </div>
@@ -236,7 +227,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
             {projects.map((p) => {
               const h = projectHealth(p);
               return (
-                <Link key={p.id} href={`/projects/${p.id}`} className="card group p-5 transition-shadow hover:shadow-md">
+                <Link key={p.id} href={`/projects/${p.id}`} className="card group p-6 transition-shadow hover:shadow-md">
                   <div className="flex items-center gap-4">
                     <ScoreRing score={h.score} level={h.level} size={76} stroke={8} />
                     <div className="min-w-0">

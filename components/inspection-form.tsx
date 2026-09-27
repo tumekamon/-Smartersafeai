@@ -183,7 +183,6 @@ export function InspectionForm({
           >
             <IconCamera width={26} height={26} className="text-foreground/40" />
             <span className="text-sm font-medium">Take or upload photos</span>
-            {template.aiAnalysisEnabled && <span className="text-xs text-foreground/50">The AI scans each photo for hazards</span>}
           </label>
           <input
             id="evidence"

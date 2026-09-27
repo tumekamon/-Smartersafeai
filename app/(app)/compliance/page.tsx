@@ -47,10 +47,7 @@ export default async function CompliancePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="eyebrow">Regulatory readiness</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Compliance</h1>
-      </div>
+      <h1 className="text-3xl font-semibold tracking-tight">Compliance</h1>
 
       <nav className="inline-flex flex-wrap gap-1 rounded-xl bg-surface p-1 ring-1 ring-border">
         {TABS.map((t) => (

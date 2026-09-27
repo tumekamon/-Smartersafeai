@@ -14,7 +14,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="card group flex flex-col p-4 transition-shadow hover:shadow-md">
+    <Link href={href} className="card group flex flex-col p-5 transition-all hover:shadow-lg hover:-translate-y-1">
       <div className="mb-3 flex items-center justify-between">
         <p className="eyebrow">{title}</p>
         <IconArrowRight width={14} height={14} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />

@@ -87,13 +87,13 @@ export default async function InspectionDetailPage({
                 <IconCheck width={26} height={26} />
               </span>
               <h2 className="mt-4 text-lg font-semibold">
-                {failed === 0 ? "Clean inspection" : "Failed items recorded"}
+                {failed === 0 ? "Clean inspection" : `${failed} item${failed === 1 ? "" : "s"} failed`}
               </h2>
-              <p className="mt-1 max-w-sm text-sm text-foreground/55">
-                {failed === 0
-                  ? "Every checklist item passed. No hazards were flagged."
-                  : `${failed} item${failed === 1 ? "" : "s"} failed. Corrective actions were raised directly for this equipment check.`}
-              </p>
+              {failed > 0 && (
+                <p className="mt-1 max-w-sm text-sm text-foreground/55">
+                  Corrective actions raised directly — no photo review needed for this equipment check.
+                </p>
+              )}
             </section>
           ) : (
             findings.map((finding) => {
@@ -127,7 +127,6 @@ export default async function InspectionDetailPage({
                     {finding.reviewerDecision === "pending" ? (
                       caps.canReviewFindings ? (
                         <div className="mt-5 border-t border-border pt-5">
-                          <p className="eyebrow mb-3">Your decision</p>
                           <ReviewPanel
                             finding={finding}
                             assignees={crew}
@@ -191,19 +190,16 @@ export default async function InspectionDetailPage({
         <aside className="space-y-5">
           <section className="card p-5">
             <div className="flex items-center gap-4">
-              <ScoreRing score={rate} level={rateLevel} size={92} stroke={9} />
-              <div>
-                <p className="eyebrow">Pass rate</p>
-                <p className="mt-1 text-sm text-foreground/60">
-                  {inspection.responses.filter((r) => r.value === "pass").length} of{" "}
-                  {inspection.responses.filter((r) => r.value !== "na").length} items passed
-                </p>
-              </div>
+              <ScoreRing score={rate} level={rateLevel} size={92} stroke={9} label="Pass rate" />
+              <p className="text-sm text-foreground/60">
+                {inspection.responses.filter((r) => r.value === "pass").length} of{" "}
+                {inspection.responses.filter((r) => r.value !== "na").length} items passed
+              </p>
             </div>
           </section>
 
           <section className="card p-5">
-            <h2 className="eyebrow mb-3">Checklist</h2>
+            <h2 className="mb-3 text-sm font-semibold">Checklist</h2>
             <ul className="space-y-3">
               {inspection.responses.map((r) => {
                 const item = template?.checklist.find((c) => c.id === r.itemId);

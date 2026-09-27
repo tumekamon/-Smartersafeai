@@ -12,11 +12,11 @@ import { nowMs } from "@/lib/time";
 
 const DAY = 86_400_000;
 
-const COLUMNS: { status: CorrectiveActionStatus; title: string; hint: string; color: string }[] = [
-  { status: "open", title: "Open", hint: "Assigned, work not done", color: "var(--status-warning)" },
-  { status: "completed", title: "Awaiting verification", hint: "Crew says it is fixed", color: "var(--chart-series-1)" },
-  { status: "verified", title: "Verified", hint: "Safety confirmed the fix", color: "var(--status-good)" },
-  { status: "closed", title: "Closed", hint: "Last 14 days", color: "var(--status-neutral)" },
+const COLUMNS: { status: CorrectiveActionStatus; title: string; color: string }[] = [
+  { status: "open", title: "Open", color: "var(--status-warning)" },
+  { status: "completed", title: "Awaiting verification", color: "var(--chart-series-1)" },
+  { status: "verified", title: "Verified", color: "var(--status-good)" },
+  { status: "closed", title: "Closed (14d)", color: "var(--status-neutral)" },
 ];
 
 const NEXT: Record<CorrectiveActionStatus, { next: CorrectiveActionStatus; label: string } | null> = {
@@ -90,8 +90,7 @@ export default async function CorrectiveActionsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">{isWorker ? "Assigned to you" : "All projects"}</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{isWorker ? "My tasks" : "Corrective actions"}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{isWorker ? "My tasks" : "Corrective actions"}</h1>
           <p className="mt-1 text-sm text-foreground/60">
             {all.filter((a) => a.status !== "closed").length} in progress
             {overdue > 0 && <span className="font-semibold text-critical"> · {overdue} overdue</span>}
@@ -119,13 +118,10 @@ export default async function CorrectiveActionsPage({
           return (
             <section key={col.status} className="rounded-2xl bg-surface-muted/60 p-3">
               <div className="mb-3 flex items-center justify-between px-1.5">
-                <div>
-                  <h2 className="flex items-center gap-2 text-sm font-semibold">
-                    <span className="h-2 w-2 rounded-full" style={{ background: col.color }} />
-                    {col.title}
-                  </h2>
-                  <p className="text-[11px] text-foreground/45">{col.hint}</p>
-                </div>
+                <h2 className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="h-2 w-2 rounded-full" style={{ background: col.color }} />
+                  {col.title}
+                </h2>
                 <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold ring-1 ring-border">{items.length}</span>
               </div>
               <div className="space-y-2.5">

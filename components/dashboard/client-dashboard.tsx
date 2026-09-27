@@ -23,11 +23,10 @@ export function ClientDashboard({ user }: { user: User }) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow">Safety performance · read-only</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight">
           {greeting()}, {user.firstName}
         </h1>
-        <p className="mt-1 text-sm text-foreground/60">BESCO Electric&apos;s safety record across your projects.</p>
+        <p className="mt-1 text-sm text-foreground/60">Read-only</p>
       </div>
 
       <section className="hero p-6 md:p-7">

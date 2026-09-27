@@ -61,10 +61,7 @@ export default async function LoginPage() {
           <h1 className="mt-5 text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
             See the hazard before it becomes an incident.
           </h1>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-white/65">
-            Field photos and inspections become flagged hazards, safety-professional decisions and verified fixes, in one place.
-          </p>
-          <div className="mt-8 overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl">
+          <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl">
             <EvidenceScene
               scene="panel"
               title="Missing GFCI protection"
@@ -91,8 +88,7 @@ export default async function LoginPage() {
             </span>
             <p className="text-sm font-semibold">SmartSafe AI</p>
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
-          <p className="mb-7 mt-1 text-sm text-foreground/60">Choose a role to explore, or sign in with your work account.</p>
+          <h2 className="mb-7 text-2xl font-semibold tracking-tight">Welcome back</h2>
           <LoginForm accounts={accounts} />
         </div>
       </section>

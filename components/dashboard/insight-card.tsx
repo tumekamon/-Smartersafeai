@@ -13,7 +13,7 @@ const toneVar = {
 export function InsightCard({ insight }: { insight: Insight }) {
   const color = toneVar[insight.tone];
   const body = (
-    <div className="card group relative flex h-full flex-col overflow-hidden p-4 transition-shadow hover:shadow-md">
+    <div className="card group relative flex h-full flex-col overflow-hidden p-5 transition-all hover:shadow-lg hover:-translate-y-1">
       <span className="absolute inset-y-0 left-0 w-1" style={{ background: color }} />
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="ai-chip">

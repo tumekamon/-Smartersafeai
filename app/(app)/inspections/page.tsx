@@ -61,10 +61,7 @@ export default async function InspectionsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="eyebrow">Field activity</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Inspections</h1>
-      </div>
+      <h1 className="text-3xl font-semibold tracking-tight">Inspections</h1>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[

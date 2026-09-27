@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/dal";
-import { getCompany, getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
+import { getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
 import { hazardBreakdown, projectHealth, weeklySeries } from "@/lib/metrics";
 import { timeAgo } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
@@ -11,16 +10,11 @@ import { IconArrowRight, IconMapPin } from "@/components/ui/icons";
 const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
 
 export default async function ProjectsPage() {
-  const user = await getCurrentUser();
-  const company = getCompany(user.companyId);
   const projects = listProjects();
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="eyebrow">{company?.name}</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Projects</h1>
-      </div>
+      <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {projects.map((project) => {

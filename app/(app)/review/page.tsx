@@ -48,18 +48,13 @@ export default async function ReviewPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow flex items-center gap-2">
-            <span className="ai-chip">
-              <IconSparkle width={12} height={12} />
-              AI review queue
-            </span>
-          </p>
+          <span className="ai-chip">
+            <IconSparkle width={12} height={12} />
+            AI review
+          </span>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             {queue.length === 0 ? "Queue is clear" : `${queue.length} finding${queue.length === 1 ? "" : "s"} to review`}
           </h1>
-          <p className="mt-1 text-sm text-foreground/60">
-            Review AI-flagged hazards, then approve, override or reject each one.
-          </p>
         </div>
       </div>
 
@@ -69,7 +64,7 @@ export default async function ReviewPage({
             <IconCheck width={26} height={26} />
           </span>
           <h2 className="mt-4 text-lg font-semibold">Nothing waiting for review</h2>
-          <p className="mt-1 max-w-sm text-sm text-foreground/55">New AI findings appear here as soon as an inspection with photos is submitted.</p>
+          <p className="mt-1 max-w-sm text-sm text-foreground/55">New findings appear here automatically.</p>
         </section>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
@@ -192,7 +187,6 @@ async function ReviewWorkspace({ finding, nextHref }: { finding: Finding; nextHr
         </div>
 
         <div>
-          <p className="eyebrow mb-3">Your decision</p>
           <ReviewPanel
             finding={finding}
             assignees={crew as NonNullable<(typeof crew)[number]>[]}

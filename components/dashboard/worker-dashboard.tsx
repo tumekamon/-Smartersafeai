@@ -27,26 +27,22 @@ export function WorkerDashboard({ user }: { user: User }) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow">My day</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight">
           {greeting()}, {user.firstName}
         </h1>
         <p className="mt-1 text-sm text-foreground/60">
           {mine.length === 0
-            ? "You have no open tasks."
-            : `${mine.length} task${mine.length === 1 ? "" : "s"} assigned to you${overdue ? `, ${overdue} overdue` : ""}.`}
+            ? "No open tasks."
+            : `${mine.length} task${mine.length === 1 ? "" : "s"} assigned${overdue ? `, ${overdue} overdue` : ""}.`}
         </p>
       </div>
 
       <section className="hero p-6">
         <div className="flex flex-wrap items-center justify-between gap-5">
-          <div>
-            <p className="flex items-center gap-2 text-lg font-semibold">
-              <IconBolt width={20} height={20} />
-              Start an inspection
-            </p>
-            <p className="mt-1 text-sm text-white/65">Pick the site you are working on. It takes about two minutes.</p>
-          </div>
+          <p className="flex items-center gap-2 text-lg font-semibold">
+            <IconBolt width={20} height={20} />
+            Start an inspection
+          </p>
           <div className="flex flex-wrap gap-2">
             {projects.map((p) => (
               <Link
@@ -63,8 +59,7 @@ export function WorkerDashboard({ user }: { user: User }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <section className="card p-5 lg:col-span-3">
-          <h2 className="mb-1 text-sm font-semibold">My tasks</h2>
-          <p className="mb-3 text-xs text-foreground/50">Mark a task completed and a safety professional verifies it</p>
+          <h2 className="mb-3 text-sm font-semibold">My tasks</h2>
           {mine.length === 0 ? (
             <p className="py-6 text-center text-sm text-foreground/50">All caught up.</p>
           ) : (
