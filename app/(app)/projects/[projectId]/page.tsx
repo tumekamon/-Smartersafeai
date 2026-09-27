@@ -12,7 +12,9 @@ import {
   listInspectionsForProject,
   listTemplates,
   listFindings,
+  listUsers,
 } from "@/lib/db";
+import { addCrewMemberAction, removeCrewMemberAction } from "@/lib/actions/projects";
 import {
   activityFeed,
   certStatus,
@@ -34,7 +36,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { CorrectiveActionStatusBadge, InspectionStatusBadge, RiskBadge } from "@/components/ui/badges";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { InsightCard } from "@/components/dashboard/insight-card";
-import { IconArrowRight, IconBolt, IconMapPin } from "@/components/ui/icons";
+import { IconArrowRight, IconBolt, IconMapPin, IconTrash } from "@/components/ui/icons";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -285,47 +287,82 @@ export default async function ProjectDetailPage({
   function Crew({ crewIds }: { crewIds: string[] }) {
     const now = Date.now();
     const certs = listCertifications(user.companyId);
+    const roster = listUsers(user.companyId);
+    const available = roster.filter((u) => !crewIds.includes(u.id));
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {crewIds.map((id) => {
-          const person = getUser(id);
-          if (!person) return null;
-          const mine = certs.filter((c) => c.userId === id);
-          const expired = mine.filter((c) => certStatus(c.expiresOn, now) === "expired").length;
-          const expiring = mine.filter((c) => certStatus(c.expiresOn, now) === "expiring").length;
-          return (
-            <section key={id} className="card p-5">
-              <div className="flex items-center gap-3">
-                <Avatar person={person} size={42} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{person.firstName} {person.lastName}</p>
-                  <p className="truncate text-xs text-foreground/50">{person.title}</p>
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {crewIds.map((id) => {
+            const person = getUser(id);
+            if (!person) return null;
+            const mine = certs.filter((c) => c.userId === id);
+            const expired = mine.filter((c) => certStatus(c.expiresOn, now) === "expired").length;
+            const expiring = mine.filter((c) => certStatus(c.expiresOn, now) === "expiring").length;
+            return (
+              <section key={id} className="card p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar person={person} size={42} />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{person.firstName} {person.lastName}</p>
+                      <p className="truncate text-xs text-foreground/50">{person.title}</p>
+                    </div>
+                  </div>
+                  {caps.canManageSettings && (
+                    <form action={removeCrewMemberAction}>
+                      <input type="hidden" name="projectId" value={projectId} />
+                      <input type="hidden" name="userId" value={id} />
+                      <button
+                        type="submit"
+                        title="Remove from crew"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-foreground/40 transition-colors hover:bg-red-500/10 hover:text-critical"
+                      >
+                        <IconTrash width={13} height={13} />
+                      </button>
+                    </form>
+                  )}
                 </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {mine.map((c) => {
-                  const s = certStatus(c.expiresOn, now);
-                  return (
-                    <span
-                      key={c.id}
-                      title={`${c.type} · expires ${shortDate(c.expiresOn)}`}
-                      className={`badge ${s === "current" ? "badge-good" : s === "expiring" ? "badge-warning" : "badge-critical"}`}
-                    >
-                      {c.type.replace(" (NFPA 70E)", "").replace(" Authorized", "").replace(" / CPR", "")}
-                    </span>
-                  );
-                })}
-              </div>
-              {(expired > 0 || expiring > 0) && (
-                <p className="mt-3 text-xs text-foreground/50">
-                  {expired > 0 && <span className="font-medium tone-critical">{expired} expired</span>}
-                  {expired > 0 && expiring > 0 && " · "}
-                  {expiring > 0 && <span className="font-medium tone-warning">{expiring} expiring</span>}
-                </p>
-              )}
-            </section>
-          );
-        })}
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {mine.map((c) => {
+                    const s = certStatus(c.expiresOn, now);
+                    return (
+                      <span
+                        key={c.id}
+                        title={`${c.type} · expires ${shortDate(c.expiresOn)}`}
+                        className={`badge ${s === "current" ? "badge-good" : s === "expiring" ? "badge-warning" : "badge-critical"}`}
+                      >
+                        {c.type.replace(" (NFPA 70E)", "").replace(" Authorized", "").replace(" / CPR", "")}
+                      </span>
+                    );
+                  })}
+                </div>
+                {(expired > 0 || expiring > 0) && (
+                  <p className="mt-3 text-xs text-foreground/50">
+                    {expired > 0 && <span className="font-medium tone-critical">{expired} expired</span>}
+                    {expired > 0 && expiring > 0 && " · "}
+                    {expiring > 0 && <span className="font-medium tone-warning">{expiring} expiring</span>}
+                  </p>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        {caps.canManageSettings && available.length > 0 && (
+          <form action={addCrewMemberAction} className="card flex flex-wrap items-center gap-3 p-4">
+            <input type="hidden" name="projectId" value={projectId} />
+            <span className="text-sm font-medium text-foreground/70">Add to crew</span>
+            <select name="userId" className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm" defaultValue="">
+              <option value="" disabled>Choose someone…</option>
+              {available.map((u) => (
+                <option key={u.id} value={u.id}>{u.firstName} {u.lastName} · {u.title}</option>
+              ))}
+            </select>
+            <button type="submit" className="rounded-lg bg-sidebar-accent px-3.5 py-1.5 text-sm font-semibold text-white">
+              Add
+            </button>
+          </form>
+        )}
       </div>
     );
   }

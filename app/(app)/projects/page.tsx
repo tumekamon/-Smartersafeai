@@ -1,23 +1,46 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
+import { getCapabilities } from "@/lib/authz";
 import { getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
 import { hazardBreakdown, projectHealth, weeklySeries } from "@/lib/metrics";
 import { timeAgo } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
 import { Sparkline } from "@/components/viz/sparkline";
 import { RiskBadge } from "@/components/ui/badges";
-import { IconArrowRight, IconMapPin } from "@/components/ui/icons";
+import { IconArrowRight, IconMapPin, IconPlus } from "@/components/ui/icons";
 
 const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();
   const projects = listProjects(user.companyId);
+  const canManage = getCapabilities(user.role).canManageSettings;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
+        {canManage && (
+          <Link
+            href="/projects/new"
+            className="flex items-center gap-1.5 rounded-lg bg-sidebar-accent px-3.5 py-2 text-sm font-semibold text-white"
+          >
+            <IconPlus width={14} height={14} />
+            New project
+          </Link>
+        )}
+      </div>
 
+      {projects.length === 0 ? (
+        <div className="card flex flex-col items-center gap-2 p-12 text-center">
+          <p className="text-sm font-medium">No projects yet</p>
+          <p className="max-w-sm text-xs text-foreground/50">
+            {canManage
+              ? "Create the first project to start logging inspections and tracking safety."
+              : "An administrator needs to create a project before there is anything to inspect."}
+          </p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {projects.map((project) => {
           const h = projectHealth(project);
@@ -81,6 +104,7 @@ export default async function ProjectsPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

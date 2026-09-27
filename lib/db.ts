@@ -22,6 +22,7 @@ import type {
   RiskLevel,
   SiteLocation,
   User,
+  UserRole,
 } from "@/lib/types";
 
 /**
@@ -112,6 +113,40 @@ export function findUserByEmail(email: string): User | undefined {
   return store.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
 }
 
+export function createUser(input: {
+  companyId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+  title: string;
+}): User {
+  const user: User = {
+    id: nextId("u"),
+    companyId: input.companyId,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    role: input.role,
+    title: input.title,
+    active: true,
+  };
+  store.users.push(user);
+  return user;
+}
+
+export function updateUser(
+  id: string,
+  input: { role?: UserRole; title?: string; active?: boolean }
+): User | undefined {
+  const user = getUser(id);
+  if (!user) return undefined;
+  if (input.role) user.role = input.role;
+  if (input.title?.trim()) user.title = input.title.trim();
+  if (input.active !== undefined) user.active = input.active;
+  return user;
+}
+
 // --- Projects ---
 
 export function listProjects(companyId: string): Project[] {
@@ -120,6 +155,62 @@ export function listProjects(companyId: string): Project[] {
 
 export function getProject(id: string): Project | undefined {
   return store.projects.find((p) => p.id === id);
+}
+
+export function createProject(input: {
+  companyId: string;
+  name: string;
+  shortName: string;
+  projectNumber: string;
+  location: string;
+  client: string;
+  startDate: string;
+  levels: string[];
+  zones: string[];
+  headcount: number;
+}): Project {
+  const project: Project = {
+    id: nextId("p"),
+    companyId: input.companyId,
+    name: input.name,
+    shortName: input.shortName,
+    projectNumber: input.projectNumber,
+    location: input.location,
+    client: input.client,
+    startDate: input.startDate,
+    status: "active",
+    percentComplete: 0,
+    headcount: input.headcount,
+    levels: input.levels,
+    zones: input.zones,
+    crewIds: [],
+  };
+  store.projects.push(project);
+  return project;
+}
+
+export function updateProject(
+  id: string,
+  input: Partial<Pick<Project, "name" | "shortName" | "location" | "client" | "status" | "percentComplete" | "headcount">>
+): Project | undefined {
+  const project = getProject(id);
+  if (!project) return undefined;
+  Object.assign(project, input);
+  return project;
+}
+
+export function addCrewMember(projectId: string, userId: string): Project | undefined {
+  const project = getProject(projectId);
+  if (!project) return undefined;
+  if (!project.crewIds.includes(userId)) project.crewIds.push(userId);
+  return project;
+}
+
+export function removeCrewMember(projectId: string, userId: string): Project | undefined {
+  const project = getProject(projectId);
+  if (!project) return undefined;
+  project.crewIds = project.crewIds.filter((id) => id !== userId);
+  return project;
 }
 
 // --- Templates ---

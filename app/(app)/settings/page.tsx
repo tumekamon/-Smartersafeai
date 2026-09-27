@@ -2,11 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { getCompany, listTemplates } from "@/lib/db";
+import { getCompany, listTemplates, listUsers } from "@/lib/db";
 import { BrandingForm } from "@/components/settings/branding-form";
 import { CategoryManager } from "@/components/settings/category-manager";
 import { NewTemplateForm } from "@/components/settings/new-template-form";
-import { IconArrowRight, IconSparkle } from "@/components/ui/icons";
+import { IconArrowRight, IconSparkle, IconUsers } from "@/components/ui/icons";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -16,6 +16,7 @@ export default async function SettingsPage() {
   if (!company) redirect("/dashboard");
 
   const templates = listTemplates(user.companyId);
+  const memberCount = listUsers(user.companyId).length;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -25,6 +26,20 @@ export default async function SettingsPage() {
         <h2 className="mb-4 text-sm font-semibold">Branding</h2>
         <BrandingForm name={company.name} primaryColor={company.primaryColor} />
       </section>
+
+      <Link
+        href="/settings/team"
+        className="card group flex items-center gap-3 p-5 transition-colors hover:bg-surface-muted"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
+          <IconUsers width={16} height={16} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">Team</p>
+          <p className="text-xs text-foreground/50">{memberCount} people · invite, change roles, deactivate</p>
+        </div>
+        <IconArrowRight width={14} height={14} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />
+      </Link>
 
       <section className="card p-5">
         <h2 className="mb-4 text-sm font-semibold">Hazard categories</h2>
