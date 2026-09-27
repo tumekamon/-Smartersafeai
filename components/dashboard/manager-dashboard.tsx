@@ -49,10 +49,11 @@ function SubScore({ label, value }: { label: string; value: number }) {
 
 function HeroStat({ label, value, values, color }: { label: string; value: string | number; values?: number[]; color: string }) {
   return (
-    <div className="hero-tile rounded-xl p-3.5">
-      <p className="hero-muted text-[11px] font-medium uppercase tracking-wider">{label}</p>
-      <div className="mt-1.5 flex items-end justify-between gap-2">
-        <p className="text-3xl font-semibold leading-none tracking-tight">{value}</p>
+    <div className="hero-tile group rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[var(--hero-to)]/20 border border-transparent hover:border-white/20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <p className="hero-muted text-[11px] font-bold uppercase tracking-widest relative z-10">{label}</p>
+      <div className="mt-2 flex items-end justify-between gap-2 relative z-10">
+        <p className="text-4xl font-extrabold leading-none tracking-tighter bg-gradient-to-br from-hero-fg to-hero-fg-muted bg-clip-text text-transparent">{value}</p>
         {values && <Sparkline values={values} width={84} height={30} color={color} ring="var(--hero-to)" />}
       </div>
     </div>
@@ -111,12 +112,12 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
         <ProjectSwitcher projects={projects} selectedId={projectId} />
       </div>
 
-      <section className="relative overflow-hidden rounded-xl border border-border shadow-sm">
+      <section className="relative overflow-hidden rounded-3xl border border-border/50 shadow-2xl shadow-brand/5 transition-all">
         <div className="absolute inset-0 z-0">
-          <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Hero background" fill className="object-cover opacity-30 mix-blend-overlay" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/20 backdrop-blur-[4px]" />
+          <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Hero background" fill className="object-cover opacity-40 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30 backdrop-blur-[6px]" />
         </div>
-        <div className="relative z-10 p-6 md:p-8">
+        <div className="relative z-10 p-6 md:p-10">
           <div className="grid items-center gap-8 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.15fr)]">
             <div className="flex items-center gap-6">
               <div className="rounded-lg bg-background/50 p-1.5 shadow-sm backdrop-blur-md">

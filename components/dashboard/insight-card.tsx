@@ -13,14 +13,14 @@ const toneVar = {
 export function InsightCard({ insight }: { insight: Insight }) {
   const color = toneVar[insight.tone];
   const body = (
-    <div className="card group relative flex h-full flex-col overflow-hidden p-5 transition-all hover:shadow-lg hover:-translate-y-1">
-      <span className="absolute inset-y-0 left-0 w-1" style={{ background: color }} />
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <div className="card group relative flex h-full flex-col overflow-hidden p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-sidebar-accent/30">
+      <span className="absolute inset-y-0 left-0 w-1.5 transition-all duration-300 group-hover:w-2" style={{ background: color }} />
+      <div className="mb-3 flex items-center justify-between gap-2">
         <span className="ai-chip">
           <IconSparkle width={12} height={12} />
           AI insight
         </span>
-        <span className="text-xs font-semibold" style={{ color }}>
+        <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color }}>
           {insight.metric}
         </span>
       </div>
