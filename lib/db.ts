@@ -3,13 +3,16 @@ import { buildSeed, type Store } from "@/lib/seed";
 import type {
   Asset,
   Certification,
+  ChecklistItem,
   ChecklistResponse,
   Company,
   CorrectiveAction,
   CorrectiveActionStatus,
+  EvidenceRequirement,
   Evidence,
   Finding,
   GcNotice,
+  HazardProfile,
   Inspection,
   InspectionTemplate,
   Permit,
@@ -51,6 +54,42 @@ export function getCompany(id: string): Company | undefined {
   return store.companies.find((c) => c.id === id);
 }
 
+export function listCompanies(): Company[] {
+  return store.companies;
+}
+
+export function updateCompanyBranding(
+  id: string,
+  input: { name?: string; primaryColor?: string }
+): Company | undefined {
+  const company = getCompany(id);
+  if (!company) return undefined;
+  if (input.name?.trim()) company.name = input.name.trim();
+  if (input.primaryColor) company.primaryColor = input.primaryColor;
+  return company;
+}
+
+export function addHazardCategory(companyId: string, name: string): Company | undefined {
+  const company = getCompany(companyId);
+  if (!company) return undefined;
+  const trimmed = name.trim();
+  if (trimmed && !company.hazardCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+    company.hazardCategories.push(trimmed);
+  }
+  return company;
+}
+
+export function removeHazardCategory(companyId: string, name: string): boolean {
+  const company = getCompany(companyId);
+  if (!company) return false;
+  const inUse = store.templates.some(
+    (t) => t.companyId === companyId && t.checklist.some((c) => c.hazard.category === name)
+  );
+  if (inUse) return false;
+  company.hazardCategories = company.hazardCategories.filter((c) => c !== name);
+  return true;
+}
+
 export function listUsers(): User[] {
   return store.users;
 }
@@ -71,12 +110,86 @@ export function getProject(id: string): Project | undefined {
 
 // --- Templates ---
 
-export function listTemplates(): InspectionTemplate[] {
-  return store.templates;
+export function listTemplates(companyId: string): InspectionTemplate[] {
+  return store.templates.filter((t) => t.companyId === companyId);
 }
 
 export function getTemplate(id: string): InspectionTemplate | undefined {
   return store.templates.find((t) => t.id === id);
+}
+
+export function createTemplate(input: {
+  companyId: string;
+  name: string;
+  evidenceRequirement: EvidenceRequirement;
+  aiAnalysisEnabled: boolean;
+}): InspectionTemplate {
+  const template: InspectionTemplate = {
+    id: nextId("t"),
+    companyId: input.companyId,
+    name: input.name,
+    evidenceRequirement: input.evidenceRequirement,
+    aiAnalysisEnabled: input.aiAnalysisEnabled,
+    checklist: [],
+  };
+  store.templates.push(template);
+  return template;
+}
+
+export function updateTemplate(
+  id: string,
+  input: { name?: string; evidenceRequirement?: EvidenceRequirement; aiAnalysisEnabled?: boolean }
+): InspectionTemplate | undefined {
+  const template = getTemplate(id);
+  if (!template) return undefined;
+  if (input.name?.trim()) template.name = input.name.trim();
+  if (input.evidenceRequirement) template.evidenceRequirement = input.evidenceRequirement;
+  if (input.aiAnalysisEnabled !== undefined) template.aiAnalysisEnabled = input.aiAnalysisEnabled;
+  return template;
+}
+
+/** Returns false without deleting if any inspection already references this template. */
+export function deleteTemplate(id: string): boolean {
+  const inUse = store.inspections.some((i) => i.templateId === id);
+  if (inUse) return false;
+  store.templates = store.templates.filter((t) => t.id !== id);
+  return true;
+}
+
+export function addChecklistItem(
+  templateId: string,
+  input: { label: string; hazard: HazardProfile }
+): ChecklistItem | undefined {
+  const template = getTemplate(templateId);
+  if (!template) return undefined;
+  const item: ChecklistItem = { id: nextId("c"), label: input.label, hazard: input.hazard };
+  template.checklist.push(item);
+  return item;
+}
+
+export function updateChecklistItem(
+  templateId: string,
+  itemId: string,
+  input: { label: string; hazard: HazardProfile }
+): ChecklistItem | undefined {
+  const template = getTemplate(templateId);
+  const item = template?.checklist.find((c) => c.id === itemId);
+  if (!item) return undefined;
+  item.label = input.label;
+  item.hazard = input.hazard;
+  return item;
+}
+
+/** Returns false without removing if any inspection response already references this item. */
+export function removeChecklistItem(templateId: string, itemId: string): boolean {
+  const inUse = store.inspections.some(
+    (i) => i.templateId === templateId && i.responses.some((r) => r.itemId === itemId)
+  );
+  if (inUse) return false;
+  const template = getTemplate(templateId);
+  if (!template) return false;
+  template.checklist = template.checklist.filter((c) => c.id !== itemId);
+  return true;
 }
 
 // --- Inspections ---

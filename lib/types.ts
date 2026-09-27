@@ -21,6 +21,8 @@ export type User = {
 export type Company = {
   id: string;
   name: string;
+  primaryColor: string;
+  hazardCategories: string[];
 };
 
 export type ProjectStatus = "active" | "on_hold" | "closed";
@@ -49,16 +51,10 @@ export type SiteLocation = {
 
 export type EvidenceRequirement = "required" | "optional" | "disabled";
 
-export type SceneKind = "panel" | "cord" | "vest" | "egress" | "ladder" | "lift";
+export type SceneKind = "panel" | "cord" | "vest" | "egress" | "ladder" | "lift" | "generic";
 
-export type HazardCategory =
-  | "Electrical"
-  | "PPE"
-  | "Fall Protection"
-  | "Housekeeping"
-  | "Egress"
-  | "Fire Protection"
-  | "Equipment";
+/** Free-form: each company defines its own set on Company.hazardCategories. */
+export type HazardCategory = string;
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
@@ -80,6 +76,7 @@ export type ChecklistItem = {
 
 export type InspectionTemplate = {
   id: string;
+  companyId: string;
   name: string;
   evidenceRequirement: EvidenceRequirement;
   aiAnalysisEnabled: boolean;

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { listUsers } from "@/lib/db";
+import { listCompanies, listProjects, listUsers } from "@/lib/db";
 import { LoginForm, type DemoAccount } from "@/components/login-form";
 import { EvidenceScene } from "@/components/viz/evidence-scene";
 import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
@@ -37,14 +37,17 @@ export default async function LoginPage() {
       hue: hueFor(u.id),
     }));
 
+  const company = listCompanies()[0];
+  const project = listProjects()[0];
+
   return (
-    <div className="grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]">
+    <div
+      className="grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]"
+      style={company ? ({ "--brand": company.primaryColor } as React.CSSProperties) : undefined}
+    >
       <section className="hero relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14" style={{ borderRadius: 0 }}>
         <div className="flex items-center gap-2.5">
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
-            style={{ background: "linear-gradient(135deg, #2f6df6, #7a5cff)" }}
-          >
+          <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-xl text-white">
             <IconCheckShield width={21} height={21} />
           </span>
           <div>
@@ -74,16 +77,16 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-white/40">BESCO Electric · UK Markey Cancer Center project team</p>
+        <p className="text-xs text-white/40">
+          {company?.name}
+          {project ? ` · ${project.shortName} project team` : ""}
+        </p>
       </section>
 
       <section className="flex items-center justify-center bg-background px-5 py-12">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
-              style={{ background: "linear-gradient(135deg, #2f6df6, #7a5cff)" }}
-            >
+            <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
               <IconCheckShield width={19} height={19} />
             </span>
             <p className="text-sm font-semibold">SmartSafe AI</p>

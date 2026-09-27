@@ -293,7 +293,7 @@ export function EvidenceScene({
       {scene === "vest" && <VestScene variant={variantFor(title)} />}
       {scene === "egress" && <EgressScene />}
       {scene === "ladder" && <LadderScene />}
-      {scene === "lift" && <Room />}
+      {(scene === "lift" || scene === "generic") && <Room />}
       <rect width={W} height={H} fill="url(#es-vig)" />
       <rect width={W} height={H} filter="url(#es-grain)" opacity={0.28} />
 

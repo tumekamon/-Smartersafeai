@@ -31,7 +31,7 @@ export default async function NewInspectionPage({
         <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">New inspection</h1>
         <p className="mt-1 text-sm text-foreground/60">{project.name}</p>
       </div>
-      <InspectionForm project={project} templates={listTemplates()} initialTemplateId={templateId} />
+      <InspectionForm project={project} templates={listTemplates(user.companyId)} initialTemplateId={templateId} />
     </div>
   );
 }

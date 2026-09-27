@@ -62,7 +62,7 @@ export default async function ProjectDetailPage({
   const user = await getCurrentUser();
   const caps = getCapabilities(user.role);
   const h = projectHealth(project);
-  const templates = listTemplates();
+  const templates = listTemplates(user.companyId);
   const inspections = listInspectionsForProject(projectId);
   const actions = listCorrectiveActionsForProject(projectId);
   const notices = listGcNotices().filter((n) => n.projectId === projectId);

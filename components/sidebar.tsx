@@ -11,6 +11,7 @@ import {
   IconFolder,
   IconGrid,
   IconInbox,
+  IconSettings,
   IconSparkle,
 } from "@/components/ui/icons";
 
@@ -47,6 +48,7 @@ export function navItemsForRole(role: UserRole): NavItem[] {
     { href: "/corrective-actions", label: "Corrective Actions", Icon: IconClipboardCheck },
     { href: "/compliance", label: "Compliance", Icon: IconFileCheck }
   );
+  if (role === "ADMIN") items.push({ href: "/settings", label: "Settings", Icon: IconSettings });
   return items;
 }
 
@@ -67,10 +69,7 @@ export function Sidebar({
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar-bg px-3 py-5 md:flex">
       <div className="mb-8 flex items-center gap-2.5 px-2">
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
-          style={{ background: "linear-gradient(135deg, #2f6df6, #7a5cff)" }}
-        >
+        <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
           <IconCheckShield width={19} height={19} />
         </span>
         <div>

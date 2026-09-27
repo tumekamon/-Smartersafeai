@@ -87,7 +87,7 @@ export default async function InspectionsPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <Pill href={q({ template: undefined })} active={!sp.template}>All types</Pill>
-          {listTemplates().map((t) => (
+          {listTemplates(user.companyId).map((t) => (
             <Pill key={t.id} href={q({ template: t.id })} active={sp.template === t.id}>{t.name.replace(" Inspection", "").replace(" Pre-Use", "")}</Pill>
           ))}
           <span className="mx-1 self-center text-foreground/20">|</span>

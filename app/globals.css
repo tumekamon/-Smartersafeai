@@ -9,7 +9,10 @@
   --sidebar-bg: #0d1220;
   --sidebar-fg: #aab3c5;
   --sidebar-fg-active: #ffffff;
-  --sidebar-accent: #2f6df6;
+
+  /* Company brand color — overridden per-tenant via an inline style on a layout ancestor. */
+  --brand: #2f6df6;
+  --sidebar-accent: var(--brand);
 
   --ai: #7a5cff;
   --ai-soft: #efeaff;
@@ -49,6 +52,7 @@
   --color-sidebar-fg: var(--sidebar-fg);
   --color-sidebar-fg-active: var(--sidebar-fg-active);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-brand: var(--brand);
   --color-ai: var(--ai);
   --color-ai-soft: var(--ai-soft);
   --font-sans: var(--font-geist-sans);
@@ -124,10 +128,14 @@ body {
 }
 
 .hero {
-  background: radial-gradient(1200px 400px at 0% 0%, color-mix(in srgb, var(--ai) 26%, transparent), transparent 60%),
+  background: radial-gradient(1200px 400px at 0% 0%, color-mix(in srgb, var(--brand) 30%, transparent), transparent 60%),
     linear-gradient(135deg, var(--hero-from), var(--hero-to));
   color: #fff;
   border-radius: 1.25rem;
+}
+
+.brand-mark {
+  background: linear-gradient(135deg, var(--brand), var(--ai));
 }
 
 .ai-chip {

@@ -57,6 +57,7 @@ const hazard = (h: HazardProfile) => h;
 const TEMPLATES: InspectionTemplate[] = [
   {
     id: "t_daily",
+    companyId: "co_besco",
     name: "Daily Site Inspection",
     evidenceRequirement: "optional",
     aiAnalysisEnabled: true,
@@ -135,6 +136,7 @@ const TEMPLATES: InspectionTemplate[] = [
   },
   {
     id: "t_electrical",
+    companyId: "co_besco",
     name: "Electrical Safety Inspection",
     evidenceRequirement: "required",
     aiAnalysisEnabled: true,
@@ -213,6 +215,7 @@ const TEMPLATES: InspectionTemplate[] = [
   },
   {
     id: "t_scissor_lift",
+    companyId: "co_besco",
     name: "Scissor Lift Pre-Use Inspection",
     evidenceRequirement: "disabled",
     aiAnalysisEnabled: false,
@@ -227,6 +230,7 @@ const TEMPLATES: InspectionTemplate[] = [
   },
   {
     id: "t_ppe",
+    companyId: "co_besco",
     name: "PPE Compliance Inspection",
     evidenceRequirement: "required",
     aiAnalysisEnabled: true,
@@ -324,7 +328,14 @@ export function buildSeed(now: Date): Store {
   const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
   const clampNow = (d: Date) => (d.getTime() > now.getTime() ? new Date(now.getTime() - 60_000) : d);
 
-  const companies: Company[] = [{ id: "co_besco", name: "BESCO Electric" }];
+  const companies: Company[] = [
+    {
+      id: "co_besco",
+      name: "BESCO Electric",
+      primaryColor: "#2f6df6",
+      hazardCategories: ["Electrical", "PPE", "Fall Protection", "Housekeeping", "Egress", "Fire Protection", "Equipment"],
+    },
+  ];
 
   const mk = (
     id: string,

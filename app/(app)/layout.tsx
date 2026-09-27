@@ -12,7 +12,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     : 0;
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div
+      className="flex min-h-screen w-full bg-background"
+      style={company ? ({ "--brand": company.primaryColor } as React.CSSProperties) : undefined}
+    >
       <Sidebar role={user.role} companyName={company?.name ?? ""} badges={{ review: pendingReviews }} projectCount={listProjects().filter((p) => p.status === "active").length} />
       <div className="flex min-h-screen flex-1 flex-col">
         <Topbar user={user} pendingReviews={pendingReviews} />

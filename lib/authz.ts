@@ -20,6 +20,7 @@ export type Capabilities = {
   canVerifyActions: boolean;
   canCloseActions: boolean;
   canViewOrgDashboard: boolean;
+  canManageSettings: boolean;
   isReadOnly: boolean;
 };
 
@@ -37,6 +38,7 @@ export function getCapabilities(role: UserRole): Capabilities {
     canVerifyActions: isSafetyProfessional || isFieldLead,
     canCloseActions: isSafetyProfessional,
     canViewOrgDashboard: isSafetyProfessional || isFieldLead,
+    canManageSettings: role === "ADMIN",
     isReadOnly: isClientViewer,
   };
 }
