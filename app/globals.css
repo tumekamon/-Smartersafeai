@@ -59,8 +59,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* System preference (no explicit choice saved) — beaten by an explicit light stamp. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #090b11;
     --foreground: #e8eaf0;
     --surface: #131722;
@@ -95,6 +96,43 @@
 
     --shadow-card: 0 0 0 rgba(0, 0, 0, 0);
   }
+}
+
+/* Explicit dark choice — wins over system light in both directions. */
+:root[data-theme="dark"] {
+  --background: #090b11;
+  --foreground: #e8eaf0;
+  --surface: #131722;
+  --surface-muted: #1a1f2c;
+  --border: #252b3a;
+  --sidebar-bg: #0b0e17;
+
+  --ai: #9d86ff;
+  --ai-soft: #231d45;
+  --hero-from: #141a33;
+  --hero-to: #241d52;
+
+  --status-good: #1fb81f;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #e66767;
+  --status-neutral: #8b93a1;
+
+  --chart-surface: #1a1a19;
+  --chart-ink-primary: #ffffff;
+  --chart-ink-secondary: #c3c2b7;
+  --chart-ink-muted: #898781;
+  --chart-gridline: #2c2c2a;
+  --chart-series-1: #3987e5;
+  --chart-series-3: #199e70;
+
+  --ramp-100: #16305a;
+  --ramp-250: #1c4a8c;
+  --ramp-400: #2a6fd0;
+  --ramp-550: #5598e7;
+  --ramp-700: #9fc3f2;
+
+  --shadow-card: 0 0 0 rgba(0, 0, 0, 0);
 }
 
 body {
