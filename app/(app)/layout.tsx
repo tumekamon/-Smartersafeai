@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getCurrentUser();
   const company = getCompany(user.companyId);
   const pendingReviews = getCapabilities(user.role).canReviewFindings
-    ? listFindings().filter((f) => f.reviewerDecision === "pending").length
+    ? listFindings(user.companyId).filter((f) => f.reviewerDecision === "pending").length
     : 0;
 
   return (
@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       className="tenant-theme flex min-h-screen w-full bg-background"
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
-      <Sidebar role={user.role} companyName={company?.name ?? ""} badges={{ review: pendingReviews }} projectCount={listProjects().filter((p) => p.status === "active").length} />
+      <Sidebar role={user.role} companyName={company?.name ?? ""} badges={{ review: pendingReviews }} projectCount={listProjects(user.companyId).filter((p) => p.status === "active").length} />
       <div className="flex min-h-screen flex-1 flex-col">
         <Topbar user={user} pendingReviews={pendingReviews} />
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>

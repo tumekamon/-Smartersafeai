@@ -51,7 +51,7 @@ export type WeekPoint = {
   inspections: number;
 };
 
-export function weeklySeries(projectId?: string, weeks = 12): WeekPoint[] {
+export function weeklySeries(companyId: string, projectId?: string, weeks = 12): WeekPoint[] {
   const now = Date.now();
   const thisWeek = mondayOf(now);
   const points: WeekPoint[] = [];
@@ -66,11 +66,11 @@ export function weeklySeries(projectId?: string, weeks = 12): WeekPoint[] {
     });
   }
   const bucket = (ms: number) => points.find((p) => ms >= p.weekStart && ms < p.weekStart + 7 * DAY);
-  for (const f of inScope(listFindings(), projectId)) {
+  for (const f of inScope(listFindings(companyId), projectId)) {
     const b = bucket(t(f.createdAt));
     if (b) b.raised += 1;
   }
-  for (const a of inScope(listCorrectiveActions(), projectId)) {
+  for (const a of inScope(listCorrectiveActions(companyId), projectId)) {
     if (a.closedAt) {
       const b = bucket(t(a.closedAt));
       if (b) b.closed += 1;
@@ -79,7 +79,7 @@ export function weeklySeries(projectId?: string, weeks = 12): WeekPoint[] {
       if (b) b.closed += 1;
     }
   }
-  for (const i of inScope(listInspections(), projectId)) {
+  for (const i of inScope(listInspections(companyId), projectId)) {
     const b = bucket(t(i.submittedAt));
     if (b) b.inspections += 1;
   }
@@ -96,10 +96,10 @@ export type ScoreBreakdown = {
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
-export function safetyScore(projectId?: string): ScoreBreakdown {
+export function safetyScore(companyId: string, projectId?: string): ScoreBreakdown {
   const now = Date.now();
   const cutoff = now - 30 * DAY;
-  const recentInspections = inScope(listInspections(), projectId).filter((i) => t(i.submittedAt) >= cutoff);
+  const recentInspections = inScope(listInspections(companyId), projectId).filter((i) => t(i.submittedAt) >= cutoff);
   let items = 0;
   let passed = 0;
   for (const i of recentInspections) {
@@ -112,15 +112,15 @@ export function safetyScore(projectId?: string): ScoreBreakdown {
   const passRatePct = items ? (passed / items) * 100 : 100;
   const inspectionScore = clamp((passRatePct - 70) * 3.6);
 
-  const actions = inScope(listCorrectiveActions(), projectId).filter((a) => t(a.createdAt) >= now - 60 * DAY);
+  const actions = inScope(listCorrectiveActions(companyId), projectId).filter((a) => t(a.createdAt) >= now - 60 * DAY);
   const overdue = actions.filter((a) => isActionOverdue(a, now)).length;
   const closed = actions.filter((a) => a.status === "closed" || a.status === "verified").length;
   const actionScore = actions.length ? clamp(100 - (overdue / actions.length) * 240 + (closed / actions.length) * 8) : 100;
 
-  const tr = trainingSummary(projectId);
+  const tr = trainingSummary(companyId, projectId);
   const trainingScore = tr.total ? clamp(100 - (tr.expired / tr.total) * 100 * 3 - (tr.expiring / tr.total) * 100 * 0.5) : 100;
 
-  const series = weeklySeries(projectId, 8);
+  const series = weeklySeries(companyId, projectId, 8);
   const recent = series.slice(-4).reduce((s, p) => s + p.raised, 0);
   const prior = series.slice(0, 4).reduce((s, p) => s + p.raised, 0);
   const trendScore = prior === 0 ? 85 : clamp(85 - ((recent - prior) / prior) * 55);
@@ -144,11 +144,11 @@ export function riskLevelFromScore(score: number): RiskLevel {
 
 export type HeatCell = { level: string; zone: string; count: number; critical: number };
 
-export function heatmap(projectId: string, days = 30): { levels: string[]; zones: string[]; cells: HeatCell[]; max: number } {
+export function heatmap(companyId: string, projectId: string, days = 30): { levels: string[]; zones: string[]; cells: HeatCell[]; max: number } {
   const project = getProject(projectId);
   if (!project) return { levels: [], zones: [], cells: [], max: 0 };
   const cutoff = Date.now() - days * DAY;
-  const findings = listFindings().filter((f) => f.projectId === projectId && t(f.createdAt) >= cutoff && f.reviewerDecision !== "rejected");
+  const findings = listFindings(companyId).filter((f) => f.projectId === projectId && t(f.createdAt) >= cutoff && f.reviewerDecision !== "rejected");
   const cells: HeatCell[] = [];
   let max = 0;
   for (const level of project.levels) {
@@ -162,18 +162,18 @@ export function heatmap(projectId: string, days = 30): { levels: string[]; zones
   return { levels: [...project.levels].reverse(), zones: project.zones, cells, max };
 }
 
-export function hazardBreakdown(projectId?: string, days = 30) {
+export function hazardBreakdown(companyId: string, projectId?: string, days = 30) {
   const cutoff = Date.now() - days * DAY;
   const counts = new Map<HazardCategory, number>();
-  for (const f of inScope(listFindings(), projectId)) {
+  for (const f of inScope(listFindings(companyId), projectId)) {
     if (t(f.createdAt) < cutoff || f.reviewerDecision === "rejected") continue;
     counts.set(f.hazardCategory, (counts.get(f.hazardCategory) ?? 0) + 1);
   }
   return [...counts.entries()].map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count);
 }
 
-export function closureStats(projectId?: string) {
-  const done = inScope(listCorrectiveActions(), projectId).filter((a) => a.closedAt || a.verifiedAt);
+export function closureStats(companyId: string, projectId?: string) {
+  const done = inScope(listCorrectiveActions(companyId), projectId).filter((a) => a.closedAt || a.verifiedAt);
   if (!done.length) return { avgDays: 0, onTimePercent: 100, count: 0 };
   let total = 0;
   let onTime = 0;
@@ -196,9 +196,9 @@ export function certStatus(expiresOn: string, now = Date.now()): CertStatus {
   return "current";
 }
 
-export function trainingSummary(projectId?: string) {
+export function trainingSummary(companyId: string, projectId?: string) {
   void projectId;
-  const certs = listCertifications();
+  const certs = listCertifications(companyId);
   const now = Date.now();
   let current = 0;
   let expiring = 0;
@@ -220,8 +220,8 @@ export function permitState(p: Permit, now = Date.now()): "active" | "closed" | 
   return "active";
 }
 
-export function permitSummary() {
-  const permits = listPermits();
+export function permitSummary(companyId: string) {
+  const permits = listPermits(companyId);
   const now = Date.now();
   return {
     active: permits.filter((p) => permitState(p, now) === "active").length,
@@ -235,16 +235,16 @@ export function ppeStatus(item: { received: number; issued: number; reorderPoint
   return { remaining, low: remaining <= item.reorderPoint };
 }
 
-export function ppeSummary() {
-  const items = listPpeItems();
+export function ppeSummary(companyId: string) {
+  const items = listPpeItems(companyId);
   const low = items.filter((i) => ppeStatus(i).low);
   const spent = items.reduce((s, i) => s + i.received * i.unitCost, 0);
   return { low, lowCount: low.length, spent, budget: 52_000 };
 }
 
-export function equipmentSummary() {
-  const assets = listAssets();
-  const lifts = listInspections().filter((i) => i.templateId === "t_scissor_lift");
+export function equipmentSummary(companyId: string) {
+  const assets = listAssets(companyId);
+  const lifts = listInspections(companyId).filter((i) => i.templateId === "t_scissor_lift");
   const rows = assets.map((a) => {
     const logs = lifts.filter((i) => i.assetTag === a.tag);
     const last = logs[0];
@@ -268,11 +268,11 @@ export type AttentionItem = {
   at: number;
 };
 
-export function attentionQueue(limit = 8, projectId?: string): AttentionItem[] {
+export function attentionQueue(companyId: string, limit = 8, projectId?: string): AttentionItem[] {
   const now = Date.now();
   const items: AttentionItem[] = [];
 
-  for (const f of inScope(listFindings(), projectId)) {
+  for (const f of inScope(listFindings(companyId), projectId)) {
     if (f.reviewerDecision !== "pending") continue;
     const project = getProject(f.projectId);
     items.push({
@@ -286,7 +286,7 @@ export function attentionQueue(limit = 8, projectId?: string): AttentionItem[] {
     });
   }
 
-  for (const a of inScope(listCorrectiveActions(), projectId)) {
+  for (const a of inScope(listCorrectiveActions(companyId), projectId)) {
     if (!isActionOverdue(a, now)) continue;
     const days = Math.max(1, Math.floor((now - t(a.dueDate)) / DAY));
     const owner = getUser(a.assignedToId);
@@ -301,7 +301,7 @@ export function attentionQueue(limit = 8, projectId?: string): AttentionItem[] {
     });
   }
 
-  for (const p of inScope(listPermits(), projectId)) {
+  for (const p of inScope(listPermits(companyId), projectId)) {
     if (permitState(p, now) !== "expired") continue;
     const project = getProject(p.projectId);
     items.push({
@@ -315,7 +315,7 @@ export function attentionQueue(limit = 8, projectId?: string): AttentionItem[] {
     });
   }
 
-  for (const g of inScope(listGcNotices(), projectId)) {
+  for (const g of inScope(listGcNotices(companyId), projectId)) {
     if (g.status !== "open" || g.priority !== "high") continue;
     const project = getProject(g.projectId);
     items.push({
@@ -329,7 +329,7 @@ export function attentionQueue(limit = 8, projectId?: string): AttentionItem[] {
     });
   }
 
-  const soon = listCertifications().filter((c) => certStatus(c.expiresOn, now) === "expiring");
+  const soon = listCertifications(companyId).filter((c) => certStatus(c.expiresOn, now) === "expiring");
   if (soon.length && !projectId) {
     items.push({
       id: "certs_soon",
@@ -369,17 +369,17 @@ const fullName = (id?: string) => {
   return u ? `${u.firstName} ${u.lastName}` : "Unknown";
 };
 
-export function activityFeed(limit = 12, projectId?: string): ActivityEvent[] {
+export function activityFeed(companyId: string, limit = 12, projectId?: string): ActivityEvent[] {
   const events: ActivityEvent[] = [];
   const cutoff = Date.now() - 4 * DAY;
 
-  for (const i of inScope(listInspections(), projectId)) {
+  for (const i of inScope(listInspections(companyId), projectId)) {
     if (t(i.submittedAt) < cutoff) continue;
     const template = getTemplate(i.templateId);
     const project = getProject(i.projectId);
     events.push({ id: `i_${i.id}`, at: t(i.submittedAt), actor: fullName(i.inspectorId), verb: "submitted", subject: `${template?.name} · ${project?.shortName}`, href: `/inspections/${i.id}`, kind: "inspection" });
   }
-  for (const f of inScope(listFindings(), projectId)) {
+  for (const f of inScope(listFindings(companyId), projectId)) {
     if (t(f.createdAt) >= cutoff) {
       events.push({ id: `fa_${f.id}`, at: t(f.createdAt), actor: "SmartSafe AI", verb: "flagged", subject: `${f.title} · ${f.location.level} ${f.location.zone}`, href: `/inspections/${f.inspectionId}`, kind: "ai" });
     }
@@ -387,13 +387,13 @@ export function activityFeed(limit = 12, projectId?: string): ActivityEvent[] {
       events.push({ id: `fr_${f.id}`, at: t(f.reviewedAt), actor: fullName(f.reviewerId), verb: f.reviewerDecision === "rejected" ? "rejected" : f.reviewerDecision === "overridden" ? "overrode" : "approved", subject: f.title, href: `/inspections/${f.inspectionId}`, kind: "review" });
     }
   }
-  for (const a of inScope(listCorrectiveActions(), projectId)) {
+  for (const a of inScope(listCorrectiveActions(companyId), projectId)) {
     const stamp = a.closedAt ?? a.verifiedAt ?? a.completedAt;
     if (stamp && t(stamp) >= cutoff) {
       events.push({ id: `ca_${a.id}`, at: t(stamp), actor: fullName(a.assignedToId), verb: a.closedAt ? "closed" : a.verifiedAt ? "verified" : "completed", subject: a.description.split(" — ")[0], href: "/corrective-actions", kind: "action" });
     }
   }
-  for (const p of inScope(listPermits(), projectId)) {
+  for (const p of inScope(listPermits(companyId), projectId)) {
     if (t(p.startsAt) >= cutoff && t(p.startsAt) <= Date.now()) {
       events.push({ id: `p_${p.id}`, at: t(p.startsAt), actor: fullName(p.issuedById), verb: "issued", subject: `${p.type} permit · ${p.location.level} ${p.location.zone}`, href: "/compliance?tab=permits", kind: "permit" });
     }
@@ -412,10 +412,10 @@ export type Insight = {
   href?: string;
 };
 
-export function insights(projectId?: string): Insight[] {
+export function insights(companyId: string, projectId?: string): Insight[] {
   const now = Date.now();
   const out: Insight[] = [];
-  const findings = inScope(listFindings(), projectId).filter((f) => f.reviewerDecision !== "rejected");
+  const findings = inScope(listFindings(companyId), projectId).filter((f) => f.reviewerDecision !== "rejected");
 
   // Recurring hazard cluster
   const cluster = new Map<string, Finding[]>();
@@ -441,7 +441,7 @@ export function insights(projectId?: string): Insight[] {
   }
 
   // Trend
-  const series = weeklySeries(projectId, 8);
+  const series = weeklySeries(companyId, projectId, 8);
   const recent = series.slice(-4).reduce((s, p) => s + p.raised, 0);
   const prior = series.slice(0, 4).reduce((s, p) => s + p.raised, 0);
   if (prior > 0) {
@@ -457,7 +457,7 @@ export function insights(projectId?: string): Insight[] {
 
   // Closure speed by project
   if (!projectId) {
-    const stats = listProjects().map((p) => ({ p, s: closureStats(p.id) })).filter((x) => x.s.count > 3);
+    const stats = listProjects(companyId).map((p) => ({ p, s: closureStats(companyId, p.id) })).filter((x) => x.s.count > 3);
     if (stats.length > 1) {
       const slowest = [...stats].sort((a, b) => b.s.avgDays - a.s.avgDays)[0];
       const fastest = [...stats].sort((a, b) => a.s.avgDays - b.s.avgDays)[0];
@@ -475,7 +475,7 @@ export function insights(projectId?: string): Insight[] {
   }
 
   // Certifications
-  const soon = listCertifications().filter((c) => certStatus(c.expiresOn, now) === "expiring");
+  const soon = listCertifications(companyId).filter((c) => certStatus(c.expiresOn, now) === "expiring");
   if (soon.length && !projectId) {
     const byType = new Map<string, number>();
     for (const c of soon) byType.set(c.type, (byType.get(c.type) ?? 0) + 1);
@@ -492,8 +492,8 @@ export function insights(projectId?: string): Insight[] {
 
   // Inspection coverage gap
   if (!projectId) {
-    for (const p of listProjects()) {
-      const last = inScope(listInspections(), p.id)[0];
+    for (const p of listProjects(companyId)) {
+      const last = inScope(listInspections(companyId), p.id)[0];
       if (last && now - t(last.submittedAt) > 2 * DAY) {
         out.push({
           id: `gap_${p.id}`,
@@ -513,16 +513,16 @@ export function insights(projectId?: string): Insight[] {
 // --- Project health ---------------------------------------------------------
 
 export function projectHealth(project: Project) {
-  const breakdown = safetyScore(project.id);
-  const actions = listCorrectiveActions().filter((a) => a.projectId === project.id);
-  const inspections = listInspections().filter((i) => i.projectId === project.id);
+  const breakdown = safetyScore(project.companyId, project.id);
+  const actions = listCorrectiveActions(project.companyId).filter((a) => a.projectId === project.id);
+  const inspections = listInspections(project.companyId).filter((i) => i.projectId === project.id);
   const lastInspection = inspections[0] as Inspection | undefined;
   return {
     ...breakdown,
     level: riskLevelFromScore(breakdown.score),
     openActions: actions.filter((a) => a.status === "open").length,
     overdue: actions.filter((a) => isActionOverdue(a)).length,
-    pendingReviews: listFindings().filter((f) => f.projectId === project.id && f.reviewerDecision === "pending").length,
+    pendingReviews: listFindings(project.companyId).filter((f) => f.projectId === project.id && f.reviewerDecision === "pending").length,
     inspections30: inspections.filter((i) => t(i.submittedAt) >= Date.now() - 30 * DAY).length,
     lastInspection,
   };
@@ -544,10 +544,10 @@ export type Hotspot = {
   dominant: HazardCategory;
 };
 
-export function hotspots(projectId?: string, limit = 4, days = 30): Hotspot[] {
+export function hotspots(companyId: string, projectId?: string, limit = 4, days = 30): Hotspot[] {
   const cutoff = Date.now() - days * DAY;
   const groups = new Map<string, Finding[]>();
-  for (const f of inScope(listFindings(), projectId)) {
+  for (const f of inScope(listFindings(companyId), projectId)) {
     if (t(f.createdAt) < cutoff || f.reviewerDecision === "rejected") continue;
     const key = `${f.projectId}|${f.location.level}|${f.location.zone}`;
     groups.set(key, [...(groups.get(key) ?? []), f]);

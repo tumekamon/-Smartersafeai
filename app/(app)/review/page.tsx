@@ -36,10 +36,10 @@ export default async function ReviewPage({
   if (!capabilities.canReviewFindings) redirect("/dashboard");
 
   const { finding: selectedId } = await searchParams;
-  const queue = listFindings().filter((f) => f.reviewerDecision === "pending").sort(queueOrder);
+  const queue = listFindings(user.companyId).filter((f) => f.reviewerDecision === "pending").sort(queueOrder);
   const selected = queue.find((f) => f.id === selectedId) ?? queue[0];
 
-  const recent = listFindings()
+  const recent = listFindings(user.companyId)
     .filter((f) => f.reviewerDecision !== "pending" && f.reviewedAt)
     .sort((a, b) => b.reviewedAt!.localeCompare(a.reviewedAt!))
     .slice(0, 4);

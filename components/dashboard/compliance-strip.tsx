@@ -24,11 +24,11 @@ function Panel({
   );
 }
 
-export function ComplianceStrip() {
-  const training = trainingSummary();
-  const permits = permitSummary();
-  const ppe = ppeSummary();
-  const equipment = equipmentSummary();
+export function ComplianceStrip({ companyId }: { companyId: string }) {
+  const training = trainingSummary(companyId);
+  const permits = permitSummary(companyId);
+  const ppe = ppeSummary(companyId);
+  const equipment = equipmentSummary(companyId);
   const lowTop = ppe.low.slice(0, 3);
   const budgetPct = Math.min(100, Math.round((ppe.spent / ppe.budget) * 100));
 

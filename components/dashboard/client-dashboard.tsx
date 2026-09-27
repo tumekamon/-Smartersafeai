@@ -11,13 +11,13 @@ import { IconArrowRight } from "@/components/ui/icons";
 const noticeTone = { open: "badge-warning", acknowledged: "badge-info", resolved: "badge-good" } as const;
 
 export function ClientDashboard({ user }: { user: User }) {
-  const projects = listProjects();
-  const score = safetyScore();
+  const projects = listProjects(user.companyId);
+  const score = safetyScore(user.companyId);
   const level = riskLevelFromScore(score.score);
-  const series = weeklySeries(undefined, 12);
-  const closure = closureStats();
-  const training = trainingSummary();
-  const notices = listGcNotices().slice(0, 5);
+  const series = weeklySeries(user.companyId, undefined, 12);
+  const closure = closureStats(user.companyId);
+  const training = trainingSummary(user.companyId);
+  const notices = listGcNotices(user.companyId).slice(0, 5);
   const inspections30 = projects.reduce((s, p) => s + projectHealth(p).inspections30, 0);
 
   return (

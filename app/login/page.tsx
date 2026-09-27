@@ -27,7 +27,8 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
-  const accounts: DemoAccount[] = listUsers()
+  const company = listCompanies()[0];
+  const accounts: DemoAccount[] = listUsers(company?.id ?? "")
     .filter((u) => u.featured)
     .map((u) => ({
       id: u.id,
@@ -38,8 +39,7 @@ export default async function LoginPage() {
       hue: hueFor(u.id),
     }));
 
-  const company = listCompanies()[0];
-  const project = listProjects()[0];
+  const project = listProjects(company?.id ?? "")[0];
 
   return (
     <div

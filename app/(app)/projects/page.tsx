@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/dal";
 import { getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
 import { hazardBreakdown, projectHealth, weeklySeries } from "@/lib/metrics";
 import { timeAgo } from "@/lib/format";
@@ -10,7 +11,8 @@ import { IconArrowRight, IconMapPin } from "@/components/ui/icons";
 const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
 
 export default async function ProjectsPage() {
-  const projects = listProjects();
+  const user = await getCurrentUser();
+  const projects = listProjects(user.companyId);
 
   return (
     <div className="space-y-6">
@@ -19,8 +21,8 @@ export default async function ProjectsPage() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {projects.map((project) => {
           const h = projectHealth(project);
-          const series = weeklySeries(project.id, 12);
-          const top = hazardBreakdown(project.id)[0];
+          const series = weeklySeries(user.companyId, project.id, 12);
+          const top = hazardBreakdown(user.companyId, project.id)[0];
           const last = listInspectionsForProject(project.id)[0];
           return (
             <Link key={project.id} href={`/projects/${project.id}`} className="card group overflow-hidden transition-shadow hover:shadow-lg">

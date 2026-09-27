@@ -56,16 +56,16 @@ export default async function ProjectDetailPage({
 }) {
   const { projectId } = await params;
   const { tab = "overview" } = await searchParams;
-  const project = getProject(projectId);
-  if (!project) notFound();
-
   const user = await getCurrentUser();
+  const project = getProject(projectId);
+  if (!project || project.companyId !== user.companyId) notFound();
+
   const caps = getCapabilities(user.role);
   const h = projectHealth(project);
   const templates = listTemplates(user.companyId);
   const inspections = listInspectionsForProject(projectId);
   const actions = listCorrectiveActionsForProject(projectId);
-  const notices = listGcNotices().filter((n) => n.projectId === projectId);
+  const notices = listGcNotices(user.companyId).filter((n) => n.projectId === projectId);
 
   return (
     <div className="space-y-6">
@@ -229,13 +229,13 @@ export default async function ProjectDetailPage({
   );
 
   function Overview({ projectId: pid }: { projectId: string }) {
-    const series = weeklySeries(pid, 12);
-    const heat = heatmap(pid);
-    const spots = hotspots(pid, 3);
-    const hazards = hazardBreakdown(pid).slice(0, 5);
-    const feed = activityFeed(8, pid);
-    const ins = insights(pid);
-    const pending = listFindings().filter((f) => f.projectId === pid && f.reviewerDecision === "pending").length;
+    const series = weeklySeries(user.companyId, pid, 12);
+    const heat = heatmap(user.companyId, pid);
+    const spots = hotspots(user.companyId, pid, 3);
+    const hazards = hazardBreakdown(user.companyId, pid).slice(0, 5);
+    const feed = activityFeed(user.companyId, 8, pid);
+    const ins = insights(user.companyId, pid);
+    const pending = listFindings(user.companyId).filter((f) => f.projectId === pid && f.reviewerDecision === "pending").length;
     void pending;
 
     return (
@@ -284,7 +284,7 @@ export default async function ProjectDetailPage({
 
   function Crew({ crewIds }: { crewIds: string[] }) {
     const now = Date.now();
-    const certs = listCertifications();
+    const certs = listCertifications(user.companyId);
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {crewIds.map((id) => {

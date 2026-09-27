@@ -197,6 +197,7 @@ export type Permit = {
 
 export type PpeItem = {
   id: string;
+  companyId: string;
   name: string;
   received: number;
   issued: number;

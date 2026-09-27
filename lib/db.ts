@@ -44,6 +44,20 @@ function nextId(prefix: string) {
 const newestFirst = <T extends { [k: string]: unknown }>(items: T[], key: keyof T) =>
   [...items].sort((a, b) => String(b[key]).localeCompare(String(a[key])));
 
+/**
+ * Every list query below is scoped to a companyId so one tenant never sees another
+ * tenant's data. Projects and users carry companyId directly; everything else
+ * (inspections, findings, corrective actions, permits, GC notices, assets) keys
+ * off projectId, and certifications key off userId, so we resolve through those.
+ */
+function projectIdsForCompany(companyId: string): Set<string> {
+  return new Set(store.projects.filter((p) => p.companyId === companyId).map((p) => p.id));
+}
+
+function userIdsForCompany(companyId: string): Set<string> {
+  return new Set(store.users.filter((u) => u.companyId === companyId).map((u) => u.id));
+}
+
 // --- Users / Companies ---
 
 export function getUser(id: string): User | undefined {
@@ -90,8 +104,8 @@ export function removeHazardCategory(companyId: string, name: string): boolean {
   return true;
 }
 
-export function listUsers(): User[] {
-  return store.users;
+export function listUsers(companyId: string): User[] {
+  return store.users.filter((u) => u.companyId === companyId);
 }
 
 export function findUserByEmail(email: string): User | undefined {
@@ -100,8 +114,8 @@ export function findUserByEmail(email: string): User | undefined {
 
 // --- Projects ---
 
-export function listProjects(): Project[] {
-  return store.projects;
+export function listProjects(companyId: string): Project[] {
+  return store.projects.filter((p) => p.companyId === companyId);
 }
 
 export function getProject(id: string): Project | undefined {
@@ -194,12 +208,13 @@ export function removeChecklistItem(templateId: string, itemId: string): boolean
 
 // --- Inspections ---
 
-export function listInspections(): Inspection[] {
-  return newestFirst(store.inspections, "submittedAt");
+export function listInspections(companyId: string): Inspection[] {
+  const ids = projectIdsForCompany(companyId);
+  return newestFirst(store.inspections.filter((i) => ids.has(i.projectId)), "submittedAt");
 }
 
 export function listInspectionsForProject(projectId: string): Inspection[] {
-  return listInspections().filter((i) => i.projectId === projectId);
+  return newestFirst(store.inspections.filter((i) => i.projectId === projectId), "submittedAt");
 }
 
 export function getInspection(id: string): Inspection | undefined {
@@ -247,8 +262,9 @@ export function markInspectionReviewed(inspectionId: string) {
 
 // --- Findings ---
 
-export function listFindings(): Finding[] {
-  return newestFirst(store.findings, "createdAt");
+export function listFindings(companyId: string): Finding[] {
+  const ids = projectIdsForCompany(companyId);
+  return newestFirst(store.findings.filter((f) => ids.has(f.projectId)), "createdAt");
 }
 
 export function getFinding(id: string): Finding | undefined {
@@ -294,12 +310,13 @@ export function attachCorrectiveActionToFinding(findingId: string, correctiveAct
 
 // --- Corrective Actions ---
 
-export function listCorrectiveActions(): CorrectiveAction[] {
-  return newestFirst(store.correctiveActions, "createdAt");
+export function listCorrectiveActions(companyId: string): CorrectiveAction[] {
+  const ids = projectIdsForCompany(companyId);
+  return newestFirst(store.correctiveActions.filter((c) => ids.has(c.projectId)), "createdAt");
 }
 
 export function listCorrectiveActionsForProject(projectId: string): CorrectiveAction[] {
-  return listCorrectiveActions().filter((c) => c.projectId === projectId);
+  return newestFirst(store.correctiveActions.filter((c) => c.projectId === projectId), "createdAt");
 }
 
 export function getCorrectiveAction(id: string): CorrectiveAction | undefined {
@@ -354,22 +371,26 @@ export function updateCorrectiveActionStatus(
 
 // --- Compliance ---
 
-export function listCertifications(): Certification[] {
-  return store.certifications;
+export function listCertifications(companyId: string): Certification[] {
+  const ids = userIdsForCompany(companyId);
+  return store.certifications.filter((c) => ids.has(c.userId));
 }
 
-export function listPermits(): Permit[] {
-  return newestFirst(store.permits, "startsAt");
+export function listPermits(companyId: string): Permit[] {
+  const ids = projectIdsForCompany(companyId);
+  return newestFirst(store.permits.filter((p) => ids.has(p.projectId)), "startsAt");
 }
 
-export function listPpeItems(): PpeItem[] {
-  return store.ppeItems;
+export function listPpeItems(companyId: string): PpeItem[] {
+  return store.ppeItems.filter((i) => i.companyId === companyId);
 }
 
-export function listAssets(): Asset[] {
-  return store.assets;
+export function listAssets(companyId: string): Asset[] {
+  const ids = projectIdsForCompany(companyId);
+  return store.assets.filter((a) => ids.has(a.projectId));
 }
 
-export function listGcNotices(): GcNotice[] {
-  return newestFirst(store.gcNotices, "raisedAt");
+export function listGcNotices(companyId: string): GcNotice[] {
+  const ids = projectIdsForCompany(companyId);
+  return newestFirst(store.gcNotices.filter((g) => ids.has(g.projectId)), "raisedAt");
 }

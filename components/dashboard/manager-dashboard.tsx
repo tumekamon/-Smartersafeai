@@ -60,23 +60,23 @@ function HeroStat({ label, value, values, color }: { label: string; value: strin
 
 export function ManagerDashboard({ user, project }: { user: User; project?: Project }) {
   const projectId = project?.id;
-  const projects = listProjects();
-  const score = safetyScore(projectId);
+  const projects = listProjects(user.companyId);
+  const score = safetyScore(user.companyId, projectId);
   const level = riskLevelFromScore(score.score);
-  const series = weeklySeries(projectId, 12);
-  const actions = (projectId ? listCorrectiveActions().filter((a) => a.projectId === projectId) : listCorrectiveActions());
-  const findings = (projectId ? listFindings().filter((f) => f.projectId === projectId) : listFindings());
+  const series = weeklySeries(user.companyId, projectId, 12);
+  const actions = (projectId ? listCorrectiveActions(user.companyId).filter((a) => a.projectId === projectId) : listCorrectiveActions(user.companyId));
+  const findings = (projectId ? listFindings(user.companyId).filter((f) => f.projectId === projectId) : listFindings(user.companyId));
   const open = actions.filter((a) => a.status === "open").length;
   const overdue = actions.filter((a) => isActionOverdue(a)).length;
   const pending = findings.filter((f) => f.reviewerDecision === "pending").length;
-  const closure = closureStats(projectId);
+  const closure = closureStats(user.companyId, projectId);
 
-  const attention = attentionQueue(8, projectId);
-  const aiInsights = insights(projectId);
-  const hazards = hazardBreakdown(projectId).slice(0, 6);
-  const feed = activityFeed(8, projectId);
+  const attention = attentionQueue(user.companyId, 8, projectId);
+  const aiInsights = insights(user.companyId, projectId);
+  const hazards = hazardBreakdown(user.companyId, projectId).slice(0, 6);
+  const feed = activityFeed(user.companyId, 8, projectId);
   const heatTargets = projectId ? [project!] : projects;
-  const spots = hotspots(projectId, 4);
+  const spots = hotspots(user.companyId, projectId, 4);
 
   return (
     <div className="space-y-6">
@@ -177,7 +177,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
           </h2>
           <div className={heatTargets.length > 1 ? "grid gap-6 md:grid-cols-3" : ""}>
             {heatTargets.map((p) => {
-              const h = heatmap(p.id);
+              const h = heatmap(user.companyId, p.id);
               return (
                 <div key={p.id}>
                   {heatTargets.length > 1 && (
@@ -218,7 +218,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
         </section>
       </div>
 
-      <ComplianceStrip />
+      <ComplianceStrip companyId={user.companyId} />
 
       {!project && (
         <section>

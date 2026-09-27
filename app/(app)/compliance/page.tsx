@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/dal";
 import { getProject, getUser, listCertifications, listGcNotices, listInspections, listPermits, listPpeItems, listUsers } from "@/lib/db";
 import {
   certStatus,
@@ -43,6 +44,7 @@ export default async function CompliancePage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const user = await getCurrentUser();
   const { tab = "training" } = await searchParams;
 
   return (
@@ -63,20 +65,20 @@ export default async function CompliancePage({
         ))}
       </nav>
 
-      {tab === "training" && <Training />}
-      {tab === "permits" && <Permits />}
-      {tab === "ppe" && <Ppe />}
-      {tab === "equipment" && <Equipment />}
-      {tab === "notices" && <Notices />}
+      {tab === "training" && <Training companyId={user.companyId} />}
+      {tab === "permits" && <Permits companyId={user.companyId} />}
+      {tab === "ppe" && <Ppe companyId={user.companyId} />}
+      {tab === "equipment" && <Equipment companyId={user.companyId} />}
+      {tab === "notices" && <Notices companyId={user.companyId} />}
     </div>
   );
 }
 
-function Training() {
+function Training({ companyId }: { companyId: string }) {
   const now = nowMs();
-  const summary = trainingSummary();
-  const certs = listCertifications();
-  const people = listUsers().filter((u) => certs.some((c) => c.userId === u.id));
+  const summary = trainingSummary(companyId);
+  const certs = listCertifications(companyId);
+  const people = listUsers(companyId).filter((u) => certs.some((c) => c.userId === u.id));
   const rows = people
     .map((p) => {
       const mine = certs.filter((c) => c.userId === p.id);
@@ -163,10 +165,10 @@ function Training() {
   );
 }
 
-function Permits() {
+function Permits({ companyId }: { companyId: string }) {
   const now = nowMs();
-  const permits = listPermits();
-  const summary = permitSummary();
+  const permits = listPermits(companyId);
+  const summary = permitSummary(companyId);
   const active = permits.filter((p) => permitState(p, now) === "active");
   const log = permits.filter((p) => new Date(p.startsAt).getTime() <= now).slice(0, 30);
   const stateBadge = { active: "badge-good", closed: "badge-neutral", expired: "badge-serious", upcoming: "badge-info" } as const;
@@ -258,9 +260,9 @@ function Permits() {
   );
 }
 
-function Ppe() {
-  const items = listPpeItems();
-  const summary = ppeSummary();
+function Ppe({ companyId }: { companyId: string }) {
+  const items = listPpeItems(companyId);
+  const summary = ppeSummary(companyId);
   const pct = Math.min(100, Math.round((summary.spent / summary.budget) * 100));
 
   return (
@@ -318,9 +320,9 @@ function Ppe() {
   );
 }
 
-function Equipment() {
-  const rows = equipmentSummary();
-  const lifts = listInspections().filter((i) => i.templateId === "t_scissor_lift");
+function Equipment({ companyId }: { companyId: string }) {
+  const rows = equipmentSummary(companyId);
+  const lifts = listInspections(companyId).filter((i) => i.templateId === "t_scissor_lift");
   const days = Array.from({ length: 21 }, (_, n) => {
     const d = new Date(nowMs() - (20 - n) * DAY);
     return d.toISOString().slice(0, 10);
@@ -360,8 +362,8 @@ function Equipment() {
   );
 }
 
-function Notices() {
-  const notices = listGcNotices();
+function Notices({ companyId }: { companyId: string }) {
+  const notices = listGcNotices(companyId);
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {notices.map((n) => (

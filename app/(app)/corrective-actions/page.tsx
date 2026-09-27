@@ -58,7 +58,7 @@ export default async function CorrectiveActionsPage({
   const view = isWorker ? "mine" : (sp.view ?? "all");
 
   const now = nowMs();
-  const all = listCorrectiveActions().filter(
+  const all = listCorrectiveActions(user.companyId).filter(
     (a) =>
       (!sp.project || a.projectId === sp.project) &&
       (view !== "mine" || a.assignedToId === user.id) &&
@@ -103,7 +103,7 @@ export default async function CorrectiveActionsPage({
             <Pill href={q({ view: "mine" })} active={view === "mine"}>Mine</Pill>
             <span className="mx-1 self-center text-foreground/20">|</span>
             <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-            {listProjects().map((p) => (
+            {listProjects(user.companyId).map((p) => (
               <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
             ))}
           </div>

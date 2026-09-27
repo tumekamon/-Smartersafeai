@@ -37,7 +37,7 @@ export default async function InspectionsPage({
 
   const sp = await searchParams;
   const limit = Math.min(200, Number(sp.limit) || PAGE);
-  const all = listInspections();
+  const all = listInspections(user.companyId);
   const filtered = all.filter(
     (i) =>
       (!sp.project || i.projectId === sp.project) &&
@@ -81,7 +81,7 @@ export default async function InspectionsPage({
       <div className="space-y-2.5">
         <div className="flex flex-wrap gap-2">
           <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-          {listProjects().map((p) => (
+          {listProjects(user.companyId).map((p) => (
             <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
           ))}
         </div>

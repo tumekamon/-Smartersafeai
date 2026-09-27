@@ -11,16 +11,16 @@ import { nowMs } from "@/lib/time";
 const DAY = 86_400_000;
 
 export function WorkerDashboard({ user }: { user: User }) {
-  const projects = listProjects();
-  const mine = listCorrectiveActions()
+  const projects = listProjects(user.companyId);
+  const mine = listCorrectiveActions(user.companyId)
     .filter((a) => a.assignedToId === user.id && a.status !== "closed")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  const mineInspections = listInspections().filter((i) => i.inspectorId === user.id);
+  const mineInspections = listInspections(user.companyId).filter((i) => i.inspectorId === user.id);
   const inspections = [
     ...mineInspections.filter((i) => i.templateId !== "t_scissor_lift"),
     ...mineInspections.filter((i) => i.templateId === "t_scissor_lift"),
   ].slice(0, 4);
-  const certs = listCertifications().filter((c) => c.userId === user.id);
+  const certs = listCertifications(user.companyId).filter((c) => c.userId === user.id);
   const overdue = mine.filter((a) => isActionOverdue(a)).length;
   const now = nowMs();
 

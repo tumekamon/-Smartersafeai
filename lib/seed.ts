@@ -1015,17 +1015,17 @@ export function buildSeed(now: Date): Store {
 
   // PPE ----------------------------------------------------------------------
   const ppeItems: PpeItem[] = [
-    { id: "ppe_01", name: "Hard hats", received: 150, issued: 118, reorderPoint: 20, unitCost: 12.5 },
-    { id: "ppe_02", name: "Hi-vis vests", received: 200, issued: 171, reorderPoint: 25, unitCost: 4.25 },
-    { id: "ppe_03", name: "Safety glasses", received: 400, issued: 362, reorderPoint: 60, unitCost: 3.1 },
-    { id: "ppe_04", name: "Cut-resistant gloves (pairs)", received: 300, issued: 241, reorderPoint: 40, unitCost: 6.8 },
-    { id: "ppe_05", name: "Class 0 insulating gloves (pairs)", received: 60, issued: 49, reorderPoint: 12, unitCost: 58 },
-    { id: "ppe_06", name: "Arc-rated face shields", received: 40, issued: 31, reorderPoint: 8, unitCost: 64 },
-    { id: "ppe_07", name: "Arc-rated FR shirts", received: 120, issued: 98, reorderPoint: 20, unitCost: 42 },
-    { id: "ppe_08", name: "Fall arrest harnesses", received: 50, issued: 42, reorderPoint: 8, unitCost: 138 },
-    { id: "ppe_09", name: "Shock-absorbing lanyards", received: 60, issued: 44, reorderPoint: 10, unitCost: 72 },
-    { id: "ppe_10", name: "Hearing protection (pairs)", received: 500, issued: 438, reorderPoint: 75, unitCost: 0.6 },
-    { id: "ppe_11", name: "Dielectric boots (pairs)", received: 45, issued: 38, reorderPoint: 6, unitCost: 165 },
+    { id: "ppe_01", companyId: "co_besco", name: "Hard hats", received: 150, issued: 118, reorderPoint: 20, unitCost: 12.5 },
+    { id: "ppe_02", companyId: "co_besco", name: "Hi-vis vests", received: 200, issued: 171, reorderPoint: 25, unitCost: 4.25 },
+    { id: "ppe_03", companyId: "co_besco", name: "Safety glasses", received: 400, issued: 362, reorderPoint: 60, unitCost: 3.1 },
+    { id: "ppe_04", companyId: "co_besco", name: "Cut-resistant gloves (pairs)", received: 300, issued: 241, reorderPoint: 40, unitCost: 6.8 },
+    { id: "ppe_05", companyId: "co_besco", name: "Class 0 insulating gloves (pairs)", received: 60, issued: 49, reorderPoint: 12, unitCost: 58 },
+    { id: "ppe_06", companyId: "co_besco", name: "Arc-rated face shields", received: 40, issued: 31, reorderPoint: 8, unitCost: 64 },
+    { id: "ppe_07", companyId: "co_besco", name: "Arc-rated FR shirts", received: 120, issued: 98, reorderPoint: 20, unitCost: 42 },
+    { id: "ppe_08", companyId: "co_besco", name: "Fall arrest harnesses", received: 50, issued: 42, reorderPoint: 8, unitCost: 138 },
+    { id: "ppe_09", companyId: "co_besco", name: "Shock-absorbing lanyards", received: 60, issued: 44, reorderPoint: 10, unitCost: 72 },
+    { id: "ppe_10", companyId: "co_besco", name: "Hearing protection (pairs)", received: 500, issued: 438, reorderPoint: 75, unitCost: 0.6 },
+    { id: "ppe_11", companyId: "co_besco", name: "Dielectric boots (pairs)", received: 45, issued: 38, reorderPoint: 6, unitCost: 165 },
   ];
 
   // GC notices -----------------------------------------------------------------
