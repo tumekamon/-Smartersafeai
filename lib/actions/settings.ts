@@ -9,6 +9,7 @@ import {
   addHazardCategory,
   createTemplate,
   deleteTemplate,
+  getTemplate,
   removeChecklistItem,
   removeHazardCategory,
   updateChecklistItem,
@@ -25,12 +26,22 @@ async function requireSettingsAccess() {
   return user;
 }
 
+/** Re-checked in every mutating action, not just the page load, since a forged action call skips the page. */
+function requireOwnTemplate(companyId: string, templateId: string) {
+  const template = getTemplate(templateId);
+  if (!template || template.companyId !== companyId) {
+    throw new Error("Template not found.");
+  }
+  return template;
+}
+
 export async function updateBrandingAction(formData: FormData) {
   const user = await requireSettingsAccess();
   const name = String(formData.get("name") ?? "");
   const primaryColor = String(formData.get("primaryColor") ?? "");
+  const heroImage = String(formData.get("heroImage") ?? "");
 
-  updateCompanyBranding(user.companyId, { name, primaryColor });
+  updateCompanyBranding(user.companyId, { name, primaryColor, heroImage });
 
   revalidatePath("/", "layout");
 }
@@ -66,8 +77,9 @@ export async function createTemplateAction(formData: FormData) {
 }
 
 export async function updateTemplateAction(formData: FormData) {
-  await requireSettingsAccess();
+  const user = await requireSettingsAccess();
   const id = String(formData.get("templateId") ?? "");
+  requireOwnTemplate(user.companyId, id);
   const name = String(formData.get("name") ?? "");
   const evidenceRequirement = String(formData.get("evidenceRequirement") ?? "optional") as EvidenceRequirement;
   const aiAnalysisEnabled = formData.get("aiAnalysisEnabled") === "on";
@@ -78,8 +90,9 @@ export async function updateTemplateAction(formData: FormData) {
 }
 
 export async function deleteTemplateAction(formData: FormData) {
-  await requireSettingsAccess();
+  const user = await requireSettingsAccess();
   const id = String(formData.get("templateId") ?? "");
+  requireOwnTemplate(user.companyId, id);
   const ok = deleteTemplate(id);
   if (!ok) throw new Error("This template already has inspections logged against it and can't be deleted.");
   revalidatePath("/settings");
@@ -98,8 +111,9 @@ function readHazardProfile(formData: FormData): HazardProfile {
 }
 
 export async function addChecklistItemAction(formData: FormData) {
-  await requireSettingsAccess();
+  const user = await requireSettingsAccess();
   const templateId = String(formData.get("templateId") ?? "");
+  requireOwnTemplate(user.companyId, templateId);
   const label = String(formData.get("label") ?? "").trim();
   if (!label) throw new Error("Checklist item label is required.");
 
@@ -108,8 +122,9 @@ export async function addChecklistItemAction(formData: FormData) {
 }
 
 export async function updateChecklistItemAction(formData: FormData) {
-  await requireSettingsAccess();
+  const user = await requireSettingsAccess();
   const templateId = String(formData.get("templateId") ?? "");
+  requireOwnTemplate(user.companyId, templateId);
   const itemId = String(formData.get("itemId") ?? "");
   const label = String(formData.get("label") ?? "").trim();
 
@@ -118,8 +133,9 @@ export async function updateChecklistItemAction(formData: FormData) {
 }
 
 export async function removeChecklistItemAction(formData: FormData) {
-  await requireSettingsAccess();
+  const user = await requireSettingsAccess();
   const templateId = String(formData.get("templateId") ?? "");
+  requireOwnTemplate(user.companyId, templateId);
   const itemId = String(formData.get("itemId") ?? "");
 
   const ok = removeChecklistItem(templateId, itemId);

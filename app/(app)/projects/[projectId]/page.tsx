@@ -74,7 +74,14 @@ export default async function ProjectDetailPage({
       <section className="hero p-6 md:p-7">
         <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0">
-            <Link href="/projects" className="hero-muted text-xs font-medium hover:opacity-80">← All projects</Link>
+            <div className="flex items-center gap-4">
+              <Link href="/projects" className="hero-muted text-xs font-medium hover:opacity-80">← All projects</Link>
+              {caps.canManageSettings && (
+                <Link href={`/projects/${projectId}/edit`} className="hero-muted text-xs font-medium hover:opacity-80">
+                  Edit project
+                </Link>
+              )}
+            </div>
             <p className="hero-muted mt-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
               <IconMapPin width={12} height={12} />
               {project.location} · {project.projectNumber} · {project.client}

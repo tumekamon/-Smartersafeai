@@ -38,7 +38,7 @@ export function AttentionList({ items }: { items: AttentionItem[] }) {
           <li key={item.id}>
             <Link href={item.href} className="group flex items-center gap-3 py-3">
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
                 style={{ color, background: `color-mix(in srgb, ${color} 14%, var(--surface))` }}
               >
                 <Icon width={17} height={17} />

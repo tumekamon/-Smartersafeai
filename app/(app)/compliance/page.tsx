@@ -51,19 +51,27 @@ export default async function CompliancePage({
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold tracking-tight">Compliance</h1>
 
-      <nav className="inline-flex flex-wrap gap-1 rounded-xl bg-surface p-1 ring-1 ring-border">
-        {TABS.map((t) => (
-          <Link
-            key={t.id}
-            href={`/compliance?tab=${t.id}`}
-            className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
-              tab === t.id ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
-            }`}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <nav className="inline-flex flex-wrap gap-1 rounded-xl bg-surface p-1 ring-1 ring-border">
+          {TABS.map((t) => (
+            <Link
+              key={t.id}
+              href={`/compliance?tab=${t.id}`}
+              className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
+                tab === t.id ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+        
+        {tab === "training" && <Link href="/compliance/training/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Log training</Link>}
+        {tab === "permits" && <Link href="/compliance/permits/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Issue permit</Link>}
+        {tab === "ppe" && <Link href="/compliance/ppe/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Receive PPE</Link>}
+        {tab === "equipment" && <Link href="/compliance/equipment/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Add asset</Link>}
+        {tab === "notices" && <Link href="/compliance/notices/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Raise notice</Link>}
+      </div>
 
       {tab === "training" && <Training companyId={user.companyId} />}
       {tab === "permits" && <Permits companyId={user.companyId} />}

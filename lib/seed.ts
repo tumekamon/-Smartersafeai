@@ -335,6 +335,7 @@ export function buildSeed(now: Date): Store {
       id: "co_besco",
       name: "BESCO Electric",
       primaryColor: "#2f6df6",
+      heroImage: "/bg-hero.jpg",
       hazardCategories: ["Electrical", "PPE", "Fall Protection", "Housekeeping", "Egress", "Fire Protection", "Equipment"],
     },
   ];

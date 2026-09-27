@@ -31,13 +31,12 @@ export default async function InspectionDetailPage({
   params: Promise<{ inspectionId: string }>;
 }) {
   const { inspectionId } = await params;
-  const inspection = getInspection(inspectionId);
-  if (!inspection) notFound();
-
   const user = await getCurrentUser();
-  const caps = getCapabilities(user.role);
+  const inspection = getInspection(inspectionId);
+  const project = getProject(inspection?.projectId ?? "");
+  if (!inspection || !project || project.companyId !== user.companyId) notFound();
 
-  const project = getProject(inspection.projectId);
+  const caps = getCapabilities(user.role);
   const template = getTemplate(inspection.templateId);
   const inspector = getUser(inspection.inspectorId);
   const findings = listFindingsForInspection(inspectionId);

@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import {
   createCorrectiveAction as dbCreateCorrectiveAction,
   getCorrectiveAction,
   getFinding,
+  getProject,
   updateCorrectiveActionStatus,
 } from "@/lib/db";
 import type { CorrectiveActionStatus, HazardCategory, RiskLevel } from "@/lib/types";
@@ -27,7 +29,11 @@ export async function createCorrectiveActionAction(formData: FormData) {
     throw new Error("Missing required corrective action fields.");
   }
 
+  const project = getProject(projectId);
+  if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
+
   const finding = findingId ? getFinding(findingId) : undefined;
+  if (finding && finding.projectId !== projectId) throw new Error("Finding does not match project.");
 
   dbCreateCorrectiveAction({
     projectId,
@@ -46,6 +52,7 @@ export async function createCorrectiveActionAction(formData: FormData) {
   revalidatePath("/review");
   revalidatePath("/dashboard");
   revalidatePath(`/projects/${projectId}`);
+  redirect("/corrective-actions");
 }
 
 export async function updateCorrectiveActionStatusAction(formData: FormData) {
@@ -57,6 +64,8 @@ export async function updateCorrectiveActionStatusAction(formData: FormData) {
 
   const action = getCorrectiveAction(id);
   if (!action) return;
+  const actionProject = getProject(action.projectId);
+  if (!actionProject || actionProject.companyId !== user.companyId) return;
 
   const isAssignee = action.assignedToId === user.id;
 

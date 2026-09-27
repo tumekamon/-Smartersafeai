@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { createCorrectiveAction, getFinding, reviewFinding as dbReviewFinding } from "@/lib/db";
+import { createCorrectiveAction, getFinding, getProject, reviewFinding as dbReviewFinding } from "@/lib/db";
 import type { ReviewerDecision, RiskLevel } from "@/lib/types";
 
 const RISK_LEVELS: RiskLevel[] = ["low", "medium", "high", "critical"];
@@ -22,6 +22,8 @@ export async function reviewFindingAction(formData: FormData) {
 
   const finding = getFinding(findingId);
   if (!finding) return;
+  const findingProject = getProject(finding.projectId);
+  if (!findingProject || findingProject.companyId !== user.companyId) return;
 
   if (decision === "overridden" && !overrideReason) {
     throw new Error("An override reason is required.");

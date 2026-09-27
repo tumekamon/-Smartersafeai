@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
@@ -49,25 +50,33 @@ export default async function ProjectsPage() {
           const last = listInspectionsForProject(project.id)[0];
           return (
             <Link key={project.id} href={`/projects/${project.id}`} className="card group overflow-hidden transition-shadow hover:shadow-lg">
-              <div className="hero p-5" style={{ borderRadius: 0 }}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="hero-muted flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
-                      <IconMapPin width={12} height={12} />
-                      {project.location} · {project.projectNumber}
-                    </p>
-                    <h2 className="mt-1.5 text-lg font-semibold leading-snug">{project.name}</h2>
-                    <p className="hero-muted mt-1 text-xs">{project.client}</p>
-                  </div>
-                  <ScoreRing score={h.score} level={h.level} size={84} stroke={8} onDark />
+              <div className="relative overflow-hidden p-6" style={{ borderRadius: "1.25rem 1.25rem 0 0" }}>
+                <div className="absolute inset-0 z-0">
+                  <Image src={`/${project.id}.jpg`} alt={project.shortName} fill className="object-cover opacity-60 mix-blend-overlay transition-transform duration-700 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/70 to-background/30 backdrop-blur-[2px]" />
                 </div>
-                <div className="mt-4">
-                  <div className="hero-muted mb-1 flex justify-between text-[11px]">
-                    <span>Construction progress</span>
-                    <span className="font-semibold" style={{ color: "var(--hero-fg)" }}>{project.percentComplete}%</span>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                        <IconMapPin width={12} height={12} />
+                        {project.location} · {project.projectNumber}
+                      </p>
+                      <h2 className="mt-1.5 text-xl font-bold leading-snug tracking-tight shadow-black drop-shadow-sm">{project.name}</h2>
+                      <p className="mt-1 text-xs font-medium text-foreground/70 drop-shadow-sm">{project.client}</p>
+                    </div>
+                    <div className="rounded-lg bg-background/50 p-1 shadow-sm backdrop-blur-md">
+                      <ScoreRing score={h.score} level={h.level} size={84} stroke={8} onDark />
+                    </div>
                   </div>
-                  <div className="hero-track h-1.5 rounded-full">
-                    <div className="hero-track-fill h-1.5 rounded-full" style={{ width: `${project.percentComplete}%` }} />
+                  <div className="mt-5">
+                    <div className="mb-1.5 flex justify-between text-[11px] font-medium uppercase tracking-wider text-foreground/80">
+                      <span>Construction progress</span>
+                      <span className="font-bold text-foreground drop-shadow-sm">{project.percentComplete}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-background/30 shadow-inner backdrop-blur-md">
+                      <div className="h-1.5 rounded-full bg-sidebar-accent shadow-sm" style={{ width: `${project.percentComplete}%` }} />
+                    </div>
                   </div>
                 </div>
               </div>

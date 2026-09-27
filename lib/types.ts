@@ -22,6 +22,7 @@ export type Company = {
   id: string;
   name: string;
   primaryColor: string;
+  heroImage?: string;
   hazardCategories: string[];
 };
 

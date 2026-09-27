@@ -77,12 +77,13 @@ export function listCompanies(): Company[] {
 
 export function updateCompanyBranding(
   id: string,
-  input: { name?: string; primaryColor?: string }
+  input: { name?: string; primaryColor?: string; heroImage?: string }
 ): Company | undefined {
   const company = getCompany(id);
   if (!company) return undefined;
   if (input.name?.trim()) company.name = input.name.trim();
   if (input.primaryColor) company.primaryColor = input.primaryColor;
+  if (input.heroImage) company.heroImage = input.heroImage;
   return company;
 }
 
@@ -486,6 +487,36 @@ export function listAssets(companyId: string): Asset[] {
 export function listGcNotices(companyId: string): GcNotice[] {
   const ids = projectIdsForCompany(companyId);
   return newestFirst(store.gcNotices.filter((g) => ids.has(g.projectId)), "raisedAt");
+}
+
+export function createCertification(input: Omit<Certification, "id">): Certification {
+  const cert: Certification = { id: nextId("crt"), ...input };
+  store.certifications.push(cert);
+  return cert;
+}
+
+export function createPermit(input: Omit<Permit, "id">): Permit {
+  const permit: Permit = { id: nextId("prm"), ...input };
+  store.permits.push(permit);
+  return permit;
+}
+
+export function createPpeItem(input: Omit<PpeItem, "id">): PpeItem {
+  const item: PpeItem = { id: nextId("ppe"), ...input };
+  store.ppeItems.push(item);
+  return item;
+}
+
+export function createAsset(input: Omit<Asset, "id">): Asset {
+  const asset: Asset = { id: nextId("ast"), ...input };
+  store.assets.push(asset);
+  return asset;
+}
+
+export function createGcNotice(input: Omit<GcNotice, "id" | "raisedAt">): GcNotice {
+  const notice: GcNotice = { id: nextId("gcn"), raisedAt: new Date().toISOString(), ...input };
+  store.gcNotices.push(notice);
+  return notice;
 }
 
 // --- Incidents ---

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Project, User } from "@/lib/types";
 import {
   activityFeed,
@@ -14,7 +15,7 @@ import {
   safetyScore,
   weeklySeries,
 } from "@/lib/metrics";
-import { listCorrectiveActions, listFindings, listProjects } from "@/lib/db";
+import { listCorrectiveActions, listFindings, listProjects, getCompany } from "@/lib/db";
 import { greeting } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
 import { Sparkline } from "@/components/viz/sparkline";
@@ -60,6 +61,7 @@ function HeroStat({ label, value, values, color }: { label: string; value: strin
 
 export function ManagerDashboard({ user, project }: { user: User; project?: Project }) {
   const projectId = project?.id;
+  const company = getCompany(user.companyId);
   const projects = listProjects(user.companyId);
   const score = safetyScore(user.companyId, projectId);
   const level = riskLevelFromScore(score.score);
@@ -109,30 +111,38 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
         <ProjectSwitcher projects={projects} selectedId={projectId} />
       </div>
 
-      <section className="hero p-6 md:p-7">
-        <div className="grid items-center gap-7 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.15fr)]">
-          <div className="flex items-center gap-5">
-            <ScoreRing score={score.score} level={level} size={156} stroke={13} onDark label="Safety score" />
-            <div>
-              <p className="hero-muted text-[11px] font-semibold uppercase tracking-wider">
-                {project ? project.shortName : "All sites"}
-              </p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight">{levelLabel[level]}</p>
+      <section className="relative overflow-hidden rounded-xl border border-border shadow-sm">
+        <div className="absolute inset-0 z-0">
+          <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Hero background" fill className="object-cover opacity-30 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/20 backdrop-blur-[4px]" />
+        </div>
+        <div className="relative z-10 p-6 md:p-8">
+          <div className="grid items-center gap-8 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.15fr)]">
+            <div className="flex items-center gap-6">
+              <div className="rounded-lg bg-background/50 p-1.5 shadow-sm backdrop-blur-md">
+                <ScoreRing score={score.score} level={level} size={156} stroke={13} onDark label="Safety score" />
+              </div>
+              <div>
+                <p className="hero-muted text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                  {project ? project.shortName : "All sites"}
+                </p>
+                <p className="mt-1 text-3xl font-bold tracking-tight shadow-black drop-shadow-sm">{levelLabel[level]}</p>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-3 lg:px-4">
-            <SubScore label="Inspection results" value={score.inspections} />
-            <SubScore label="Action closure" value={score.actions} />
-            <SubScore label="Training compliance" value={score.training} />
-            <SubScore label="Finding trend" value={score.trend} />
-          </div>
+            <div className="space-y-4 lg:px-6">
+              <SubScore label="Inspection results" value={score.inspections} />
+              <SubScore label="Action closure" value={score.actions} />
+              <SubScore label="Training compliance" value={score.training} />
+              <SubScore label="Finding trend" value={score.trend} />
+            </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <HeroStat label="Findings / week" value={series[series.length - 1].raised} values={series.map((p) => p.raised)} color="var(--chart-series-1)" />
-            <HeroStat label="Inspections / week" value={series[series.length - 1].inspections} values={series.map((p) => p.inspections)} color="var(--chart-series-3)" />
-            <HeroStat label="Open actions" value={open} color="var(--chart-series-1)" />
-            <HeroStat label="Avg. days to close" value={closure.avgDays.toFixed(1)} color="var(--chart-series-1)" />
+            <div className="grid grid-cols-2 gap-3">
+              <HeroStat label="Findings / week" value={series[series.length - 1].raised} values={series.map((p) => p.raised)} color="var(--chart-series-1)" />
+              <HeroStat label="Inspections / week" value={series[series.length - 1].inspections} values={series.map((p) => p.inspections)} color="var(--chart-series-3)" />
+              <HeroStat label="Open actions" value={open} color="var(--chart-series-1)" />
+              <HeroStat label="Avg. days to close" value={closure.avgDays.toFixed(1)} color="var(--chart-series-1)" />
+            </div>
           </div>
         </div>
       </section>
@@ -142,7 +152,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
           <div className="mb-1 flex items-center justify-between">
             <h2 className="text-sm font-semibold">Needs your attention</h2>
             {pending > 0 && (
-              <Link href="/review" className="rounded-full bg-ai-soft px-3 py-1 text-xs font-semibold text-ai">
+              <Link href="/review" className="rounded-md bg-ai-soft px-3 py-1 text-xs font-semibold text-ai">
                 Open review queue ({pending})
               </Link>
             )}
@@ -194,7 +204,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
               <ol className="space-y-2.5">
                 {spots.map((s, i) => (
                   <li key={`${s.project.id}${s.level}${s.zone}`} className="flex items-center gap-3 text-sm">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-foreground/60">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-muted text-xs font-semibold text-foreground/60">
                       {i + 1}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -227,35 +237,44 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
             {projects.map((p) => {
               const h = projectHealth(p);
               return (
-                <Link key={p.id} href={`/projects/${p.id}`} className="card group p-6 transition-shadow hover:shadow-md">
-                  <div className="flex items-center gap-4">
-                    <ScoreRing score={h.score} level={h.level} size={76} stroke={8} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">{p.shortName}</p>
-                      <p className="text-xs text-foreground/50">{p.location}</p>
-                      <div className="mt-1.5">
-                        <RiskBadge level={h.level} />
+                <Link key={p.id} href={`/projects/${p.id}`} className="card group relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg">
+                  <div className="absolute inset-0 z-0">
+                    <Image src={`/${p.id}.jpg`} alt={p.shortName} fill className="object-cover opacity-60 mix-blend-overlay transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/80 to-background/30 backdrop-blur-[2px]" />
+                  </div>
+                  
+                  <div className="relative z-10 p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="rounded-lg bg-background/50 p-1 backdrop-blur-md">
+                        <ScoreRing score={h.score} level={h.level} size={76} stroke={8} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-lg font-semibold tracking-tight shadow-black drop-shadow-sm">{p.shortName}</p>
+                        <p className="text-xs font-medium text-foreground/70 drop-shadow-sm">{p.location}</p>
+                        <div className="mt-1.5">
+                          <RiskBadge level={h.level} />
+                        </div>
                       </div>
                     </div>
+                    <dl className="mt-5 grid grid-cols-3 gap-2 rounded-xl bg-background/40 p-3 text-center backdrop-blur-md border border-white/10 shadow-inner">
+                      <div>
+                        <dd className="text-lg font-semibold">{h.openActions}</dd>
+                        <dt className="text-[11px] font-medium text-foreground/60 uppercase tracking-wider">open</dt>
+                      </div>
+                      <div>
+                        <dd className={`text-lg font-semibold ${h.overdue ? "tone-critical" : ""}`}>{h.overdue}</dd>
+                        <dt className="text-[11px] font-medium text-foreground/60 uppercase tracking-wider">overdue</dt>
+                      </div>
+                      <div>
+                        <dd className="text-lg font-semibold">{h.pendingReviews}</dd>
+                        <dt className="text-[11px] font-medium text-foreground/60 uppercase tracking-wider">review</dt>
+                      </div>
+                    </dl>
+                    <p className="mt-4 flex items-center gap-1 text-xs font-semibold text-sidebar-accent uppercase tracking-wider">
+                      Open project
+                      <IconArrowRight width={13} height={13} className="transition-transform group-hover:translate-x-1" />
+                    </p>
                   </div>
-                  <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <dd className="text-lg font-semibold">{h.openActions}</dd>
-                      <dt className="text-[11px] text-foreground/50">open</dt>
-                    </div>
-                    <div>
-                      <dd className={`text-lg font-semibold ${h.overdue ? "tone-critical" : ""}`}>{h.overdue}</dd>
-                      <dt className="text-[11px] text-foreground/50">overdue</dt>
-                    </div>
-                    <div>
-                      <dd className="text-lg font-semibold">{h.pendingReviews}</dd>
-                      <dt className="text-[11px] text-foreground/50">to review</dt>
-                    </div>
-                  </dl>
-                  <p className="mt-4 flex items-center gap-1 text-xs font-medium text-sidebar-accent">
-                    Open project
-                    <IconArrowRight width={13} height={13} className="transition-transform group-hover:translate-x-0.5" />
-                  </p>
                 </Link>
               );
             })}

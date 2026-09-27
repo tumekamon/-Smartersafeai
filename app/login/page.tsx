@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { getSession } from "@/lib/session";
 import { listCompanies, listProjects, listUsers } from "@/lib/db";
 import { brandVars } from "@/lib/color";
@@ -47,26 +48,31 @@ export default async function LoginPage() {
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
       <section className="hero relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14" style={{ borderRadius: 0 }}>
-        <div className="flex items-center gap-2.5">
-          <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-xl text-white">
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Construction background" fill className="object-cover opacity-30 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-transparent mix-blend-multiply" />
+        </div>
+        
+        <div className="relative z-10 flex items-center gap-2.5">
+          <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-lg text-white shadow-md">
             <IconCheckShield width={21} height={21} />
           </span>
           <div>
-            <p className="text-base font-semibold">SmartSafe AI</p>
-            <p className="hero-muted text-xs">Safety Intelligence Platform</p>
+            <p className="text-base font-semibold drop-shadow-sm">SmartSafe AI</p>
+            <p className="hero-muted text-xs font-medium drop-shadow-sm">Safety Intelligence Platform</p>
           </div>
         </div>
 
-        <div className="max-w-xl">
-          <span className="ai-chip">
+        <div className="relative z-10 max-w-xl">
+          <span className="ai-chip shadow-sm backdrop-blur-md">
             <IconSparkle width={12} height={12} />
             AI-assisted, human-decided
           </span>
-          <h1 className="mt-5 text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
+          <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight drop-shadow-md xl:text-5xl text-foreground">
             See the hazard before it becomes an incident.
           </h1>
           <div
-            className="mt-6 overflow-hidden rounded-2xl shadow-2xl"
+            className="mt-6 overflow-hidden rounded-lg shadow-2xl backdrop-blur-sm"
             style={{ border: "1px solid var(--hero-tile-border)" }}
           >
             <EvidenceScene
@@ -81,7 +87,7 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <p className="hero-muted text-xs opacity-70">
+        <p className="relative z-10 hero-muted text-xs font-medium opacity-80 drop-shadow-sm">
           {company?.name}
           {project ? ` · ${project.shortName} project team` : ""}
         </p>
@@ -90,7 +96,7 @@ export default async function LoginPage() {
       <section className="flex items-center justify-center bg-background px-5 py-12">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
+            <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-md text-white">
               <IconCheckShield width={19} height={19} />
             </span>
             <p className="text-sm font-semibold">SmartSafe AI</p>

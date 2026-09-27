@@ -36,6 +36,9 @@ export async function submitInspection(
   if (!project || !template) {
     return { error: "Missing project or inspection template." };
   }
+  if (project.companyId !== user.companyId || template.companyId !== user.companyId) {
+    return { error: "Missing project or inspection template." };
+  }
   if (!project.levels.includes(level) || !project.zones.includes(zone)) {
     return { error: "Choose the level and zone that was inspected." };
   }

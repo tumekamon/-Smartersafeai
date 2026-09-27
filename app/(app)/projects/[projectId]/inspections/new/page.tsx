@@ -14,10 +14,10 @@ export default async function NewInspectionPage({
 }) {
   const { projectId } = await params;
   const { templateId } = await searchParams;
-  const project = getProject(projectId);
-  if (!project) notFound();
-
   const user = await getCurrentUser();
+  const project = getProject(projectId);
+  if (!project || project.companyId !== user.companyId) notFound();
+
   if (!getCapabilities(user.role).canSubmitInspections) {
     redirect(`/projects/${projectId}`);
   }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { createUser, findUserByEmail, updateUser } from "@/lib/db";
+import { createUser, findUserByEmail, getUser, updateUser } from "@/lib/db";
 import type { UserRole } from "@/lib/types";
 
 const ROLES: UserRole[] = ["ADMIN", "SAFETY_DIRECTOR", "SAFETY_MANAGER", "SUPERVISOR", "WORKER", "CLIENT_VIEWER"];
@@ -38,6 +38,8 @@ export async function updateUserRoleAction(formData: FormData) {
   const role = String(formData.get("role") ?? "") as UserRole;
   if (!ROLES.includes(role)) throw new Error("Not a valid role.");
   if (userId === user.id) throw new Error("You can't change your own role.");
+  const target = getUser(userId);
+  if (!target || target.companyId !== user.companyId) throw new Error("Person not found.");
 
   updateUser(userId, { role });
   revalidatePath("/settings/team");
@@ -48,6 +50,8 @@ export async function setUserActiveAction(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
   const active = formData.get("active") === "true";
   if (userId === user.id) throw new Error("You can't deactivate your own account.");
+  const target = getUser(userId);
+  if (!target || target.companyId !== user.companyId) throw new Error("Person not found.");
 
   updateUser(userId, { active });
   revalidatePath("/settings/team");
@@ -55,4 +59,17 @@ export async function setUserActiveAction(formData: FormData) {
 
 function roleLabel(role: UserRole) {
   return role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export async function updateProfileAction(formData: FormData) {
+  const user = await getCurrentUser();
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+
+  if (!firstName || !lastName) throw new Error("First and last name are required.");
+
+  updateUser(user.id, { firstName, lastName, title });
+  revalidatePath("/settings/profile");
+  revalidatePath("/dashboard");
 }

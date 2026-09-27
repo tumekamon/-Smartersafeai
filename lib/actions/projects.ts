@@ -52,16 +52,25 @@ export async function createProjectAction(formData: FormData) {
   redirect(`/projects/${project.id}`);
 }
 
-export async function updateProjectStatusAction(formData: FormData) {
+export async function updateProjectAction(formData: FormData) {
   const user = await requireSettingsAccess();
   const projectId = String(formData.get("projectId") ?? "");
   const project = getProject(projectId);
   if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
 
-  const status = String(formData.get("status") ?? "") as ProjectStatus;
-  updateProject(projectId, { status });
+  const updates: Parameters<typeof updateProject>[1] = {};
+  if (formData.has("status")) updates.status = String(formData.get("status")) as ProjectStatus;
+  if (formData.has("name")) updates.name = String(formData.get("name")).trim();
+  if (formData.has("shortName")) updates.shortName = String(formData.get("shortName")).trim();
+  if (formData.has("location")) updates.location = String(formData.get("location")).trim();
+  if (formData.has("client")) updates.client = String(formData.get("client")).trim();
+  if (formData.has("headcount")) updates.headcount = Number(formData.get("headcount")) || 0;
+  if (formData.has("percentComplete")) updates.percentComplete = Number(formData.get("percentComplete")) || 0;
+
+  updateProject(projectId, updates);
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/projects");
+  redirect(`/projects/${projectId}`);
 }
 
 export async function addCrewMemberAction(formData: FormData) {

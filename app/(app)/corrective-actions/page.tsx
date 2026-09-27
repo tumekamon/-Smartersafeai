@@ -97,15 +97,20 @@ export default async function CorrectiveActionsPage({
           </p>
         </div>
         {!isWorker && (
-          <div className="flex flex-wrap gap-2">
-            <Pill href={q({ view: undefined })} active={view === "all"}>Everything</Pill>
-            <Pill href={q({ view: "overdue" })} active={view === "overdue"}>Overdue</Pill>
-            <Pill href={q({ view: "mine" })} active={view === "mine"}>Mine</Pill>
-            <span className="mx-1 self-center text-foreground/20">|</span>
-            <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-            {listProjects(user.companyId).map((p) => (
-              <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
-            ))}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap gap-2">
+              <Pill href={q({ view: undefined })} active={view === "all"}>Everything</Pill>
+              <Pill href={q({ view: "overdue" })} active={view === "overdue"}>Overdue</Pill>
+              <Pill href={q({ view: "mine" })} active={view === "mine"}>Mine</Pill>
+              <span className="mx-1 self-center text-foreground/20">|</span>
+              <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
+              {listProjects(user.companyId).map((p) => (
+                <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
+              ))}
+            </div>
+            <Link href="/corrective-actions/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">
+              + New action
+            </Link>
           </div>
         )}
       </div>
