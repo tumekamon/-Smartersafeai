@@ -67,7 +67,7 @@ export function Sidebar({
   const items = navItemsForRole(role);
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar-bg px-3 py-5 md:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar-bg px-3 py-5 md:flex">
       <div className="mb-8 flex items-center gap-2.5 px-2">
         <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
           <IconCheckShield width={19} height={19} />
@@ -87,9 +87,7 @@ export function Sidebar({
               key={href}
               href={href}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-white/10 text-sidebar-fg-active"
-                  : "text-sidebar-fg hover:bg-white/5 hover:text-sidebar-fg-active"
+                active ? "sidebar-nav-active" : "sidebar-nav-inactive"
               }`}
             >
               <Icon width={17} height={17} />
@@ -102,7 +100,7 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="rounded-xl bg-white/5 px-3 py-3">
+      <div className="sidebar-panel rounded-xl px-3 py-3">
         <p className="text-xs font-semibold text-sidebar-fg-active">{companyName}</p>
         <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-sidebar-fg/55">
           <span className="live-dot" style={{ width: 6, height: 6 }} />

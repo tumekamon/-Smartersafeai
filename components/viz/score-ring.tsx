@@ -34,7 +34,7 @@ export function ScoreRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={onDark ? "rgba(255,255,255,0.12)" : "var(--surface-muted)"}
+          stroke={onDark ? "var(--hero-tile-border)" : "var(--surface-muted)"}
           strokeWidth={stroke}
         />
         <circle

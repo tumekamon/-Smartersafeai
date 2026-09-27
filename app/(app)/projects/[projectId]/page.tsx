@@ -72,19 +72,19 @@ export default async function ProjectDetailPage({
       <section className="hero p-6 md:p-7">
         <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0">
-            <Link href="/projects" className="text-xs font-medium text-white/60 hover:text-white">← All projects</Link>
-            <p className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
+            <Link href="/projects" className="hero-muted text-xs font-medium hover:opacity-80">← All projects</Link>
+            <p className="hero-muted mt-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
               <IconMapPin width={12} height={12} />
               {project.location} · {project.projectNumber} · {project.client}
             </p>
             <h1 className="mt-1.5 text-3xl font-semibold leading-tight tracking-tight">{project.name}</h1>
             <div className="mt-4 max-w-sm">
-              <div className="mb-1 flex justify-between text-[11px] text-white/60">
+              <div className="hero-muted mb-1 flex justify-between text-[11px]">
                 <span>Construction progress</span>
-                <span className="font-semibold text-white">{project.percentComplete}%</span>
+                <span className="font-semibold" style={{ color: "var(--hero-fg)" }}>{project.percentComplete}%</span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/10">
-                <div className="h-1.5 rounded-full bg-white/80" style={{ width: `${project.percentComplete}%` }} />
+              <div className="hero-track h-1.5 rounded-full">
+                <div className="hero-track-fill h-1.5 rounded-full" style={{ width: `${project.percentComplete}%` }} />
               </div>
             </div>
           </div>
@@ -97,7 +97,7 @@ export default async function ProjectDetailPage({
               ].map((s) => (
                 <div key={s.l}>
                   <p className="text-3xl font-semibold leading-none">{s.v}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/55">{s.l}</p>
+                  <p className="hero-muted mt-1 text-[11px] uppercase tracking-wider">{s.l}</p>
                 </div>
               ))}
             </div>

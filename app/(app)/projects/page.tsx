@@ -27,22 +27,22 @@ export default async function ProjectsPage() {
               <div className="hero p-5" style={{ borderRadius: 0 }}>
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
+                    <p className="hero-muted flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
                       <IconMapPin width={12} height={12} />
                       {project.location} · {project.projectNumber}
                     </p>
                     <h2 className="mt-1.5 text-lg font-semibold leading-snug">{project.name}</h2>
-                    <p className="mt-1 text-xs text-white/60">{project.client}</p>
+                    <p className="hero-muted mt-1 text-xs">{project.client}</p>
                   </div>
                   <ScoreRing score={h.score} level={h.level} size={84} stroke={8} onDark />
                 </div>
                 <div className="mt-4">
-                  <div className="mb-1 flex justify-between text-[11px] text-white/60">
+                  <div className="hero-muted mb-1 flex justify-between text-[11px]">
                     <span>Construction progress</span>
-                    <span className="font-semibold text-white">{project.percentComplete}%</span>
+                    <span className="font-semibold" style={{ color: "var(--hero-fg)" }}>{project.percentComplete}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/10">
-                    <div className="h-1.5 rounded-full bg-white/80" style={{ width: `${project.percentComplete}%` }} />
+                  <div className="hero-track h-1.5 rounded-full">
+                    <div className="hero-track-fill h-1.5 rounded-full" style={{ width: `${project.percentComplete}%` }} />
                   </div>
                 </div>
               </div>

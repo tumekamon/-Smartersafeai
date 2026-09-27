@@ -53,7 +53,7 @@ export default async function LoginPage() {
           </span>
           <div>
             <p className="text-base font-semibold">SmartSafe AI</p>
-            <p className="text-xs text-white/55">Safety Intelligence Platform</p>
+            <p className="hero-muted text-xs">Safety Intelligence Platform</p>
           </div>
         </div>
 
@@ -65,7 +65,10 @@ export default async function LoginPage() {
           <h1 className="mt-5 text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
             See the hazard before it becomes an incident.
           </h1>
-          <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl">
+          <div
+            className="mt-6 overflow-hidden rounded-2xl shadow-2xl"
+            style={{ border: "1px solid var(--hero-tile-border)" }}
+          >
             <EvidenceScene
               scene="panel"
               title="Missing GFCI protection"
@@ -78,7 +81,7 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-white/40">
+        <p className="hero-muted text-xs opacity-70">
           {company?.name}
           {project ? ` · ${project.shortName} project team` : ""}
         </p>

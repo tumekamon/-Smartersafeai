@@ -6,9 +6,16 @@
   --surface: #ffffff;
   --surface-muted: #eef0f5;
   --border: #e2e5ec;
-  --sidebar-bg: #0d1220;
-  --sidebar-fg: #aab3c5;
-  --sidebar-fg-active: #ffffff;
+
+  /* Sidebar has its own light/dark pair — a distinct light surface, not a
+     permanently-dark rail borrowed from the dark theme. */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: var(--border);
+  --sidebar-fg: #676f7d;
+  --sidebar-fg-active: #12161f;
+  --sidebar-active-bg: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --sidebar-hover-bg: color-mix(in srgb, var(--foreground) 3.5%, transparent);
+  --sidebar-panel-bg: var(--surface-muted);
 
   /*
    * Company brand color. --brand-light/--brand-dark are set per-tenant via inline
@@ -25,8 +32,16 @@
 
   --ai: #7a5cff;
   --ai-soft: #efeaff;
-  --hero-from: #0d1220;
-  --hero-to: #1b2350;
+
+  /* Hero also gets a real light appearance instead of the dark navy gradient
+     borrowed from dark mode — a soft brand-tinted surface with dark ink. */
+  --hero-from: #f7f8fc;
+  --hero-to: #eef0fb;
+  --hero-fg: #12161f;
+  --hero-fg-muted: #5b6472;
+  --hero-tile-bg: color-mix(in srgb, var(--foreground) 4.5%, transparent);
+  --hero-tile-border: color-mix(in srgb, var(--foreground) 8%, transparent);
+  --hero-tile-hover: color-mix(in srgb, var(--foreground) 8%, transparent);
 
   --status-good: #0ca30c;
   --status-warning: #b8790f;
@@ -58,9 +73,18 @@
   --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
   --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-fg: var(--sidebar-fg);
   --color-sidebar-fg-active: var(--sidebar-fg-active);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-active-bg: var(--sidebar-active-bg);
+  --color-sidebar-hover-bg: var(--sidebar-hover-bg);
+  --color-sidebar-panel-bg: var(--sidebar-panel-bg);
+  --color-hero-fg: var(--hero-fg);
+  --color-hero-fg-muted: var(--hero-fg-muted);
+  --color-hero-tile-bg: var(--hero-tile-bg);
+  --color-hero-tile-border: var(--hero-tile-border);
+  --color-hero-tile-hover: var(--hero-tile-hover);
   --color-brand: var(--brand);
   --color-brand-light: var(--brand-light);
   --color-brand-dark: var(--brand-dark);
@@ -95,12 +119,24 @@ html[data-theme="dark"] .tenant-theme {
     --surface: #131722;
     --surface-muted: #1a1f2c;
     --border: #252b3a;
+
     --sidebar-bg: #0b0e17;
+    --sidebar-border: transparent;
+    --sidebar-fg: #aab3c5;
+    --sidebar-fg-active: #ffffff;
+    --sidebar-active-bg: color-mix(in srgb, white 10%, transparent);
+    --sidebar-hover-bg: color-mix(in srgb, white 5%, transparent);
+    --sidebar-panel-bg: color-mix(in srgb, white 5%, transparent);
 
     --ai: #9d86ff;
     --ai-soft: #231d45;
     --hero-from: #141a33;
     --hero-to: #241d52;
+    --hero-fg: #ffffff;
+    --hero-fg-muted: color-mix(in srgb, white 65%, transparent);
+    --hero-tile-bg: color-mix(in srgb, white 6%, transparent);
+    --hero-tile-border: color-mix(in srgb, white 10%, transparent);
+    --hero-tile-hover: color-mix(in srgb, white 15%, transparent);
 
     --status-good: #1fb81f;
     --status-warning: #fab219;
@@ -133,12 +169,24 @@ html[data-theme="dark"] .tenant-theme {
   --surface: #131722;
   --surface-muted: #1a1f2c;
   --border: #252b3a;
+
   --sidebar-bg: #0b0e17;
+  --sidebar-border: transparent;
+  --sidebar-fg: #aab3c5;
+  --sidebar-fg-active: #ffffff;
+  --sidebar-active-bg: color-mix(in srgb, white 10%, transparent);
+  --sidebar-hover-bg: color-mix(in srgb, white 5%, transparent);
+  --sidebar-panel-bg: color-mix(in srgb, white 5%, transparent);
 
   --ai: #9d86ff;
   --ai-soft: #231d45;
   --hero-from: #141a33;
   --hero-to: #241d52;
+  --hero-fg: #ffffff;
+  --hero-fg-muted: color-mix(in srgb, white 65%, transparent);
+  --hero-tile-bg: color-mix(in srgb, white 6%, transparent);
+  --hero-tile-border: color-mix(in srgb, white 10%, transparent);
+  --hero-tile-hover: color-mix(in srgb, white 15%, transparent);
 
   --status-good: #1fb81f;
   --status-warning: #fab219;
@@ -194,10 +242,32 @@ body {
 }
 
 .hero {
-  background: radial-gradient(1200px 400px at 0% 0%, color-mix(in srgb, var(--brand) 30%, transparent), transparent 60%),
+  background: radial-gradient(1200px 400px at 0% 0%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 60%),
     linear-gradient(135deg, var(--hero-from), var(--hero-to));
-  color: #fff;
+  color: var(--hero-fg);
+  border: 1px solid var(--hero-tile-border);
   border-radius: 1.25rem;
+}
+
+.hero-muted {
+  color: var(--hero-fg-muted);
+}
+
+.hero-tile {
+  background: var(--hero-tile-bg);
+  border: 1px solid var(--hero-tile-border);
+}
+
+.hero-tile-hover:hover {
+  background: var(--hero-tile-hover);
+}
+
+.hero-track {
+  background: var(--hero-tile-bg);
+}
+
+.hero-track-fill {
+  background: var(--brand);
 }
 
 .brand-mark {
@@ -314,4 +384,21 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 9999px;
+}
+
+.sidebar-nav-active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-fg-active);
+}
+
+.sidebar-nav-inactive {
+  color: var(--sidebar-fg);
+}
+.sidebar-nav-inactive:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-fg-active);
+}
+
+.sidebar-panel {
+  background: var(--sidebar-panel-bg);
 }

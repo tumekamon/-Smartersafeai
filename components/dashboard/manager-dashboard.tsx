@@ -36,10 +36,10 @@ function SubScore({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="mb-1 flex justify-between text-xs">
-        <span className="text-white/65">{label}</span>
+        <span className="hero-muted">{label}</span>
         <span className="font-semibold">{value}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/10">
+      <div className="hero-track h-1.5 rounded-full">
         <div className="h-1.5 rounded-full" style={{ width: `${value}%`, background: color }} />
       </div>
     </div>
@@ -48,11 +48,11 @@ function SubScore({ label, value }: { label: string; value: number }) {
 
 function HeroStat({ label, value, values, color }: { label: string; value: string | number; values?: number[]; color: string }) {
   return (
-    <div className="rounded-xl bg-white/[0.06] p-3.5 ring-1 ring-white/10">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-white/55">{label}</p>
+    <div className="hero-tile rounded-xl p-3.5">
+      <p className="hero-muted text-[11px] font-medium uppercase tracking-wider">{label}</p>
       <div className="mt-1.5 flex items-end justify-between gap-2">
         <p className="text-3xl font-semibold leading-none tracking-tight">{value}</p>
-        {values && <Sparkline values={values} width={84} height={30} color={color} ring="#171d3f" />}
+        {values && <Sparkline values={values} width={84} height={30} color={color} ring="var(--hero-to)" />}
       </div>
     </div>
   );
@@ -114,7 +114,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
           <div className="flex items-center gap-5">
             <ScoreRing score={score.score} level={level} size={156} stroke={13} onDark label="Safety score" />
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/55">
+              <p className="hero-muted text-[11px] font-semibold uppercase tracking-wider">
                 {project ? project.shortName : "All sites"}
               </p>
               <p className="mt-1 text-2xl font-semibold tracking-tight">{levelLabel[level]}</p>
@@ -129,10 +129,10 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <HeroStat label="Findings / week" value={series[series.length - 1].raised} values={series.map((p) => p.raised)} color="#8fb8ff" />
-            <HeroStat label="Inspections / week" value={series[series.length - 1].inspections} values={series.map((p) => p.inspections)} color="#7de3c0" />
-            <HeroStat label="Open actions" value={open} color="#8fb8ff" />
-            <HeroStat label="Avg. days to close" value={closure.avgDays.toFixed(1)} color="#8fb8ff" />
+            <HeroStat label="Findings / week" value={series[series.length - 1].raised} values={series.map((p) => p.raised)} color="var(--chart-series-1)" />
+            <HeroStat label="Inspections / week" value={series[series.length - 1].inspections} values={series.map((p) => p.inspections)} color="var(--chart-series-3)" />
+            <HeroStat label="Open actions" value={open} color="var(--chart-series-1)" />
+            <HeroStat label="Avg. days to close" value={closure.avgDays.toFixed(1)} color="var(--chart-series-1)" />
           </div>
         </div>
       </section>

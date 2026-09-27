@@ -39,8 +39,8 @@ export function ClientDashboard({ user }: { user: User }) {
               { label: "Avg. days to close", value: closure.avgDays.toFixed(1) },
               { label: "Training valid", value: `${Math.round(training.compliantPercent)}%` },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl bg-white/[0.06] p-3.5 ring-1 ring-white/10">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/55">{s.label}</p>
+              <div key={s.label} className="hero-tile rounded-xl p-3.5">
+                <p className="hero-muted text-[11px] font-medium uppercase tracking-wider">{s.label}</p>
                 <p className="mt-1.5 text-3xl font-semibold leading-none tracking-tight">{s.value}</p>
               </div>
             ))}
