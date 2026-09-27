@@ -10,8 +10,17 @@
   --sidebar-fg: #aab3c5;
   --sidebar-fg-active: #ffffff;
 
-  /* Company brand color — overridden per-tenant via an inline style on a layout ancestor. */
-  --brand: #2f6df6;
+  /*
+   * Company brand color. --brand-light/--brand-dark are set per-tenant via inline
+   * style on the nearest .tenant-theme ancestor (see the .tenant-theme rules below);
+   * --brand itself must be derived on that SAME element so the substitution sees the
+   * inline override — deriving it at :root instead would freeze in the default,
+   * since custom-property var() chains resolve at the element that declares them,
+   * not at whichever element ends up consuming the final value.
+   */
+  --brand-light: #2f6df6;
+  --brand-dark: #6d94f8;
+  --brand: var(--brand-light);
   --sidebar-accent: var(--brand);
 
   --ai: #7a5cff;
@@ -53,10 +62,29 @@
   --color-sidebar-fg-active: var(--sidebar-fg-active);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-dark: var(--brand-dark);
   --color-ai: var(--ai);
   --color-ai-soft: var(--ai-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/*
+ * Brand color resolution — scoped to .tenant-theme (the element carrying the
+ * per-company --brand-light/--brand-dark inline override) rather than :root,
+ * so the var() substitution below sees that same element's inline values.
+ */
+.tenant-theme {
+  --brand: var(--brand-light);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .tenant-theme {
+    --brand: var(--brand-dark);
+  }
+}
+html[data-theme="dark"] .tenant-theme {
+  --brand: var(--brand-dark);
 }
 
 /* System preference (no explicit choice saved) — beaten by an explicit light stamp. */

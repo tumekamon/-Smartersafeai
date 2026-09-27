@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listCompanies, listProjects, listUsers } from "@/lib/db";
+import { brandVars } from "@/lib/color";
 import { LoginForm, type DemoAccount } from "@/components/login-form";
 import { EvidenceScene } from "@/components/viz/evidence-scene";
 import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
@@ -42,8 +43,8 @@ export default async function LoginPage() {
 
   return (
     <div
-      className="grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]"
-      style={company ? ({ "--brand": company.primaryColor } as React.CSSProperties) : undefined}
+      className="tenant-theme grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]"
+      style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
       <section className="hero relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14" style={{ borderRadius: 0 }}>
         <div className="flex items-center gap-2.5">

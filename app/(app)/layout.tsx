@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/dal";
 import { getCompany, listFindings, listProjects } from "@/lib/db";
 import { getCapabilities } from "@/lib/authz";
+import { brandVars } from "@/lib/color";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 
@@ -13,8 +14,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div
-      className="flex min-h-screen w-full bg-background"
-      style={company ? ({ "--brand": company.primaryColor } as React.CSSProperties) : undefined}
+      className="tenant-theme flex min-h-screen w-full bg-background"
+      style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
       <Sidebar role={user.role} companyName={company?.name ?? ""} badges={{ review: pendingReviews }} projectCount={listProjects().filter((p) => p.status === "active").length} />
       <div className="flex min-h-screen flex-1 flex-col">

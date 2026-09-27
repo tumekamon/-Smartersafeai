@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { updateBrandingAction } from "@/lib/actions/settings";
-import { IconCheckShield } from "@/components/ui/icons";
+import { deriveDarkBrand } from "@/lib/color";
+import { IconCheckShield, IconMoon, IconSun } from "@/components/ui/icons";
 
 const SWATCHES = ["#2f6df6", "#7a5cff", "#0ca35f", "#d0913b", "#d0453b", "#0f8b8d", "#c23b8f", "#1c1f26"];
 
@@ -61,6 +62,19 @@ export function BrandingForm({ name, primaryColor }: { name: string; primaryColo
             onChange={(e) => setColor(e.target.value)}
             className="w-24 rounded-lg border border-border bg-surface px-2 py-1.5 text-xs font-mono outline-none focus:border-sidebar-accent"
           />
+        </div>
+
+        <div className="mt-3 flex items-center gap-4 text-xs text-foreground/55">
+          <span className="flex items-center gap-1.5">
+            <IconSun width={12} height={12} />
+            <span className="h-4 w-4 rounded-full border border-border" style={{ background: color }} />
+            Light mode
+          </span>
+          <span className="flex items-center gap-1.5">
+            <IconMoon width={12} height={12} />
+            <span className="h-4 w-4 rounded-full border border-border" style={{ background: deriveDarkBrand(color) }} />
+            Dark mode (auto-adjusted)
+          </span>
         </div>
       </div>
 
