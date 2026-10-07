@@ -140,10 +140,12 @@ export function createUser(input: {
 
 export function updateUser(
   id: string,
-  input: { role?: UserRole; title?: string; active?: boolean }
+  input: { firstName?: string; lastName?: string; role?: UserRole; title?: string; active?: boolean }
 ): User | undefined {
   const user = getUser(id);
   if (!user) return undefined;
+  if (input.firstName?.trim()) user.firstName = input.firstName.trim();
+  if (input.lastName?.trim()) user.lastName = input.lastName.trim();
   if (input.role) user.role = input.role;
   if (input.title?.trim()) user.title = input.title.trim();
   if (input.active !== undefined) user.active = input.active;

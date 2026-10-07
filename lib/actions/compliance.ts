@@ -12,7 +12,9 @@ import {
   createGcNotice,
   getProject,
 } from "@/lib/db";
-import type { CertificationType, SiteLocation, GcNoticeStatus, GcNoticePriority } from "@/lib/types";
+import type { CertificationType, SiteLocation, GcNoticeStatus, GcNoticePriority, PermitType } from "@/lib/types";
+
+const PERMIT_TYPES: PermitType[] = ["Hot Work", "Confined Space", "Excavation", "Energized Work"];
 
 export async function createCertificationAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -45,7 +47,7 @@ export async function createPermitAction(formData: FormData) {
   }
 
   const projectId = String(formData.get("projectId") ?? "");
-  const type = String(formData.get("type") ?? "");
+  const type = String(formData.get("type") ?? "") as PermitType;
   const description = String(formData.get("description") ?? "");
   const level = String(formData.get("level") ?? "");
   const zone = String(formData.get("zone") ?? "");
@@ -56,6 +58,7 @@ export async function createPermitAction(formData: FormData) {
   const project = getProject(projectId);
   if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
   if (!type || !description || !startsAt || !expiresAt) throw new Error("Missing required fields.");
+  if (!PERMIT_TYPES.includes(type)) throw new Error("Unknown permit type.");
 
   createPermit({
     projectId,

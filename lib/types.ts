@@ -189,7 +189,7 @@ export type Permit = {
   location: SiteLocation;
   description: string;
   issuedById: string;
-  approvedById: string;
+  approvedById?: string;
   attendantId?: string;
   startsAt: string;
   expiresAt: string;
@@ -211,6 +211,7 @@ export type Asset = {
   tag: string;
   name: string;
   projectId: string;
+  category?: string;
 };
 
 export type IncidentType = "near_miss" | "first_aid" | "recordable" | "property_damage" | "illness";
