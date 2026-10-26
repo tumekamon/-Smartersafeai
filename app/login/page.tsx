@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { roleLabel } from "@/lib/roles";
+import { ROLE_INFO, ROLES, roleLabel } from "@/lib/roles";
 import Image from "next/image";
 import { getSession } from "@/lib/session";
 import { listCompanies, listProjects, listUsers } from "@/lib/db";
 import { brandVars } from "@/lib/color";
-import { LoginForm, type DemoAccount } from "@/components/login-form";
+import { LoginForm, type DemoAccount, type DemoLevel } from "@/components/login-form";
 import { EvidenceScene } from "@/components/viz/evidence-scene";
 import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
 
@@ -22,16 +22,21 @@ export default async function LoginPage() {
   }
 
   const company = listCompanies()[0];
-  const accounts: DemoAccount[] = listUsers(company?.id ?? "")
-    .filter((u) => u.featured)
-    .map((u) => ({
-      id: u.id,
-      name: `${u.firstName} ${u.lastName}`,
-      role: roleLabel(u),
-      email: u.email,
-      initials: `${u.firstName[0]}${u.lastName[0]}`,
-      hue: hueFor(u.id),
-    }));
+  const featured = listUsers(company?.id ?? "").filter((u) => u.featured);
+  const toAccount = (u: (typeof featured)[number]): DemoAccount => ({
+    id: u.id,
+    name: `${u.firstName} ${u.lastName}`,
+    role: roleLabel(u),
+    email: u.email,
+    initials: `${u.firstName[0]}${u.lastName[0]}`,
+    hue: hueFor(u.id),
+  });
+  const levels: DemoLevel[] = ROLES.map((r) => ({
+    level: ROLE_INFO[r].level,
+    label: ROLE_INFO[r].label,
+    accounts: featured.filter((u) => u.role === r && !u.readOnly).map(toAccount),
+  })).filter((l) => l.accounts.length > 0);
+  const clients = featured.filter((u) => u.readOnly).map(toAccount);
 
   const project = listProjects(company?.id ?? "")[0];
 
@@ -95,7 +100,7 @@ export default async function LoginPage() {
             <p className="text-sm font-semibold">SmartSafe AI</p>
           </div>
           <h2 className="mb-7 text-2xl font-semibold tracking-tight">Welcome back</h2>
-          <LoginForm accounts={accounts} />
+          <LoginForm levels={levels} clients={clients} />
         </div>
       </section>
     </div>
