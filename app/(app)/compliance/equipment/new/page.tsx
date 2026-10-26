@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default async function AddAssetPage() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) redirect("/compliance");
+  if (!getCapabilities(user).canManageSettings) redirect("/compliance");
 
   const projects = listProjects(user.companyId);
 

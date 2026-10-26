@@ -32,12 +32,12 @@ import type {
  * Cached on `globalThis` so dev-mode module reloads don't reseed it.
  */
 
-const globalForStore = globalThis as unknown as { __smartsafeStoreV2?: Store };
+const globalForStore = globalThis as unknown as { __smartsafeStoreV3?: Store };
 
-export const store: Store = globalForStore.__smartsafeStoreV2 ?? buildSeed(new Date());
+export const store: Store = globalForStore.__smartsafeStoreV3 ?? buildSeed(new Date());
 
-if (!globalForStore.__smartsafeStoreV2) {
-  globalForStore.__smartsafeStoreV2 = store;
+if (!globalForStore.__smartsafeStoreV3) {
+  globalForStore.__smartsafeStoreV3 = store;
 }
 
 function nextId(prefix: string) {
@@ -123,6 +123,7 @@ export function createUser(input: {
   email: string;
   role: UserRole;
   title: string;
+  readOnly?: boolean;
 }): User {
   const user: User = {
     id: nextId("u"),
@@ -133,6 +134,7 @@ export function createUser(input: {
     role: input.role,
     title: input.title,
     active: true,
+    readOnly: input.readOnly || undefined,
   };
   store.users.push(user);
   return user;
@@ -140,7 +142,15 @@ export function createUser(input: {
 
 export function updateUser(
   id: string,
-  input: { firstName?: string; lastName?: string; role?: UserRole; title?: string; active?: boolean }
+  input: {
+    firstName?: string;
+    lastName?: string;
+    role?: UserRole;
+    title?: string;
+    active?: boolean;
+    readOnly?: boolean;
+    dashboardTiles?: string[];
+  }
 ): User | undefined {
   const user = getUser(id);
   if (!user) return undefined;
@@ -149,6 +159,8 @@ export function updateUser(
   if (input.role) user.role = input.role;
   if (input.title?.trim()) user.title = input.title.trim();
   if (input.active !== undefined) user.active = input.active;
+  if (input.readOnly !== undefined) user.readOnly = input.readOnly || undefined;
+  if (input.dashboardTiles !== undefined) user.dashboardTiles = input.dashboardTiles;
   return user;
 }
 

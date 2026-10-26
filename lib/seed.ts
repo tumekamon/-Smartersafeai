@@ -362,7 +362,7 @@ export function buildSeed(now: Date): Store {
 
   const users: User[] = [
     mk("u_patrick", "Patrick", "Murani", "ADMIN", "Platform Administrator", "patrick@besco.example", true),
-    mk("u_lawrence", "Lawrence", "Kibet", "SAFETY_DIRECTOR", "EHS Director", "lawrence@besco.example", true),
+    mk("u_lawrence", "Lawrence", "Kibet", "SAFETY_MANAGER", "EHS Director", "lawrence@besco.example", true),
     mk("u_amon", "Amon", "Tumek", "SAFETY_MANAGER", "Site Safety Manager", "amon@besco.example", true),
     mk("u_justus", "Justus", "Gitau", "SUPERVISOR", "Electrical Superintendent", "justus@besco.example", true),
     mk("u_kevin", "Kevin", "Otieno", "WORKER", "Journeyman Electrician", "kevin@besco.example", true),
@@ -372,7 +372,8 @@ export function buildSeed(now: Date): Store {
       firstName: "Dana",
       lastName: "Whitfield",
       email: "dana@walsh.example",
-      role: "CLIENT_VIEWER",
+      role: "SAFETY_MANAGER",
+      readOnly: true,
       title: "Project Executive, Walsh Construction",
       active: true,
       featured: true,

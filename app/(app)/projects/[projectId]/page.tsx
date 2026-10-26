@@ -62,7 +62,7 @@ export default async function ProjectDetailPage({
   const project = getProject(projectId);
   if (!project || project.companyId !== user.companyId) notFound();
 
-  const caps = getCapabilities(user.role);
+  const caps = getCapabilities(user);
   const h = projectHealth(project);
   const templates = listTemplates(user.companyId);
   const inspections = listInspectionsForProject(projectId);

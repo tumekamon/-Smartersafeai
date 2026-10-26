@@ -4,7 +4,6 @@ import type { Project, User } from "@/lib/types";
 import {
   activityFeed,
   attentionQueue,
-  closureStats,
   hazardBreakdown,
   heatmap,
   hotspots,
@@ -18,7 +17,7 @@ import {
 import { listCorrectiveActions, listFindings, listProjects, getCompany } from "@/lib/db";
 import { greeting } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
-import { Sparkline } from "@/components/viz/sparkline";
+import { StatTiles } from "@/components/dashboard/stat-tiles";
 import { TrendChart } from "@/components/viz/trend-chart";
 import { HeatMap } from "@/components/viz/heat-map";
 import { BreakdownBars } from "@/components/ui/breakdown-bars";
@@ -47,20 +46,7 @@ function SubScore({ label, value }: { label: string; value: number }) {
   );
 }
 
-function HeroStat({ label, value, values, color }: { label: string; value: string | number; values?: number[]; color: string }) {
-  return (
-    <div className="hero-tile group rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[var(--hero-to)]/20 border border-transparent hover:border-white/20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <p className="hero-muted text-[11px] font-bold uppercase tracking-widest relative z-10">{label}</p>
-      <div className="mt-2 flex items-end justify-between gap-2 relative z-10">
-        <p className="text-4xl font-extrabold leading-none tracking-tighter bg-gradient-to-br from-hero-fg to-hero-fg-muted bg-clip-text text-transparent">{value}</p>
-        {values && <Sparkline values={values} width={84} height={30} color={color} ring="var(--hero-to)" />}
-      </div>
-    </div>
-  );
-}
-
-export function ManagerDashboard({ user, project }: { user: User; project?: Project }) {
+export function ManagerDashboard({ user, project, canCustomize }: { user: User; project?: Project; canCustomize: boolean }) {
   const projectId = project?.id;
   const company = getCompany(user.companyId);
   const projects = listProjects(user.companyId);
@@ -69,10 +55,8 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
   const series = weeklySeries(user.companyId, projectId, 12);
   const actions = (projectId ? listCorrectiveActions(user.companyId).filter((a) => a.projectId === projectId) : listCorrectiveActions(user.companyId));
   const findings = (projectId ? listFindings(user.companyId).filter((f) => f.projectId === projectId) : listFindings(user.companyId));
-  const open = actions.filter((a) => a.status === "open").length;
   const overdue = actions.filter((a) => isActionOverdue(a)).length;
   const pending = findings.filter((f) => f.reviewerDecision === "pending").length;
-  const closure = closureStats(user.companyId, projectId);
 
   const attention = attentionQueue(user.companyId, 8, projectId);
   const aiInsights = insights(user.companyId, projectId);
@@ -118,7 +102,7 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30 backdrop-blur-[6px]" />
         </div>
         <div className="relative z-10 p-6 md:p-10">
-          <div className="grid items-center gap-8 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1.15fr)]">
+          <div className="grid items-center gap-8 lg:grid-cols-[auto_minmax(0,1fr)]">
             <div className="flex items-center gap-6">
               <div className="rounded-lg bg-background/50 p-1.5 shadow-sm backdrop-blur-md">
                 <ScoreRing score={score.score} level={level} size={156} stroke={13} onDark label="Safety score" />
@@ -137,16 +121,11 @@ export function ManagerDashboard({ user, project }: { user: User; project?: Proj
               <SubScore label="Training compliance" value={score.training} />
               <SubScore label="Finding trend" value={score.trend} />
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <HeroStat label="Findings / week" value={series[series.length - 1].raised} values={series.map((p) => p.raised)} color="var(--chart-series-1)" />
-              <HeroStat label="Inspections / week" value={series[series.length - 1].inspections} values={series.map((p) => p.inspections)} color="var(--chart-series-3)" />
-              <HeroStat label="Open actions" value={open} color="var(--chart-series-1)" />
-              <HeroStat label="Avg. days to close" value={closure.avgDays.toFixed(1)} color="var(--chart-series-1)" />
-            </div>
           </div>
         </div>
       </section>
+
+      <StatTiles companyId={user.companyId} projectId={projectId} saved={user.dashboardTiles} canEdit={canCustomize} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <section className="card p-6 lg:col-span-3">

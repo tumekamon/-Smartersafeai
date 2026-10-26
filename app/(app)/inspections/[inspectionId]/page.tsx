@@ -36,7 +36,7 @@ export default async function InspectionDetailPage({
   const project = getProject(inspection?.projectId ?? "");
   if (!inspection || !project || project.companyId !== user.companyId) notFound();
 
-  const caps = getCapabilities(user.role);
+  const caps = getCapabilities(user);
   const template = getTemplate(inspection.templateId);
   const inspector = getUser(inspection.inspectorId);
   const findings = listFindingsForInspection(inspectionId);

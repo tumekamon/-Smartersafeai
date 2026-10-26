@@ -15,7 +15,7 @@ const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();
   const projects = listProjects(user.companyId);
-  const canManage = getCapabilities(user.role).canManageSettings;
+  const canManage = getCapabilities(user).canManageSettings;
 
   return (
     <div className="space-y-6">

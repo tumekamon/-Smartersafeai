@@ -11,7 +11,7 @@ const TYPES: IncidentType[] = ["near_miss", "first_aid", "recordable", "property
 
 export async function reportIncidentAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (getCapabilities(user.role).isReadOnly) {
+  if (getCapabilities(user).isReadOnly) {
     throw new Error("Your role cannot report incidents.");
   }
 
@@ -50,7 +50,7 @@ export async function reportIncidentAction(formData: FormData) {
 
 export async function updateIncidentStatusAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canReviewFindings) {
+  if (!getCapabilities(user).canReviewFindings) {
     throw new Error("Only a safety professional can change an incident's status.");
   }
 

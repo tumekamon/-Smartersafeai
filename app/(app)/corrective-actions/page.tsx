@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WorkTabs } from "@/components/work-tabs";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { getProject, getUser, listCorrectiveActions, listProjects } from "@/lib/db";
@@ -52,7 +53,7 @@ export default async function CorrectiveActionsPage({
   searchParams: Promise<{ view?: string; project?: string }>;
 }) {
   const user = await getCurrentUser();
-  const caps = getCapabilities(user.role);
+  const caps = getCapabilities(user);
   const isWorker = user.role === "WORKER";
   const sp = await searchParams;
   const view = isWorker ? "mine" : (sp.view ?? "all");
@@ -88,6 +89,7 @@ export default async function CorrectiveActionsPage({
 
   return (
     <div className="space-y-6">
+      <WorkTabs user={user} caps={caps} active="fixes" />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">{isWorker ? "My tasks" : "Corrective actions"}</h1>

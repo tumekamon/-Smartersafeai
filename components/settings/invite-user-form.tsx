@@ -2,15 +2,7 @@
 
 import { useRef, useState } from "react";
 import { inviteUserAction } from "@/lib/actions/users";
-
-const ROLE_OPTIONS = [
-  { value: "ADMIN", label: "Admin" },
-  { value: "SAFETY_DIRECTOR", label: "Safety Director" },
-  { value: "SAFETY_MANAGER", label: "Safety Manager" },
-  { value: "SUPERVISOR", label: "Supervisor" },
-  { value: "WORKER", label: "Field Worker" },
-  { value: "CLIENT_VIEWER", label: "Client Viewer" },
-] as const;
+import { ROLE_OPTIONS } from "@/lib/roles";
 
 export function InviteUserForm() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -66,6 +58,10 @@ export function InviteUserForm() {
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
         </select>
+        <label className="flex items-center gap-2 text-sm text-foreground/70">
+          <input type="checkbox" name="readOnly" className="h-4 w-4" />
+          Read-only (client)
+        </label>
         <button type="submit" className="rounded-lg bg-sidebar-accent px-4 py-2 text-sm font-semibold text-white">
           Add to workspace
         </button>

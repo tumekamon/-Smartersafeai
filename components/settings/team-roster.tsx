@@ -1,17 +1,9 @@
 "use client";
 
-import { setUserActiveAction, updateUserRoleAction } from "@/lib/actions/users";
+import { setUserActiveAction, setUserReadOnlyAction, updateUserRoleAction } from "@/lib/actions/users";
+import { ROLE_OPTIONS } from "@/lib/roles";
 import { Avatar } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
-
-const ROLE_OPTIONS = [
-  { value: "ADMIN", label: "Admin" },
-  { value: "SAFETY_DIRECTOR", label: "Safety Director" },
-  { value: "SAFETY_MANAGER", label: "Safety Manager" },
-  { value: "SUPERVISOR", label: "Supervisor" },
-  { value: "WORKER", label: "Field Worker" },
-  { value: "CLIENT_VIEWER", label: "Client Viewer" },
-] as const;
 
 export function TeamRoster({ members, currentUserId }: { members: User[]; currentUserId: string }) {
   return (
@@ -42,6 +34,21 @@ export function TeamRoster({ members, currentUserId }: { members: User[]; curren
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
               </select>
+            </form>
+
+            <form action={setUserReadOnlyAction}>
+              <input type="hidden" name="userId" value={m.id} />
+              <input type="hidden" name="readOnly" value={(!m.readOnly).toString()} />
+              <button
+                type="submit"
+                disabled={isSelf}
+                aria-pressed={m.readOnly === true}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                  m.readOnly ? "bg-foreground text-background" : "bg-surface-muted text-foreground/60 hover:text-foreground"
+                }`}
+              >
+                Read-only
+              </button>
             </form>
 
             <form action={setUserActiveAction}>

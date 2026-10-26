@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default async function LogPpePage() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) redirect("/compliance");
+  if (!getCapabilities(user).canManageSettings) redirect("/compliance");
 
   return (
     <div className="max-w-xl space-y-6">

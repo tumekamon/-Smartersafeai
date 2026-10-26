@@ -11,11 +11,17 @@ export default async function DashboardPage({
   searchParams: Promise<{ project?: string }>;
 }) {
   const user = await getCurrentUser();
-  const capabilities = getCapabilities(user.role);
+  const capabilities = getCapabilities(user);
   const { project: projectId } = await searchParams;
 
   if (capabilities.isReadOnly) return <ClientDashboard user={user} />;
   if (!capabilities.canViewOrgDashboard) return <WorkerDashboard user={user} />;
 
-  return <ManagerDashboard user={user} project={projectId ? getProject(projectId) : undefined} />;
+  return (
+    <ManagerDashboard
+      user={user}
+      project={projectId ? getProject(projectId) : undefined}
+      canCustomize={capabilities.canCustomizeDashboard}
+    />
+  );
 }

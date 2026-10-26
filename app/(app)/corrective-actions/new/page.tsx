@@ -6,7 +6,7 @@ import { createCorrectiveActionAction } from "@/lib/actions/corrective-actions";
 
 export default async function NewCorrectiveActionPage() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canCreateCorrectiveActions) redirect("/dashboard");
+  if (!getCapabilities(user).canCreateCorrectiveActions) redirect("/dashboard");
 
   const projects = listProjects(user.companyId);
   const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));

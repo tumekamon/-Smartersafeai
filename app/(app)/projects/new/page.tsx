@@ -5,7 +5,7 @@ import { createProjectAction } from "@/lib/actions/projects";
 
 export default async function NewProjectPage() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) redirect("/dashboard");
+  if (!getCapabilities(user).canManageSettings) redirect("/dashboard");
 
   return (
     <div className="max-w-xl space-y-6">

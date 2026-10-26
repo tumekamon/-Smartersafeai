@@ -18,7 +18,7 @@ const PERMIT_TYPES: PermitType[] = ["Hot Work", "Confined Space", "Excavation", 
 
 export async function createCertificationAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (user.role === "WORKER" || user.role === "CLIENT_VIEWER") {
+  if (!getCapabilities(user).canManageCompliance) {
     throw new Error("You do not have permission to add certifications.");
   }
   
@@ -42,7 +42,7 @@ export async function createCertificationAction(formData: FormData) {
 
 export async function createPermitAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (user.role === "WORKER" || user.role === "CLIENT_VIEWER") {
+  if (!getCapabilities(user).canManageCompliance) {
     throw new Error("You do not have permission to issue permits.");
   }
 
@@ -77,7 +77,7 @@ export async function createPermitAction(formData: FormData) {
 
 export async function createPpeItemAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) {
+  if (!getCapabilities(user).canManageSettings) {
     throw new Error("Only an administrator can manage PPE.");
   }
 
@@ -104,7 +104,7 @@ export async function createPpeItemAction(formData: FormData) {
 
 export async function createAssetAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) {
+  if (!getCapabilities(user).canManageSettings) {
     throw new Error("Only an administrator can manage assets.");
   }
 
@@ -130,7 +130,7 @@ export async function createAssetAction(formData: FormData) {
 
 export async function createGcNoticeAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (user.role === "WORKER" || user.role === "CLIENT_VIEWER") {
+  if (!getCapabilities(user).canManageCompliance) {
     throw new Error("You do not have permission to raise GC notices.");
   }
 

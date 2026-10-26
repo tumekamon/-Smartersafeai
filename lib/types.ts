@@ -1,10 +1,5 @@
-export type UserRole =
-  | "ADMIN"
-  | "SAFETY_DIRECTOR"
-  | "SAFETY_MANAGER"
-  | "SUPERVISOR"
-  | "WORKER"
-  | "CLIENT_VIEWER";
+/** Four role levels: L1 Admin, L2 Safety Manager, L3 Supervisor, L4 Worker (see lib/roles.ts). */
+export type UserRole = "ADMIN" | "SAFETY_MANAGER" | "SUPERVISOR" | "WORKER";
 
 export type User = {
   id: string;
@@ -15,6 +10,10 @@ export type User = {
   role: UserRole;
   title: string;
   active: boolean;
+  /** Read-only access (e.g. a client) — can view, never change anything. */
+  readOnly?: boolean;
+  /** Home-screen tiles this user picked; unset means the defaults. */
+  dashboardTiles?: string[];
   featured?: boolean;
 };
 

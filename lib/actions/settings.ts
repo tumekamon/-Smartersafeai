@@ -20,8 +20,17 @@ import type { EvidenceRequirement, HazardProfile, RiskLevel, SceneKind } from "@
 
 async function requireSettingsAccess() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) {
+  if (!getCapabilities(user).canManageSettings) {
     throw new Error("Only an administrator can change workspace settings.");
+  }
+  return user;
+}
+
+/** Templates are open to L1–L3: foremen build their own daily checklists. */
+async function requireTemplateAccess() {
+  const user = await getCurrentUser();
+  if (!getCapabilities(user).canManageTemplates) {
+    throw new Error("Only admins, safety managers and supervisors can edit templates.");
   }
   return user;
 }
@@ -65,7 +74,7 @@ export async function removeCategoryAction(formData: FormData) {
 }
 
 export async function createTemplateAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireTemplateAccess();
   const name = String(formData.get("name") ?? "").trim();
   const evidenceRequirement = String(formData.get("evidenceRequirement") ?? "optional") as EvidenceRequirement;
   const aiAnalysisEnabled = formData.get("aiAnalysisEnabled") === "on";
@@ -77,7 +86,7 @@ export async function createTemplateAction(formData: FormData) {
 }
 
 export async function updateTemplateAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireTemplateAccess();
   const id = String(formData.get("templateId") ?? "");
   requireOwnTemplate(user.companyId, id);
   const name = String(formData.get("name") ?? "");
@@ -90,7 +99,7 @@ export async function updateTemplateAction(formData: FormData) {
 }
 
 export async function deleteTemplateAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireTemplateAccess();
   const id = String(formData.get("templateId") ?? "");
   requireOwnTemplate(user.companyId, id);
   const ok = deleteTemplate(id);
@@ -111,7 +120,7 @@ function readHazardProfile(formData: FormData): HazardProfile {
 }
 
 export async function addChecklistItemAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireTemplateAccess();
   const templateId = String(formData.get("templateId") ?? "");
   requireOwnTemplate(user.companyId, templateId);
   const label = String(formData.get("label") ?? "").trim();
@@ -122,7 +131,7 @@ export async function addChecklistItemAction(formData: FormData) {
 }
 
 export async function updateChecklistItemAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireTemplateAccess();
   const templateId = String(formData.get("templateId") ?? "");
   requireOwnTemplate(user.companyId, templateId);
   const itemId = String(formData.get("itemId") ?? "");
@@ -133,7 +142,7 @@ export async function updateChecklistItemAction(formData: FormData) {
 }
 
 export async function removeChecklistItemAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireTemplateAccess();
   const templateId = String(formData.get("templateId") ?? "");
   requireOwnTemplate(user.companyId, templateId);
   const itemId = String(formData.get("itemId") ?? "");

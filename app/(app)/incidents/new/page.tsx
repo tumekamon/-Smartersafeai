@@ -14,7 +14,7 @@ const TYPES: { value: string; label: string }[] = [
 
 export default async function NewIncidentPage() {
   const user = await getCurrentUser();
-  if (getCapabilities(user.role).isReadOnly) redirect("/dashboard");
+  if (getCapabilities(user).isReadOnly) redirect("/dashboard");
 
   const projects = listProjects(user.companyId);
   const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));

@@ -10,12 +10,14 @@ import { IconArrowRight, IconSparkle, IconUsers } from "@/components/ui/icons";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
-  const canManage = getCapabilities(user.role).canManageSettings;
+  const caps = getCapabilities(user);
+  const canManage = caps.canManageSettings;
+  const canEditTemplates = caps.canManageTemplates;
 
   const company = getCompany(user.companyId);
   if (!company) redirect("/dashboard");
 
-  const templates = canManage ? listTemplates(user.companyId) : [];
+  const templates = canEditTemplates ? listTemplates(user.companyId) : [];
   const memberCount = canManage ? listUsers(user.companyId).length : 0;
 
   return (
@@ -57,13 +59,15 @@ export default async function SettingsPage() {
       </Link>
 
       {canManage && (
-        <>
-          <section className="card p-5">
-            <h2 className="mb-4 text-sm font-semibold">Hazard categories</h2>
-            <CategoryManager categories={company.hazardCategories} />
-          </section>
+        <section className="card p-5">
+          <h2 className="mb-4 text-sm font-semibold">Hazard categories</h2>
+          <CategoryManager categories={company.hazardCategories} />
+        </section>
+      )}
 
-          <section className="card p-5">
+      {canEditTemplates && (
+        <>
+          <section id="templates" className="card p-5">
             <h2 className="mb-4 text-sm font-semibold">Inspection templates</h2>
             <ul className="mb-4 divide-y divide-border">
               {templates.map((t) => (

@@ -90,6 +90,10 @@
   --color-brand-dark: var(--brand-dark);
   --color-ai: var(--ai);
   --color-ai-soft: var(--ai-soft);
+  --color-status-good: var(--status-good);
+  --color-status-warning: var(--status-warning);
+  --color-status-serious: var(--status-serious);
+  --color-status-critical: var(--status-critical);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -402,4 +406,15 @@ body {
 
 .sidebar-panel {
   background: var(--sidebar-panel-bg);
+}
+
+/* Large, glove-friendly action tiles used by the mobile ＋ sheet. */
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 6.5rem;
+  border-radius: 1.375rem;
+  padding: 1.25rem;
+  color: #fff;
 }

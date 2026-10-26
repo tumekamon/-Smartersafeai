@@ -34,7 +34,7 @@ export default async function IncidentsPage({
   searchParams: Promise<{ project?: string; status?: string }>;
 }) {
   const user = await getCurrentUser();
-  const caps = getCapabilities(user.role);
+  const caps = getCapabilities(user);
   const sp = await searchParams;
 
   const all = listIncidents(user.companyId).filter(

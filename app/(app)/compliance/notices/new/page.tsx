@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { getCapabilities } from "@/lib/authz";
 import { listProjects } from "@/lib/db";
 import { createGcNoticeAction } from "@/lib/actions/compliance";
 import Link from "next/link";
 
 export default async function RaiseNoticePage() {
   const user = await getCurrentUser();
-  if (user.role === "WORKER" || user.role === "CLIENT_VIEWER") redirect("/compliance");
+  if (!getCapabilities(user).canManageCompliance) redirect("/compliance");
 
   const projects = listProjects(user.companyId);
 

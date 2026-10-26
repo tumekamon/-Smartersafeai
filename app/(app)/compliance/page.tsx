@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
+import { getCapabilities } from "@/lib/authz";
 import { getProject, getUser, listCertifications, listGcNotices, listInspections, listPermits, listPpeItems, listUsers } from "@/lib/db";
 import {
   certStatus,
@@ -46,6 +47,7 @@ export default async function CompliancePage({
 }) {
   const user = await getCurrentUser();
   const { tab = "training" } = await searchParams;
+  const caps = getCapabilities(user);
 
   return (
     <div className="space-y-6">
@@ -66,11 +68,11 @@ export default async function CompliancePage({
           ))}
         </nav>
         
-        {tab === "training" && <Link href="/compliance/training/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Log training</Link>}
-        {tab === "permits" && <Link href="/compliance/permits/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Issue permit</Link>}
-        {tab === "ppe" && <Link href="/compliance/ppe/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Receive PPE</Link>}
-        {tab === "equipment" && <Link href="/compliance/equipment/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Add asset</Link>}
-        {tab === "notices" && <Link href="/compliance/notices/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Raise notice</Link>}
+        {tab === "training" && caps.canManageCompliance && <Link href="/compliance/training/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Log training</Link>}
+        {tab === "permits" && caps.canManageCompliance && <Link href="/compliance/permits/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Issue permit</Link>}
+        {tab === "ppe" && caps.canManageSettings && <Link href="/compliance/ppe/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Receive PPE</Link>}
+        {tab === "equipment" && caps.canManageSettings && <Link href="/compliance/equipment/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Add asset</Link>}
+        {tab === "notices" && caps.canManageCompliance && <Link href="/compliance/notices/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Raise notice</Link>}
       </div>
 
       {tab === "training" && <Training companyId={user.companyId} />}

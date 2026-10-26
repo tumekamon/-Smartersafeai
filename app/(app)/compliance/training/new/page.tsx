@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { getCapabilities } from "@/lib/authz";
 import { listUsers } from "@/lib/db";
 import { createCertificationAction } from "@/lib/actions/compliance";
 import Link from "next/link";
@@ -15,7 +16,7 @@ const CERT_TYPES = [
 
 export default async function LogTrainingPage() {
   const user = await getCurrentUser();
-  if (user.role === "WORKER" || user.role === "CLIENT_VIEWER") redirect("/compliance");
+  if (!getCapabilities(user).canManageCompliance) redirect("/compliance");
 
   const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
 

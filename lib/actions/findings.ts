@@ -11,7 +11,7 @@ const RISK_LEVELS: RiskLevel[] = ["low", "medium", "high", "critical"];
 
 export async function reviewFindingAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canReviewFindings) {
+  if (!getCapabilities(user).canReviewFindings) {
     throw new Error("Only safety professionals can review AI findings.");
   }
 
@@ -46,7 +46,7 @@ export async function reviewFindingAction(formData: FormData) {
     dueDate &&
     description &&
     !reviewed.correctiveActionId &&
-    getCapabilities(user.role).canCreateCorrectiveActions
+    getCapabilities(user).canCreateCorrectiveActions
   ) {
     createCorrectiveAction({
       projectId: reviewed.projectId,

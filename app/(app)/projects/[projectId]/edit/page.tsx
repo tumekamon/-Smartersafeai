@@ -12,7 +12,7 @@ export default async function EditProjectPage({
 }) {
   const { projectId } = await params;
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) redirect("/dashboard");
+  if (!getCapabilities(user).canManageSettings) redirect("/dashboard");
 
   const project = getProject(projectId);
   if (!project || project.companyId !== user.companyId) notFound();

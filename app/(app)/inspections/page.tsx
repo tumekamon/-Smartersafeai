@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WorkTabs } from "@/components/work-tabs";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
@@ -32,7 +33,7 @@ export default async function InspectionsPage({
   searchParams: Promise<{ project?: string; template?: string; result?: string; limit?: string }>;
 }) {
   const user = await getCurrentUser();
-  const caps = getCapabilities(user.role);
+  const caps = getCapabilities(user);
   if (caps.isReadOnly || user.role === "WORKER") redirect("/dashboard");
 
   const sp = await searchParams;
@@ -61,6 +62,7 @@ export default async function InspectionsPage({
 
   return (
     <div className="space-y-6">
+      <WorkTabs user={user} caps={caps} active="inspections" />
       <h1 className="text-3xl font-semibold tracking-tight">Inspections</h1>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

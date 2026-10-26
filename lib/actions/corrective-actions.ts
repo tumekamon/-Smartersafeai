@@ -15,7 +15,7 @@ import type { CorrectiveActionStatus, HazardCategory, RiskLevel } from "@/lib/ty
 
 export async function createCorrectiveActionAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canCreateCorrectiveActions) {
+  if (!getCapabilities(user).canCreateCorrectiveActions) {
     throw new Error("Your role cannot create corrective actions.");
   }
 
@@ -57,7 +57,7 @@ export async function createCorrectiveActionAction(formData: FormData) {
 
 export async function updateCorrectiveActionStatusAction(formData: FormData) {
   const user = await getCurrentUser();
-  const capabilities = getCapabilities(user.role);
+  const capabilities = getCapabilities(user);
 
   const id = String(formData.get("correctiveActionId") ?? "");
   const status = String(formData.get("status") ?? "") as CorrectiveActionStatus;

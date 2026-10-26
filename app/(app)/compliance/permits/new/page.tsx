@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { getCapabilities } from "@/lib/authz";
 import { listProjects, listUsers } from "@/lib/db";
 import { createPermitAction } from "@/lib/actions/compliance";
 import Link from "next/link";
@@ -14,7 +15,7 @@ const PERMIT_TYPES = [
 
 export default async function IssuePermitPage() {
   const user = await getCurrentUser();
-  if (user.role === "WORKER" || user.role === "CLIENT_VIEWER") redirect("/compliance");
+  if (!getCapabilities(user).canManageCompliance) redirect("/compliance");
 
   const projects = listProjects(user.companyId);
   const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));

@@ -9,7 +9,7 @@ import type { ProjectStatus } from "@/lib/types";
 
 async function requireSettingsAccess() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) {
+  if (!getCapabilities(user).canManageSettings) {
     throw new Error("Only an administrator can manage projects.");
   }
   return user;

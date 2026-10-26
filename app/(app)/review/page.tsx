@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WorkTabs } from "@/components/work-tabs";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
@@ -32,7 +33,7 @@ export default async function ReviewPage({
   searchParams: Promise<{ finding?: string }>;
 }) {
   const user = await getCurrentUser();
-  const capabilities = getCapabilities(user.role);
+  const capabilities = getCapabilities(user);
   if (!capabilities.canReviewFindings) redirect("/dashboard");
 
   const { finding: selectedId } = await searchParams;
@@ -46,6 +47,7 @@ export default async function ReviewPage({
 
   return (
     <div className="space-y-6">
+      <WorkTabs user={user} caps={capabilities} active="review" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <span className="ai-chip">

@@ -22,7 +22,7 @@ export async function submitInspection(
   formData: FormData
 ): Promise<SubmitInspectionState> {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canSubmitInspections) {
+  if (!getCapabilities(user).canSubmitInspections) {
     return { error: "Your role does not have permission to submit inspections." };
   }
 

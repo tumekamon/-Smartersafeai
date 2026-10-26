@@ -18,7 +18,7 @@ export default async function NewInspectionPage({
   const project = getProject(projectId);
   if (!project || project.companyId !== user.companyId) notFound();
 
-  if (!getCapabilities(user.role).canSubmitInspections) {
+  if (!getCapabilities(user).canSubmitInspections) {
     redirect(`/projects/${projectId}`);
   }
 

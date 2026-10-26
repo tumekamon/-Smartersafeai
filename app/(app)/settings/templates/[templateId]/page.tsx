@@ -13,7 +13,7 @@ export default async function TemplateSettingsPage({
   params: Promise<{ templateId: string }>;
 }) {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) redirect("/dashboard");
+  if (!getCapabilities(user).canManageTemplates) redirect("/dashboard");
 
   const { templateId } = await params;
   const template = getTemplate(templateId);

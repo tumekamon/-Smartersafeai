@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { roleLabel } from "@/lib/roles";
 import Image from "next/image";
 import { getSession } from "@/lib/session";
 import { listCompanies, listProjects, listUsers } from "@/lib/db";
@@ -7,14 +8,6 @@ import { LoginForm, type DemoAccount } from "@/components/login-form";
 import { EvidenceScene } from "@/components/viz/evidence-scene";
 import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
 
-const ROLE_LABELS = {
-  ADMIN: "Admin",
-  SAFETY_DIRECTOR: "Safety Director",
-  SAFETY_MANAGER: "Safety Manager",
-  SUPERVISOR: "Supervisor",
-  WORKER: "Field Worker",
-  CLIENT_VIEWER: "Client Viewer",
-} as const;
 
 function hueFor(id: string) {
   let h = 0;
@@ -34,7 +27,7 @@ export default async function LoginPage() {
     .map((u) => ({
       id: u.id,
       name: `${u.firstName} ${u.lastName}`,
-      role: ROLE_LABELS[u.role],
+      role: roleLabel(u),
       email: u.email,
       initials: `${u.firstName[0]}${u.lastName[0]}`,
       hue: hueFor(u.id),

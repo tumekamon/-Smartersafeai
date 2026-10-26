@@ -7,7 +7,7 @@ import { InviteUserForm } from "@/components/settings/invite-user-form";
 
 export default async function TeamSettingsPage() {
   const user = await getCurrentUser();
-  if (!getCapabilities(user.role).canManageSettings) redirect("/dashboard");
+  if (!getCapabilities(user).canManageSettings) redirect("/dashboard");
 
   const members = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
 
