@@ -1,5 +1,6 @@
 import "server-only";
 import { buildSeed, type Store } from "@/lib/seed";
+import type { RoleLayout } from "@/lib/home-layout";
 import type {
   Asset,
   Certification,
@@ -84,6 +85,20 @@ export function updateCompanyBranding(
   if (input.name?.trim()) company.name = input.name.trim();
   if (input.primaryColor) company.primaryColor = input.primaryColor;
   if (input.heroImage) company.heroImage = input.heroImage;
+  return company;
+}
+
+export function setRoleLayout(companyId: string, role: UserRole, layout: RoleLayout): Company | undefined {
+  const company = getCompany(companyId);
+  if (!company) return undefined;
+  company.roleLayouts = { ...company.roleLayouts, [role]: layout };
+  return company;
+}
+
+export function setAllowPersonalTiles(companyId: string, allow: boolean): Company | undefined {
+  const company = getCompany(companyId);
+  if (!company) return undefined;
+  company.allowPersonalTiles = allow;
   return company;
 }
 

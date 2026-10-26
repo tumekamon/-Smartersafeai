@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import type { User } from "@/lib/types";
+import type { ModuleId } from "@/lib/home-layout";
 import { IconClipboardCheck, IconFileCheck, IconHome, IconMenu } from "@/components/ui/icons";
 
 /**
@@ -17,9 +18,9 @@ export type NavItem = {
   badgeKey?: "work";
 };
 
-export function navItemsFor(user: Pick<User, "role" | "readOnly">): NavItem[] {
+export function navItemsFor(user: Pick<User, "role" | "readOnly">, hidden: ModuleId[] = []): NavItem[] {
   const isWorker = user.role === "WORKER" && !user.readOnly;
-  return [
+  const items: NavItem[] = [
     { href: "/dashboard", label: isWorker ? "My Day" : "Home", Icon: IconHome, match: ["/dashboard"] },
     {
       href: "/work",
@@ -31,6 +32,7 @@ export function navItemsFor(user: Pick<User, "role" | "readOnly">): NavItem[] {
     { href: "/compliance", label: "Compliance", Icon: IconFileCheck, match: ["/compliance"] },
     { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings"] },
   ];
+  return hidden.includes("compliance") ? items.filter((i) => i.href !== "/compliance") : items;
 }
 
 export function isNavActive(item: NavItem, pathname: string) {

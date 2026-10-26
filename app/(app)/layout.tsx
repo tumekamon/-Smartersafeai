@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/dal";
 import { sitesFor } from "@/lib/scope";
+import { hiddenModules } from "@/lib/home-layout";
 import { getCompany, listCorrectiveActions, listFindings } from "@/lib/db";
 import { getCapabilities } from "@/lib/authz";
 import { brandVars } from "@/lib/color";
@@ -20,13 +21,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ? 0
       : listCorrectiveActions(user.companyId).filter((a) => a.assignedToId === user.id && a.status === "open").length;
   const navUser = { role: user.role, readOnly: user.readOnly };
+  const hidden = hiddenModules(company, user);
 
   return (
     <div
       className="tenant-theme flex min-h-screen w-full bg-background"
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
-      <Sidebar user={navUser} companyName={company?.name ?? ""} badges={{ work: workBadge }} projectCount={projects.length} />
+      <Sidebar user={navUser} companyName={company?.name ?? ""} badges={{ work: workBadge }} projectCount={projects.length} hidden={hidden} />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Topbar user={user} />
         <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:py-8">{children}</main>
@@ -34,12 +36,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <MobileNav
         user={navUser}
         workBadge={workBadge}
+        hidden={hidden}
         projects={projects.map((p) => ({ id: p.id, shortName: p.shortName }))}
         flags={{
           canInspect: caps.canSubmitInspections,
-          canReportIncident: !caps.isReadOnly,
+          canReportIncident: !caps.isReadOnly && !hidden.includes("incidents"),
           canCreateAction: caps.canCreateCorrectiveActions,
-          canManageCompliance: caps.canManageCompliance,
+          canManageCompliance: caps.canManageCompliance && !hidden.includes("compliance"),
         }}
       />
     </div>

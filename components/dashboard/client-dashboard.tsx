@@ -6,7 +6,8 @@ import { greeting, shortDate } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
 import { TrendChart } from "@/components/viz/trend-chart";
 import { RiskBadge } from "@/components/ui/badges";
-import { IconArrowRight } from "@/components/ui/icons";
+import { IconArrowRight, IconBuilding, IconTrendUp, IconUsers } from "@/components/ui/icons";
+import { SectionHeader } from "@/components/ui/section-header";
 
 const noticeTone = { open: "badge-warning", acknowledged: "badge-info", resolved: "badge-good" } as const;
 
@@ -50,11 +51,11 @@ export function ClientDashboard({ user }: { user: User }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <section className="card p-5 lg:col-span-3">
-          <h2 className="mb-3 text-sm font-semibold">Findings raised vs. actions closed</h2>
+          <SectionHeader Icon={IconTrendUp} title="Findings vs. closures" />
           <TrendChart points={series} />
         </section>
         <section className="card p-5 lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold">Coordination notices</h2>
+          <SectionHeader Icon={IconUsers} title="Coordination notices" tone="warning" />
           <ul className="divide-y divide-border">
             {notices.map((n) => (
               <li key={n.id} className="py-3">
@@ -71,7 +72,7 @@ export function ClientDashboard({ user }: { user: User }) {
       </div>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold">Projects</h2>
+        <SectionHeader Icon={IconBuilding} title="Projects" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {projects.map((p) => {
             const h = projectHealth(p);

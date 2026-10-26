@@ -6,7 +6,8 @@ import { getCompany, listTemplates, listUsers } from "@/lib/db";
 import { BrandingForm } from "@/components/settings/branding-form";
 import { CategoryManager } from "@/components/settings/category-manager";
 import { NewTemplateForm } from "@/components/settings/new-template-form";
-import { IconArrowRight, IconSparkle, IconUsers } from "@/components/ui/icons";
+import { IconAlertTriangle, IconArrowRight, IconClipboardCheck, IconGrid, IconSparkle, IconUser, IconUsers } from "@/components/ui/icons";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -26,9 +27,25 @@ export default async function SettingsPage() {
 
       {canManage && (
         <section className="card p-5">
-          <h2 className="mb-4 text-sm font-semibold">Branding</h2>
+          <SectionHeader Icon={IconSparkle} title="Branding" />
           <BrandingForm name={company.name} primaryColor={company.primaryColor} heroImage={company.heroImage} />
         </section>
+      )}
+
+      {canManage && (
+        <Link
+          href="/settings/home"
+          className="card group flex items-center gap-3 p-5 transition-colors hover:bg-surface-muted"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-brand">
+            <IconGrid width={20} height={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold">What each role sees</p>
+            <p className="text-xs text-foreground/50">Home sections, number tiles and menu areas per role level</p>
+          </div>
+          <IconArrowRight width={14} height={14} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />
+        </Link>
       )}
 
       {canManage && (
@@ -36,11 +53,11 @@ export default async function SettingsPage() {
           href="/settings/team"
           className="card group flex items-center gap-3 p-5 transition-colors hover:bg-surface-muted"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
-            <IconUsers width={16} height={16} />
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-brand">
+            <IconUsers width={20} height={20} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Team</p>
+            <p className="text-[15px] font-bold">Team</p>
             <p className="text-xs text-foreground/50">{memberCount} people · invite, change roles, deactivate</p>
           </div>
           <IconArrowRight width={14} height={14} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />
@@ -51,8 +68,11 @@ export default async function SettingsPage() {
         href="/settings/profile"
         className="card group flex items-center gap-3 p-5 transition-colors hover:bg-surface-muted"
       >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-brand">
+          <IconUser width={20} height={20} />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Your Profile</p>
+          <p className="text-[15px] font-bold">Your Profile</p>
           <p className="text-xs text-foreground/50">Update your name, title, and personal details</p>
         </div>
         <IconArrowRight width={14} height={14} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />
@@ -60,7 +80,7 @@ export default async function SettingsPage() {
 
       {canManage && (
         <section className="card p-5">
-          <h2 className="mb-4 text-sm font-semibold">Hazard categories</h2>
+          <SectionHeader Icon={IconAlertTriangle} title="Hazard categories" tone="warning" />
           <CategoryManager categories={company.hazardCategories} />
         </section>
       )}
@@ -68,7 +88,7 @@ export default async function SettingsPage() {
       {canEditTemplates && (
         <>
           <section id="templates" className="card p-5">
-            <h2 className="mb-4 text-sm font-semibold">Inspection templates</h2>
+            <SectionHeader Icon={IconClipboardCheck} title="Inspection templates" />
             <ul className="mb-4 divide-y divide-border">
               {templates.map((t) => (
                 <li key={t.id}>

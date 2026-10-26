@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User } from "@/lib/types";
+import type { ModuleId } from "@/lib/home-layout";
 import { isNavActive, navItemsFor } from "@/components/nav-items";
 import { IconCheckShield } from "@/components/ui/icons";
 
@@ -11,14 +12,16 @@ export function Sidebar({
   companyName,
   badges,
   projectCount,
+  hidden = [],
 }: {
   user: Pick<User, "role" | "readOnly">;
   companyName: string;
   badges: { work: number };
   projectCount: number;
+  hidden?: ModuleId[];
 }) {
   const pathname = usePathname();
-  const items = navItemsFor(user);
+  const items = navItemsFor(user, hidden);
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border/40 bg-sidebar-bg/70 backdrop-blur-xl px-4 py-6 md:flex transition-all duration-500 ease-in-out shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">

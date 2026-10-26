@@ -2,12 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
+import { getCompany } from "@/lib/db";
 import { MAX_TILES, TILE_CATALOG, tilesFor } from "@/lib/dashboard-tiles";
 import { TilePicker } from "@/components/dashboard/tile-picker";
 
 export default async function DashboardTilesPage() {
   const user = await getCurrentUser();
   if (!getCapabilities(user).canCustomizeDashboard) redirect("/dashboard");
+  if (getCompany(user.companyId)?.allowPersonalTiles === false) redirect("/dashboard");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

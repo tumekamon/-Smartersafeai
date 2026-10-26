@@ -28,7 +28,9 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { ComplianceStrip } from "@/components/dashboard/compliance-strip";
 import { ProjectSwitcher } from "@/components/dashboard/project-switcher";
 import { RiskBadge } from "@/components/ui/badges";
-import { IconArrowRight, IconMapPin, IconSparkle, IconClock, IconCheck } from "@/components/ui/icons";
+import { IconAlertTriangle, IconArrowRight, IconBolt, IconBuilding, IconCheck, IconClock, IconMapPin, IconSparkle, IconTrendUp } from "@/components/ui/icons";
+import { SectionHeader } from "@/components/ui/section-header";
+import { hiddenModules, tileChoiceFor, visibleSections, type SectionId } from "@/lib/home-layout";
 
 const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: "Critical" } as const;
 
@@ -76,6 +78,12 @@ export function ManagerDashboard({
   const heatTargets = projectId ? [project!] : projects;
   const spots = hotspots(user.companyId, projectId, 4);
 
+  const show = visibleSections(company, user.role);
+  const hidden = hiddenModules(company, user);
+  // In a two-up row, a card fills the full width when its partner is switched off.
+  const span = (a: SectionId, b: SectionId, wide: boolean) =>
+    show.has(a) && show.has(b) ? (wide ? "lg:col-span-3" : "lg:col-span-2") : "lg:col-span-5";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -83,22 +91,22 @@ export function ManagerDashboard({
           <h1 className="text-3xl font-semibold tracking-tight">
             {greeting()}, {user.firstName}
           </h1>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {pending > 0 && (
-              <span className="badge badge-serious text-[11px] py-1 px-2.5">
-                <IconSparkle width={13} height={13} />
-                {pending} pending review{pending === 1 ? "" : "s"}
-              </span>
+              <Link href="/review" className="badge badge-serious min-h-9 px-3 text-sm">
+                <IconSparkle width={15} height={15} />
+                {pending} to review
+              </Link>
             )}
             {overdue > 0 && (
-              <span className="badge badge-critical text-[11px] py-1 px-2.5">
-                <IconClock width={13} height={13} />
-                {overdue} overdue action{overdue === 1 ? "" : "s"}
-              </span>
+              <Link href="/corrective-actions?view=overdue" className="badge badge-critical min-h-9 px-3 text-sm">
+                <IconClock width={15} height={15} />
+                {overdue} overdue
+              </Link>
             )}
             {pending === 0 && overdue === 0 && (
-              <span className="badge badge-good text-[11px] py-1 px-2.5">
-                <IconCheck width={13} height={13} />
+              <span className="badge badge-good min-h-9 px-3 text-sm">
+                <IconCheck width={15} height={15} />
                 All clear
               </span>
             )}
@@ -107,123 +115,142 @@ export function ManagerDashboard({
         <ProjectSwitcher projects={projects} selectedId={projectId} showAll={showAllSites} />
       </div>
 
-      <section className="relative overflow-hidden rounded-3xl border border-border/50 shadow-2xl shadow-brand/5 transition-all">
-        <div className="absolute inset-0 z-0">
-          <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Hero background" fill className="object-cover opacity-40 mix-blend-overlay" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30 backdrop-blur-[6px]" />
-        </div>
-        <div className="relative z-10 p-6 md:p-10">
-          <div className="grid items-center gap-8 lg:grid-cols-[auto_minmax(0,1fr)]">
-            <div className="flex items-center gap-6">
-              <div className="rounded-lg bg-background/50 p-1.5 shadow-sm backdrop-blur-md">
-                <ScoreRing score={score.score} level={level} size={156} stroke={13} onDark label="Safety score" />
-              </div>
-              <div>
-                <p className="hero-muted text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                  {project ? project.shortName : "All sites"}
-                </p>
-                <p className="mt-1 text-3xl font-bold tracking-tight shadow-black drop-shadow-sm">{levelLabel[level]}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 lg:px-6">
-              <SubScore label="Inspection results" value={score.inspections} />
-              <SubScore label="Action closure" value={score.actions} />
-              <SubScore label="Training compliance" value={score.training} />
-              <SubScore label="Finding trend" value={score.trend} />
-            </div>
+      {show.has("score") && (
+        <section className="relative overflow-hidden rounded-3xl border border-border/50 shadow-2xl shadow-brand/5 transition-all">
+          <div className="absolute inset-0 z-0">
+            <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Hero background" fill className="object-cover opacity-40 mix-blend-overlay" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30 backdrop-blur-[6px]" />
           </div>
-        </div>
-      </section>
-
-      <StatTiles companyId={user.companyId} projectId={projectId} saved={user.dashboardTiles} canEdit={canCustomize} />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section className="card p-6 lg:col-span-3">
-          <div className="mb-1 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Needs your attention</h2>
-            {pending > 0 && (
-              <Link href="/review" className="rounded-md bg-ai-soft px-3 py-1 text-xs font-semibold text-ai">
-                Open review queue ({pending})
-              </Link>
-            )}
-          </div>
-          <AttentionList items={attention} />
-        </section>
-
-        <section className="grid auto-rows-fr gap-3 lg:col-span-2">
-          {aiInsights.map((insight) => (
-            <InsightCard key={insight.id} insight={insight} />
-          ))}
-        </section>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section className="card p-6 lg:col-span-3">
-          <h2 className="mb-3 text-sm font-semibold">Findings vs. closures</h2>
-          <TrendChart points={series} />
-        </section>
-
-        <section className="card p-6 lg:col-span-2">
-          <h2 className="mb-4 text-sm font-semibold">What is going wrong</h2>
-          <BreakdownBars items={hazards.map((h) => ({ label: h.category, value: h.count, tone: "info" as const }))} />
-        </section>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <section className="card p-6 lg:col-span-3">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
-            <IconMapPin width={15} height={15} className="text-foreground/50" />
-            Where findings are happening
-          </h2>
-          <div className={heatTargets.length > 1 ? "grid gap-6 md:grid-cols-3" : ""}>
-            {heatTargets.map((p) => {
-              const h = heatmap(user.companyId, p.id);
-              return (
-                <div key={p.id}>
-                  {heatTargets.length > 1 && (
-                    <p className="mb-2 text-xs font-semibold">{p.shortName}</p>
-                  )}
-                  <HeatMap levels={h.levels} zones={h.zones} cells={h.cells} max={h.max} compact={heatTargets.length > 1} />
+          <div className="relative z-10 p-6 md:p-10">
+            <div className="grid items-center gap-8 lg:grid-cols-[auto_minmax(0,1fr)]">
+              <div className="flex items-center gap-6">
+                <div className="rounded-lg bg-background/50 p-1.5 shadow-sm backdrop-blur-md">
+                  <ScoreRing score={score.score} level={level} size={156} stroke={13} onDark label="Safety score" />
                 </div>
-              );
-            })}
-          </div>
-          {spots.length > 0 && (
-            <div className="mt-6 border-t border-border pt-4">
-              <p className="eyebrow mb-3">Top hotspots</p>
-              <ol className="space-y-2.5">
-                {spots.map((s, i) => (
-                  <li key={`${s.project.id}${s.level}${s.zone}`} className="flex items-center gap-3 text-sm">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-muted text-xs font-semibold text-foreground/60">
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="font-medium">
-                        {s.level} {s.zone}
-                      </span>
-                      <span className="text-foreground/50"> · {s.project.shortName} · mostly {s.dominant.toLowerCase()}</span>
-                    </span>
-                    {s.high > 0 && <span className="badge badge-serious">{s.high} high</span>}
-                    <span className="w-16 text-right text-sm font-semibold">{s.count} <span className="text-xs font-normal text-foreground/45">findings</span></span>
-                  </li>
-                ))}
-              </ol>
+                <div>
+                  <p className="hero-muted text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                    {project ? project.shortName : "All sites"}
+                  </p>
+                  <p className="mt-1 text-3xl font-bold tracking-tight shadow-black drop-shadow-sm">{levelLabel[level]}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 lg:px-6">
+                <SubScore label="Inspection results" value={score.inspections} />
+                <SubScore label="Action closure" value={score.actions} />
+                <SubScore label="Training compliance" value={score.training} />
+                <SubScore label="Finding trend" value={score.trend} />
+              </div>
             </div>
+          </div>
+        </section>
+      )}
+
+      {show.has("tiles") && (
+        <StatTiles companyId={user.companyId} projectId={projectId} saved={tileChoiceFor(company, user)} canEdit={canCustomize && company?.allowPersonalTiles !== false} hidden={hidden} />
+      )}
+
+      {(show.has("attention") || show.has("insights")) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          {show.has("attention") && (
+            <section className={`card p-5 md:p-6 ${span("attention", "insights", true)}`}>
+              <SectionHeader
+                Icon={IconBolt}
+                title="Needs your attention"
+                tone="critical"
+                action={
+                  pending > 0 && (
+                    <Link href="/review" className="flex min-h-10 items-center rounded-lg bg-ai-soft px-3 text-sm font-semibold text-ai">
+                      Review ({pending})
+                    </Link>
+                  )
+                }
+              />
+              <AttentionList items={attention} />
+            </section>
           )}
-        </section>
 
-        <section className="card p-6 lg:col-span-2">
-          <h2 className="mb-4 text-sm font-semibold">Live activity</h2>
-          <ActivityFeed events={feed} />
-        </section>
-      </div>
+          {show.has("insights") && (
+            <section className={`grid auto-rows-fr gap-3 ${span("insights", "attention", false)}`}>
+              {aiInsights.map((insight) => (
+                <InsightCard key={insight.id} insight={insight} />
+              ))}
+            </section>
+          )}
+        </div>
+      )}
 
-      <ComplianceStrip companyId={user.companyId} />
+      {(show.has("trend") || show.has("hazards")) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          {show.has("trend") && (
+            <section className={`card p-5 md:p-6 ${span("trend", "hazards", true)}`}>
+              <SectionHeader Icon={IconTrendUp} title="Findings vs. closures" />
+              <TrendChart points={series} />
+            </section>
+          )}
 
-      {!project && (
+          {show.has("hazards") && (
+            <section className={`card p-5 md:p-6 ${span("hazards", "trend", false)}`}>
+              <SectionHeader Icon={IconAlertTriangle} title="What is going wrong" tone="warning" />
+              <BreakdownBars items={hazards.map((h) => ({ label: h.category, value: h.count, tone: "info" as const }))} />
+            </section>
+          )}
+        </div>
+      )}
+
+      {(show.has("heatmap") || show.has("activity")) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          {show.has("heatmap") && (
+            <section className={`card p-5 md:p-6 ${span("heatmap", "activity", true)}`}>
+              <SectionHeader Icon={IconMapPin} title="Where findings happen" />
+              <div className={heatTargets.length > 1 ? "grid gap-6 md:grid-cols-3" : ""}>
+                {heatTargets.map((p) => {
+                  const h = heatmap(user.companyId, p.id);
+                  return (
+                    <div key={p.id}>
+                      {heatTargets.length > 1 && <p className="mb-2 text-sm font-bold">{p.shortName}</p>}
+                      <HeatMap levels={h.levels} zones={h.zones} cells={h.cells} max={h.max} compact={heatTargets.length > 1} />
+                    </div>
+                  );
+                })}
+              </div>
+              {spots.length > 0 && (
+                <div className="mt-6 border-t border-border pt-4">
+                  <p className="mb-3 text-sm font-bold text-foreground/70">Top hotspots</p>
+                  <ol className="space-y-2">
+                    {spots.map((s, i) => (
+                      <li key={`${s.project.id}${s.level}${s.zone}`} className="flex min-h-11 items-center gap-3 rounded-xl bg-surface-muted/60 px-3 text-sm">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface text-sm font-bold">
+                          {i + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">
+                          <span className="font-bold">{s.level} {s.zone}</span>
+                          <span className="text-foreground/55"> · {s.project.shortName} · {s.dominant}</span>
+                        </span>
+                        {s.high > 0 && <span className="badge badge-serious">{s.high} high</span>}
+                        <span className="text-base font-extrabold">{s.count}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </section>
+          )}
+
+          {show.has("activity") && (
+            <section className={`card p-5 md:p-6 ${span("activity", "heatmap", false)}`}>
+              <SectionHeader Icon={IconClock} title="Live activity" tone="good" />
+              <ActivityFeed events={feed} />
+            </section>
+          )}
+        </div>
+      )}
+
+      {show.has("compliance") && !hidden.includes("compliance") && <ComplianceStrip companyId={user.companyId} />}
+
+      {show.has("projects") && !project && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold">Project health</h2>
+          <SectionHeader Icon={IconBuilding} title="Project health" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {projects.map((p) => {
               const h = projectHealth(p);
@@ -233,7 +260,7 @@ export function ManagerDashboard({
                     <Image src={`/${p.id}.jpg`} alt={p.shortName} fill className="object-cover opacity-60 mix-blend-overlay transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/80 to-background/30 backdrop-blur-[2px]" />
                   </div>
-                  
+
                   <div className="relative z-10 p-6">
                     <div className="flex items-center gap-4">
                       <div className="rounded-lg bg-background/50 p-1 backdrop-blur-md">
@@ -247,23 +274,23 @@ export function ManagerDashboard({
                         </div>
                       </div>
                     </div>
-                    <dl className="mt-5 grid grid-cols-3 gap-2 rounded-xl bg-background/40 p-3 text-center backdrop-blur-md border border-white/10 shadow-inner">
-                      <div>
-                        <dd className="text-lg font-semibold">{h.openActions}</dd>
-                        <dt className="text-[11px] font-medium text-foreground/60 uppercase tracking-wider">open</dt>
+                    <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-xl bg-background/60 p-2.5 backdrop-blur-md">
+                        <dd className="text-2xl font-extrabold">{h.openActions}</dd>
+                        <dt className="text-xs font-semibold text-foreground/60">open</dt>
                       </div>
-                      <div>
-                        <dd className={`text-lg font-semibold ${h.overdue ? "tone-critical" : ""}`}>{h.overdue}</dd>
-                        <dt className="text-[11px] font-medium text-foreground/60 uppercase tracking-wider">overdue</dt>
+                      <div className={`rounded-xl p-2.5 backdrop-blur-md ${h.overdue ? "bg-status-critical text-white" : "bg-background/60"}`}>
+                        <dd className="text-2xl font-extrabold">{h.overdue}</dd>
+                        <dt className={`text-xs font-semibold ${h.overdue ? "text-white/90" : "text-foreground/60"}`}>overdue</dt>
                       </div>
-                      <div>
-                        <dd className="text-lg font-semibold">{h.pendingReviews}</dd>
-                        <dt className="text-[11px] font-medium text-foreground/60 uppercase tracking-wider">review</dt>
+                      <div className="rounded-xl bg-background/60 p-2.5 backdrop-blur-md">
+                        <dd className="text-2xl font-extrabold">{h.pendingReviews}</dd>
+                        <dt className="text-xs font-semibold text-foreground/60">to review</dt>
                       </div>
                     </dl>
-                    <p className="mt-4 flex items-center gap-1 text-xs font-semibold text-sidebar-accent uppercase tracking-wider">
+                    <p className="mt-4 flex items-center gap-1 text-sm font-bold text-sidebar-accent">
                       Open project
-                      <IconArrowRight width={13} height={13} className="transition-transform group-hover:translate-x-1" />
+                      <IconArrowRight width={15} height={15} className="transition-transform group-hover:translate-x-1" />
                     </p>
                   </div>
                 </Link>

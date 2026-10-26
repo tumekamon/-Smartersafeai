@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { listIncidents, listProjects } from "@/lib/db";
+import { moduleVisible } from "@/lib/home-layout";
+import { getCompany, listIncidents, listProjects } from "@/lib/db";
 import { logout } from "@/lib/actions/auth";
 import {
   IconAlertTriangle,
   IconFileText,
   IconFolder,
+  IconGrid,
   IconLogout,
   IconSettings,
   IconUser,
@@ -22,8 +24,9 @@ export default async function MorePage() {
 
   const tiles = [
     { href: "/projects", label: "Projects", meta: `${activeProjects} active`, Icon: IconFolder, show: true },
-    { href: "/incidents", label: "Incidents", meta: `${openIncidents} open`, Icon: IconAlertTriangle, show: true },
+    { href: "/incidents", label: "Incidents", meta: `${openIncidents} open`, Icon: IconAlertTriangle, show: moduleVisible(getCompany(user.companyId), user, "incidents") },
     { href: "/settings#templates", label: "Templates", meta: "Daily checklists", Icon: IconFileText, show: caps.canManageTemplates },
+    { href: "/settings/home", label: "Role screens", meta: "What each role sees", Icon: IconGrid, show: caps.canManageSettings },
     { href: "/settings/team", label: "Team", meta: "People & role levels", Icon: IconUsers, show: caps.canManageSettings },
     { href: "/settings", label: "Settings", meta: caps.canManageSettings ? "Branding, hazards" : "Preferences", Icon: IconSettings, show: true },
     { href: "/settings/profile", label: "My profile", meta: "Name & title", Icon: IconUser, show: true },

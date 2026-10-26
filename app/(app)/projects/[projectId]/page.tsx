@@ -10,7 +10,6 @@ import {
   listCorrectiveActionsForProject,
   listGcNotices,
   listInspectionsForProject,
-  listTemplates,
   listFindings,
   listUsers,
 } from "@/lib/db";
@@ -36,7 +35,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { CorrectiveActionStatusBadge, InspectionStatusBadge, RiskBadge } from "@/components/ui/badges";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { InsightCard } from "@/components/dashboard/insight-card";
-import { IconArrowRight, IconBolt, IconMapPin, IconTrash } from "@/components/ui/icons";
+import { IconAlertTriangle, IconArrowRight, IconBolt, IconMapPin, IconTrash } from "@/components/ui/icons";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -64,7 +63,6 @@ export default async function ProjectDetailPage({
 
   const caps = getCapabilities(user);
   const h = projectHealth(project);
-  const templates = listTemplates(user.companyId);
   const inspections = listInspectionsForProject(projectId);
   const actions = listCorrectiveActionsForProject(projectId);
   const notices = listGcNotices(user.companyId).filter((n) => n.projectId === projectId);
@@ -118,12 +116,12 @@ export default async function ProjectDetailPage({
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav className="flex gap-1 rounded-xl bg-surface p-1 ring-1 ring-border">
+        <nav className="-mx-4 flex gap-1 overflow-x-auto px-4 md:mx-0 md:rounded-xl md:bg-surface md:p-1 md:ring-1 md:ring-border">
           {TABS.map((t) => (
             <Link
               key={t.id}
               href={`/projects/${projectId}?tab=${t.id}`}
-              className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex min-h-10 shrink-0 items-center rounded-lg px-4 text-sm font-semibold transition-colors ${
                 tab === t.id ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
               }`}
             >
@@ -132,20 +130,21 @@ export default async function ProjectDetailPage({
           ))}
         </nav>
         {caps.canSubmitInspections && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-foreground/50">
-              <IconBolt width={14} height={14} />
-              Start
-            </span>
-            {templates.map((t) => (
-              <Link
-                key={t.id}
-                href={`/projects/${projectId}/inspections/new?templateId=${t.id}`}
-                className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium ring-1 ring-border transition-colors hover:bg-sidebar-accent hover:text-white hover:ring-sidebar-accent"
-              >
-                {t.name.replace(" Inspection", "").replace(" Pre-Use", "")}
-              </Link>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/hazards/new?project=${projectId}`}
+              className="flex min-h-11 items-center gap-2 rounded-xl bg-[#c2410c] px-4 text-sm font-bold text-white"
+            >
+              <IconAlertTriangle width={18} height={18} strokeWidth={2} />
+              Report hazard
+            </Link>
+            <Link
+              href={`/projects/${projectId}/inspections/new`}
+              className="flex min-h-11 items-center gap-2 rounded-xl bg-sidebar-accent px-4 text-sm font-bold text-white"
+            >
+              <IconBolt width={18} height={18} strokeWidth={2} />
+              Start inspection
+            </Link>
           </div>
         )}
       </div>

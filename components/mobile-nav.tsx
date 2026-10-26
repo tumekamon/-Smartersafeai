@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { User } from "@/lib/types";
+import type { ModuleId } from "@/lib/home-layout";
 import { isNavActive, navItemsFor } from "@/components/nav-items";
 import { IconAlertTriangle, IconArrowRight, IconBolt, IconClipboardCheck, IconFileCheck, IconPlus, IconWrench, IconX } from "@/components/ui/icons";
 
@@ -23,15 +24,17 @@ export function MobileNav({
   workBadge,
   projects,
   flags,
+  hidden = [],
 }: {
   user: Pick<User, "role" | "readOnly">;
   workBadge: number;
   projects: { id: string; shortName: string }[];
   flags: QuickActionFlags;
+  hidden?: ModuleId[];
 }) {
   const pathname = usePathname();
   const [sheet, setSheet] = useState<"closed" | "actions" | "pickProject">("closed");
-  const items = navItemsFor(user);
+  const items = navItemsFor(user, hidden);
   const hasActions = flags.canInspect || flags.canReportIncident || flags.canCreateAction || flags.canManageCompliance;
 
   useEffect(() => {
@@ -71,9 +74,8 @@ export function MobileNav({
     <>
       <nav
         aria-label="Main"
-        className={`fixed inset-x-0 bottom-0 z-40 grid border-t border-border bg-surface/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-1 backdrop-blur-xl md:hidden ${
-          hasActions ? "grid-cols-5" : "grid-cols-4"
-        }`}
+        className="fixed inset-x-0 bottom-0 z-40 grid border-t border-border bg-surface/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-1 backdrop-blur-xl md:hidden"
+        style={{ gridTemplateColumns: `repeat(${items.length + (hasActions ? 1 : 0)}, minmax(0, 1fr))` }}
       >
         {tab(first)}
         {tab(second)}

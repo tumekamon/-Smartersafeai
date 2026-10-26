@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { tilesFor, tileValue } from "@/lib/dashboard-tiles";
+import type { ModuleId } from "@/lib/home-layout";
 import { Sparkline } from "@/components/viz/sparkline";
 import { IconSettings } from "@/components/ui/icons";
 
@@ -9,13 +10,15 @@ export function StatTiles({
   projectId,
   saved,
   canEdit,
+  hidden = [],
 }: {
   companyId: string;
   projectId?: string;
   saved?: string[];
   canEdit: boolean;
+  hidden?: ModuleId[];
 }) {
-  const tiles = tilesFor(saved).map((def) => ({ def, v: tileValue(def.id, companyId, projectId) }));
+  const tiles = tilesFor(saved).filter((t) => !t.module || !hidden.includes(t.module)).map((def) => ({ def, v: tileValue(def.id, companyId, projectId) }));
 
   return (
     <section aria-label="Key numbers" className="space-y-3">

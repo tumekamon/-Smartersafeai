@@ -8,6 +8,7 @@ import {
 } from "@/lib/metrics";
 import { listCorrectiveActions, listFindings, listIncidents, listInspections } from "@/lib/db";
 import { nowMs } from "@/lib/time";
+import type { ModuleId } from "@/lib/home-layout";
 
 /**
  * Home-screen number tiles a manager can pick from (Oct 9 review: "if I don't want
@@ -29,7 +30,7 @@ export type TileId =
   | "certs_expiring"
   | "open_incidents";
 
-export type TileDef = { id: TileId; label: string; alert?: boolean };
+export type TileDef = { id: TileId; label: string; alert?: boolean; module?: ModuleId };
 
 export const TILE_CATALOG: TileDef[] = [
   { id: "pending_reviews", label: "AI findings to review", alert: true },
@@ -40,8 +41,8 @@ export const TILE_CATALOG: TileDef[] = [
   { id: "open_actions", label: "Open actions" },
   { id: "avg_days_close", label: "Avg. days to close" },
   { id: "pass_rate_week", label: "Pass rate this week" },
-  { id: "certs_expiring", label: "Certs expiring / expired", alert: true },
-  { id: "open_incidents", label: "Open incidents", alert: true },
+  { id: "certs_expiring", label: "Certs expiring / expired", alert: true, module: "compliance" },
+  { id: "open_incidents", label: "Open incidents", alert: true, module: "incidents" },
 ];
 
 export const DEFAULT_TILES: TileId[] = [

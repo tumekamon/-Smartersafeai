@@ -1,3 +1,5 @@
+import type { RoleLayout } from "@/lib/home-layout";
+
 /** Four role levels: L1 Admin, L2 Safety Manager, L3 Supervisor, L4 Worker (see lib/roles.ts). */
 export type UserRole = "ADMIN" | "SAFETY_MANAGER" | "SUPERVISOR" | "WORKER";
 
@@ -23,6 +25,10 @@ export type Company = {
   primaryColor: string;
   heroImage?: string;
   hazardCategories: string[];
+  /** What each role level sees on Home and in the menu, set by the admin (lib/home-layout.ts). */
+  roleLayouts?: Partial<Record<UserRole, RoleLayout>>;
+  /** When false, everyone sees their role's tiles and nobody can pick their own. Default true. */
+  allowPersonalTiles?: boolean;
 };
 
 export type ProjectStatus = "active" | "on_hold" | "closed";

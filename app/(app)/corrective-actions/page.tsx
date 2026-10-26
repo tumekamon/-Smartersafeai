@@ -14,11 +14,11 @@ import { nowMs } from "@/lib/time";
 
 const DAY = 86_400_000;
 
-const COLUMNS: { status: CorrectiveActionStatus; title: string; color: string }[] = [
-  { status: "open", title: "Open", color: "var(--status-warning)" },
-  { status: "completed", title: "Awaiting verification", color: "var(--chart-series-1)" },
-  { status: "verified", title: "Verified", color: "var(--status-good)" },
-  { status: "closed", title: "Closed (14d)", color: "var(--status-neutral)" },
+const COLUMNS: { status: CorrectiveActionStatus; title: string; short: string; color: string }[] = [
+  { status: "open", title: "Open", short: "Open", color: "var(--status-warning)" },
+  { status: "completed", title: "Awaiting verification", short: "To verify", color: "var(--chart-series-1)" },
+  { status: "verified", title: "Verified", short: "Verified", color: "var(--status-good)" },
+  { status: "closed", title: "Closed (14d)", short: "Closed", color: "var(--status-neutral)" },
 ];
 
 const NEXT: Record<CorrectiveActionStatus, { next: CorrectiveActionStatus; label: string } | null> = {
@@ -51,7 +51,7 @@ function Pill({ href, active, children }: { href: string; active: boolean; child
 export default async function CorrectiveActionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; project?: string }>;
+  searchParams: Promise<{ view?: string; project?: string; col?: string }>;
 }) {
   const user = await getCurrentUser();
   const caps = getCapabilities(user);
@@ -71,9 +71,11 @@ export default async function CorrectiveActionsPage({
   );
 
   const overdue = all.filter((a) => isActionOverdue(a, now)).length;
+  const counts = Object.fromEntries(COLUMNS.map((c) => [c.status, all.filter((a) => a.status === c.status).length])) as Record<CorrectiveActionStatus, number>;
+  const activeCol = COLUMNS.some((c) => c.status === sp.col) ? (sp.col as CorrectiveActionStatus) : "open";
   const q = (over: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
-    const merged = { view: sp.view, project: sp.project, ...over };
+    const merged = { view: sp.view, project: sp.project, col: sp.col, ...over };
     for (const [k, v] of Object.entries(merged)) if (v) params.set(k, v);
     const s = params.toString();
     return s ? `/corrective-actions?${s}` : "/corrective-actions";
@@ -95,7 +97,7 @@ export default async function CorrectiveActionsPage({
       <WorkTabs user={user} caps={caps} active="fixes" />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{isWorker ? "My tasks" : "Corrective actions"}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{isWorker ? "My tasks" : "Fixes"}</h1>
           <p className="mt-1 text-sm text-foreground/60">
             {all.filter((a) => a.status !== "closed").length} in progress
             {overdue > 0 && <span className="font-semibold text-critical"> · {overdue} overdue</span>}
@@ -113,12 +115,30 @@ export default async function CorrectiveActionsPage({
                 <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
               ))}
             </div>
-            <Link href="/corrective-actions/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">
-              + New action
+            <Link href="/corrective-actions/new" className="flex min-h-11 items-center rounded-xl bg-sidebar-accent px-5 text-[15px] font-bold text-white">
+              + Assign a fix
             </Link>
           </div>
         )}
       </div>
+
+      {/* Phones show one column at a time, picked from these tiles, instead of four stacked lists. */}
+      <nav aria-label="Status" className="grid grid-cols-4 gap-1.5 md:hidden">
+        {COLUMNS.map((col) => {
+          const on = col.status === activeCol;
+          return (
+            <Link
+              key={col.status}
+              href={q({ col: col.status })}
+              aria-current={on ? "page" : undefined}
+              className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-center ${on ? "bg-foreground text-background" : "card"}`}
+            >
+              <span className="text-xl font-extrabold leading-none">{counts[col.status]}</span>
+              <span className="text-[11px] font-bold leading-tight">{col.short}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {COLUMNS.map((col) => {
@@ -126,13 +146,13 @@ export default async function CorrectiveActionsPage({
             .filter((a) => a.status === col.status)
             .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
           return (
-            <section key={col.status} className="rounded-2xl bg-surface-muted/60 p-3">
+            <section key={col.status} className={`rounded-2xl bg-surface-muted/60 p-3 ${col.status === activeCol ? "" : "hidden md:block"}`}>
               <div className="mb-3 flex items-center justify-between px-1.5">
-                <h2 className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="h-2 w-2 rounded-full" style={{ background: col.color }} />
+                <h2 className="flex items-center gap-2 text-[15px] font-bold">
+                  <span className="h-3 w-3 rounded-full" style={{ background: col.color }} />
                   {col.title}
                 </h2>
-                <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold ring-1 ring-border">{items.length}</span>
+                <span className="rounded-full bg-surface px-2.5 py-0.5 text-sm font-bold ring-1 ring-border">{items.length}</span>
               </div>
               <div className="space-y-2.5">
                 {items.slice(0, 12).map((a) => {
@@ -142,16 +162,16 @@ export default async function CorrectiveActionsPage({
                   const days = Math.ceil((new Date(a.dueDate).getTime() + DAY - now) / DAY);
                   const step = canAdvance(a);
                   return (
-                    <article key={a.id} className="card relative overflow-hidden p-3.5 pl-4">
-                      <span className="absolute inset-y-0 left-0 w-1" style={{ background: stripe[a.priority] }} />
-                      <p className="text-sm font-medium leading-snug">{a.description.split(" — ")[0]}</p>
-                      <p className="mt-1.5 flex items-center gap-1 text-[11px] text-foreground/50">
-                        <IconMapPin width={11} height={11} />
+                    <article key={a.id} className="card relative overflow-hidden p-4 pl-5">
+                      <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: stripe[a.priority] }} />
+                      <p className="text-[15px] font-semibold leading-snug">{a.description.split(" — ")[0]}</p>
+                      <p className="mt-1.5 flex items-center gap-1 text-xs text-foreground/55">
+                        <IconMapPin width={13} height={13} />
                         {project?.shortName}{a.location ? ` · ${a.location.level} ${a.location.zone}` : ""}
                       </p>
                       <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-1.5 text-xs text-foreground/65">
-                          {owner && <Avatar person={owner} size={20} />}
+                        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground/70">
+                          {owner && <Avatar person={owner} size={24} />}
                           {owner?.firstName}
                         </span>
                         {a.status === "completed" ? (
@@ -161,7 +181,7 @@ export default async function CorrectiveActionsPage({
                         ) : a.status === "closed" || a.status === "verified" ? (
                           <span className="text-[11px] text-foreground/45">{shortDate(a.closedAt ?? a.verifiedAt ?? a.dueDate)}</span>
                         ) : (
-                          <span className={`text-[11px] font-semibold ${late ? "text-critical" : days <= 2 ? "tone-warning" : "text-foreground/50"}`}>
+                          <span className={`badge ${late ? "badge-critical" : days <= 2 ? "badge-warning" : "badge-neutral"}`}>
                             {late ? `${Math.abs(days)}d overdue` : days === 0 ? "Due today" : `Due in ${days}d`}
                           </span>
                         )}
@@ -172,10 +192,12 @@ export default async function CorrectiveActionsPage({
                           <input type="hidden" name="status" value={step.next} />
                           <button
                             type="submit"
-                            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-muted py-1.5 text-xs font-semibold transition-colors hover:bg-sidebar-accent hover:text-white"
+                            className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl text-sm font-bold transition-colors ${
+                              step.next === "closed" ? "bg-surface-muted hover:bg-sidebar-accent hover:text-white" : "bg-foreground text-background hover:opacity-90"
+                            }`}
                           >
                             {step.label}
-                            <IconArrowRight width={12} height={12} />
+                            <IconArrowRight width={16} height={16} />
                           </button>
                         </form>
                       )}
