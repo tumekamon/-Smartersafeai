@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/dal";
 import { updateProfileAction } from "@/lib/actions/users";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 
 export default async function ProfileSettingsPage() {
   const user = await getCurrentUser();
@@ -56,6 +57,8 @@ export default async function ProfileSettingsPage() {
           </button>
         </div>
       </form>
+
+      <ChangePasswordForm />
     </div>
   );
 }

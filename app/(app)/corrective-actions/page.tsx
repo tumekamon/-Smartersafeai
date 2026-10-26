@@ -55,7 +55,8 @@ export default async function CorrectiveActionsPage({
 }) {
   const user = await getCurrentUser();
   const caps = getCapabilities(user);
-  const isWorker = user.role === "WORKER";
+  // A worker sees only their own tasks unless they were given rights over fixes.
+  const isWorker = user.role === "WORKER" && !caps.canVerifyActions && !caps.canReviewFindings;
   const sp = await searchParams;
   const view = isWorker ? "mine" : (sp.view ?? "all");
 

@@ -35,7 +35,7 @@ export default async function InspectionsPage({
 }) {
   const user = await getCurrentUser();
   const caps = getCapabilities(user);
-  if (caps.isReadOnly || user.role === "WORKER") redirect("/dashboard");
+  if (caps.isReadOnly || (user.role === "WORKER" && !caps.canVerifyActions && !caps.canReviewFindings)) redirect("/dashboard");
 
   const sp = await searchParams;
   const limit = Math.min(200, Number(sp.limit) || PAGE);

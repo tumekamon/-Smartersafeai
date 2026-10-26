@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { siteIdsFor, sitesFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { getProject, getUser, listIncidents } from "@/lib/db";
+import { getCompany, getProject, getUser, listIncidents } from "@/lib/db";
 import { updateIncidentStatusAction } from "@/lib/actions/incidents";
 import { shortDateTime } from "@/lib/format";
 import { IncidentStatusBadge, IncidentTypeBadge } from "@/components/ui/badges";
@@ -39,6 +39,7 @@ export default async function IncidentsPage({
   const sp = await searchParams;
 
   const sites = siteIdsFor(user);
+  const fields = getCompany(user.companyId)?.incidentFields ?? [];
   const all = listIncidents(user.companyId).filter(
     (i) => sites.has(i.projectId) && (!sp.project || i.projectId === sp.project) && (!sp.status || i.status === sp.status)
   );
@@ -115,6 +116,19 @@ export default async function IncidentsPage({
                   </div>
                   <IncidentStatusBadge status={incident.status} />
                 </div>
+
+                {fields.some((f) => incident.customAnswers?.[f.id]) && (
+                  <dl className="mt-3 grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-2">
+                    {fields
+                      .filter((f) => incident.customAnswers?.[f.id])
+                      .map((f) => (
+                        <div key={f.id} className="rounded-lg bg-surface-muted/70 px-3 py-2">
+                          <dt className="text-xs font-semibold text-foreground/55">{f.label}</dt>
+                          <dd className="font-semibold">{incident.customAnswers?.[f.id]}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                )}
 
                 {incident.immediateAction && (
                   <p className="mt-3 rounded-lg bg-surface-muted p-3 text-sm">

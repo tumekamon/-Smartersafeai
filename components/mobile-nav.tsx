@@ -74,7 +74,7 @@ export function MobileNav({
     <>
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 grid border-t border-border bg-surface/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-1 backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid print:hidden border-t border-border bg-surface/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-1 backdrop-blur-xl md:hidden"
         style={{ gridTemplateColumns: `repeat(${items.length + (hasActions ? 1 : 0)}, minmax(0, 1fr))` }}
       >
         {tab(first)}

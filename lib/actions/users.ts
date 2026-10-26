@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { createUser, findUserByEmail, getUser, updateUser } from "@/lib/db";
-import { ROLES, ROLE_INFO } from "@/lib/roles";
+import { EXTRA_PERMISSIONS, ROLES, ROLE_INFO } from "@/lib/roles";
+import { checkPassword, setPassword } from "@/lib/password";
 import type { UserRole } from "@/lib/types";
 
 async function requireSettingsAccess() {
@@ -80,4 +81,33 @@ export async function updateProfileAction(formData: FormData) {
   updateUser(user.id, { firstName, lastName, title });
   revalidatePath("/settings/profile");
   revalidatePath("/dashboard");
+}
+
+export async function toggleExtraPermissionAction(formData: FormData) {
+  const user = await requireSettingsAccess();
+  const userId = String(formData.get("userId") ?? "");
+  const permission = String(formData.get("permission") ?? "");
+  const perm = EXTRA_PERMISSIONS.find((p) => p.id === permission)?.id;
+  if (!perm) throw new Error("Not a valid permission.");
+  const target = getUser(userId);
+  if (!target || target.companyId !== user.companyId) throw new Error("Person not found.");
+
+  const current = new Set(target.extraPermissions ?? []);
+  if (current.has(perm)) current.delete(perm);
+  else current.add(perm);
+  updateUser(userId, { extraPermissions: [...current] });
+  revalidatePath("/settings/team");
+}
+
+export type ChangePasswordState = { error?: string; ok?: boolean } | undefined;
+
+export async function changePasswordAction(_state: ChangePasswordState, formData: FormData): Promise<ChangePasswordState> {
+  const user = await getCurrentUser();
+  const current = String(formData.get("current") ?? "");
+  const next = String(formData.get("next") ?? "");
+  if (!checkPassword(user.id, current)) return { error: "Your current password is not right." };
+  if (next.length < 10) return { error: "Use at least 10 characters." };
+  if (next === current) return { error: "Pick a password you haven't used here." };
+  setPassword(user.id, next);
+  return { ok: true };
 }

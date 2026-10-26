@@ -167,8 +167,15 @@ async function ReviewWorkspace({ finding, nextHref }: { finding: Finding; nextHr
 
           {finding.source === "field" ? (
             <div className="mt-4 rounded-xl border border-border bg-surface-muted p-3.5">
-              <p className="text-xs font-semibold text-foreground/60">Reported on site — no AI check</p>
+              <p className="text-xs font-semibold text-foreground/60">Reported on site</p>
               <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
+              {finding.photoCheck && (
+                <p className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5 text-sm">
+                  <span className="ai-chip">Photo check · simulated</span>
+                  <span className="font-semibold">{finding.photoCheck.label}</span>
+                  <span className="text-foreground/55">{Math.round(finding.photoCheck.confidence * 100)}%</span>
+                </p>
+              )}
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-ai/25 bg-ai-soft p-3.5">

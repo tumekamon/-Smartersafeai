@@ -40,3 +40,30 @@ export function analyzeInspection(
       };
     });
 }
+
+/**
+ * Stand-in for the photo model on quick hazard reports (e.g. "person above 6 ft with no
+ * protection" from the Oct 9 demo). It picks a plausible detection for the chosen
+ * category, seeded by the photo bytes so the same photo always gives the same answer.
+ * Results are always marked simulated until the real vision model replaces this.
+ */
+const PHOTO_DETECTIONS: Record<string, string[]> = {
+  "Fall Protection": ["Person above 6 ft with no harness", "Open edge without guardrail", "Floor opening not covered"],
+  Electrical: ["Exposed live conductors", "Missing GFCI protection", "Damaged extension cord"],
+  PPE: ["Hard hat not worn", "No high-visibility vest", "Missing eye protection"],
+  Housekeeping: ["Trip hazard on walkway", "Debris blocking access", "Cords across walkway"],
+  Egress: ["Exit route blocked", "Exit sign not lit"],
+  "Fire Protection": ["Extinguisher blocked", "Hot work without fire watch"],
+  Equipment: ["Guard missing on equipment", "Damaged ladder in use"],
+};
+
+export function checkHazardPhoto(category: string, photo: { dataUrl?: string; fileName: string } | undefined) {
+  if (!photo) return undefined;
+  const options = PHOTO_DETECTIONS[category] ?? [`${category} hazard visible`];
+  const seed = [...(photo.dataUrl?.slice(-64) ?? photo.fileName)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return {
+    label: options[seed % options.length],
+    confidence: Math.round((0.72 + (seed % 23) / 100) * 100) / 100,
+    simulated: true as const,
+  };
+}

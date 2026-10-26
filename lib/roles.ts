@@ -1,4 +1,4 @@
-import type { User, UserRole } from "@/lib/types";
+import type { ExtraPermission, User, UserRole } from "@/lib/types";
 
 /**
  * Four standard role levels, applied the same way on every project (agreed in the
@@ -18,5 +18,21 @@ export const ROLE_INFO: Record<UserRole, { level: number; label: string; summary
 export function roleLabel(user: Pick<User, "role" | "readOnly">) {
   return user.readOnly ? "Client · read-only" : `L${ROLE_INFO[user.role].level} · ${ROLE_INFO[user.role].label}`;
 }
+
+/** Rights an admin can add to one person without changing their level. */
+export const EXTRA_PERMISSIONS: { id: ExtraPermission; label: string }[] = [
+  { id: "templates", label: "Make checklists" },
+  { id: "fixes", label: "Assign & verify fixes" },
+  { id: "review", label: "Review AI findings" },
+  { id: "compliance", label: "Manage compliance" },
+];
+
+/** Extras a level already includes, so the Team page only offers the ones that add something. */
+export const ROLE_INCLUDES: Record<UserRole, ExtraPermission[]> = {
+  ADMIN: ["templates", "fixes", "review", "compliance"],
+  SAFETY_MANAGER: ["templates", "fixes", "review", "compliance"],
+  SUPERVISOR: ["templates", "fixes", "compliance"],
+  WORKER: [],
+};
 
 export const ROLE_OPTIONS = ROLES.map((r) => ({ value: r, label: `L${ROLE_INFO[r].level} · ${ROLE_INFO[r].label}` }));

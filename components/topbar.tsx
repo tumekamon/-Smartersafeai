@@ -10,7 +10,7 @@ export async function Topbar({ user }: { user: User }) {
   const theme = await getTheme();
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border/40 bg-surface/70 backdrop-blur-xl px-4 py-3 md:px-6 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] transition-all duration-300">
+    <header className="sticky top-0 z-40 flex print:hidden items-center justify-between border-b border-border/40 bg-surface/70 backdrop-blur-xl px-4 py-3 md:px-6 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] transition-all duration-300">
       <Link href="/dashboard" aria-label="Home" className="flex items-center gap-2 md:hidden">
         <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
           <IconCheckShield width={19} height={19} />

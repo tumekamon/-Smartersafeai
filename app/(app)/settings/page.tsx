@@ -50,6 +50,22 @@ export default async function SettingsPage() {
 
       {canManage && (
         <Link
+          href="/settings/incident-form"
+          className="card group flex items-center gap-3 p-5 transition-colors hover:bg-surface-muted"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-brand">
+            <IconAlertTriangle width={20} height={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold">Incident form</p>
+            <p className="text-xs text-foreground/50">Add your own questions to every incident report</p>
+          </div>
+          <IconArrowRight width={14} height={14} className="text-foreground/25 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      )}
+
+      {canManage && (
+        <Link
           href="/settings/team"
           className="card group flex items-center gap-3 p-5 transition-colors hover:bg-surface-muted"
         >

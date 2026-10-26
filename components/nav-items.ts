@@ -30,7 +30,7 @@ export function navItemsFor(user: Pick<User, "role" | "readOnly">, hidden: Modul
       badgeKey: "work",
     },
     { href: "/compliance", label: "Compliance", Icon: IconFileCheck, match: ["/compliance"] },
-    { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings"] },
+    { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings", "/reports"] },
   ];
   return hidden.includes("compliance") ? items.filter((i) => i.href !== "/compliance") : items;
 }

@@ -337,6 +337,11 @@ export function buildSeed(now: Date): Store {
       primaryColor: "#2f6df6",
       heroImage: "/bg-hero.jpg",
       hazardCategories: ["Electrical", "PPE", "Fall Protection", "Housekeeping", "Egress", "Fire Protection", "Equipment"],
+      incidentFields: [
+        { id: "if_weather", label: "Weather at the time", kind: "choice", options: ["Clear", "Rain", "Wind", "Heat"], required: false },
+        { id: "if_barricaded", label: "Was the area made safe and barricaded?", kind: "yesno", required: true },
+        { id: "if_witness", label: "Witness name", kind: "text", required: false },
+      ],
     },
   ];
 

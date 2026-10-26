@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { setUserActiveAction, setUserReadOnlyAction, updateUserRoleAction } from "@/lib/actions/users";
-import { ROLE_OPTIONS } from "@/lib/roles";
+import { setUserActiveAction, setUserReadOnlyAction, toggleExtraPermissionAction, updateUserRoleAction } from "@/lib/actions/users";
+import { EXTRA_PERMISSIONS, ROLE_INCLUDES, ROLE_OPTIONS } from "@/lib/roles";
 import { Avatar } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
 
@@ -28,6 +28,30 @@ export function TeamRoster({
                 {isSelf && <span className="ml-1.5 text-[11px] font-normal text-foreground/40">(you)</span>}
               </p>
               <p className="truncate text-xs text-foreground/50">{m.email} · {m.title}</p>
+              {ROLE_INCLUDES[m.role].length < EXTRA_PERMISSIONS.length && !m.readOnly && (
+                <div className="mt-1.5 flex flex-wrap gap-1" aria-label="Extra permissions">
+                  {EXTRA_PERMISSIONS.filter((p) => !ROLE_INCLUDES[m.role].includes(p.id)).map((p) => {
+                    const on = (m.extraPermissions ?? []).includes(p.id);
+                    return (
+                      <form key={p.id} action={toggleExtraPermissionAction}>
+                        <input type="hidden" name="userId" value={m.id} />
+                        <input type="hidden" name="permission" value={p.id} />
+                        <button
+                          type="submit"
+                          aria-pressed={on}
+                          title={on ? `Remove: ${p.label}` : `Also allow: ${p.label}`}
+                          className={`min-h-8 rounded-full px-2.5 text-[11px] font-bold transition-colors ${
+                            on ? "bg-brand text-white" : "bg-surface-muted text-foreground/55 hover:text-foreground"
+                          }`}
+                        >
+                          {on ? "✓ " : "+ "}
+                          {p.label}
+                        </button>
+                      </form>
+                    );
+                  })}
+                </div>
+              )}
               {(m.role === "SUPERVISOR" || m.role === "WORKER") && !m.readOnly && (
                 <p className="mt-1 flex flex-wrap gap-1">
                   {(sitesByUser[m.id] ?? []).length === 0 ? (

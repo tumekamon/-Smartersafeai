@@ -84,7 +84,7 @@ export function tileValue(id: TileId, companyId: string, projectId?: string): Ti
     }
     case "high_risk_open": {
       const n = inProject(listCorrectiveActions(companyId)).filter(
-        (a) => a.status !== "closed" && (a.priority === "high" || a.priority === "critical")
+        (a) => a.status === "open" && (a.priority === "high" || a.priority === "critical")
       ).length;
       return { value: n, raw: n, href: `/corrective-actions${q ? `?${q}` : ""}` };
     }

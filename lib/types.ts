@@ -3,6 +3,8 @@ import type { RoleLayout } from "@/lib/home-layout";
 /** Four role levels: L1 Admin, L2 Safety Manager, L3 Supervisor, L4 Worker (see lib/roles.ts). */
 export type UserRole = "ADMIN" | "SAFETY_MANAGER" | "SUPERVISOR" | "WORKER";
 
+export type ExtraPermission = "templates" | "fixes" | "review" | "compliance";
+
 export type User = {
   id: string;
   companyId: string;
@@ -14,6 +16,11 @@ export type User = {
   active: boolean;
   /** Read-only access (e.g. a client) — can view, never change anything. */
   readOnly?: boolean;
+  /**
+   * Extra rights on top of the role level, for people who wear two hats
+   * (a worker who is also a foreman, a PM who is also technical director).
+   */
+  extraPermissions?: ExtraPermission[];
   /** Home-screen tiles this user picked; unset means the defaults. */
   dashboardTiles?: string[];
   featured?: boolean;
@@ -29,6 +36,16 @@ export type Company = {
   roleLayouts?: Partial<Record<UserRole, RoleLayout>>;
   /** When false, everyone sees their role's tiles and nobody can pick their own. Default true. */
   allowPersonalTiles?: boolean;
+  /** The company's own questions added to the incident report, in order. */
+  incidentFields?: IncidentField[];
+};
+
+export type IncidentField = {
+  id: string;
+  label: string;
+  kind: "text" | "choice" | "yesno";
+  options?: string[];
+  required: boolean;
 };
 
 export type ProjectStatus = "active" | "on_hold" | "closed";
@@ -131,6 +148,8 @@ export type Finding = {
   correctiveActionId?: string;
   /** "field" = a person reported it from site; otherwise the AI raised it from an inspection. */
   source?: "ai" | "field";
+  /** What the (simulated) photo check saw on a site report, shown next to the person's own words. */
+  photoCheck?: { label: string; confidence: number; simulated: true };
   createdAt: string;
 };
 
@@ -240,6 +259,8 @@ export type Incident = {
   reportedById: string;
   reportedAt: string;
   closedAt?: string;
+  /** Answers to the company's own incident questions, keyed by field id. */
+  customAnswers?: Record<string, string>;
 };
 
 export type GcNoticePriority = "low" | "medium" | "high";
@@ -260,4 +281,7 @@ export type GcNotice = {
 
 export type SessionPayload = {
   userId: string;
+  /** Issued-at and expiry, ms since epoch. */
+  iat: number;
+  exp: number;
 };

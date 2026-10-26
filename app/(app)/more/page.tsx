@@ -25,6 +25,7 @@ export default async function MorePage() {
   const tiles = [
     { href: "/projects", label: "Projects", meta: `${activeProjects} active`, Icon: IconFolder, show: true },
     { href: "/incidents", label: "Incidents", meta: `${openIncidents} open`, Icon: IconAlertTriangle, show: moduleVisible(getCompany(user.companyId), user, "incidents") },
+    { href: "/reports", label: "Reports", meta: "Print, PDF or CSV", Icon: IconFileText, show: caps.canViewReports },
     { href: "/settings#templates", label: "Templates", meta: "Daily checklists", Icon: IconFileText, show: caps.canManageTemplates },
     { href: "/settings/home", label: "Role screens", meta: "What each role sees", Icon: IconGrid, show: caps.canManageSettings },
     { href: "/settings/team", label: "Team", meta: "People & role levels", Icon: IconUsers, show: caps.canManageSettings },
@@ -53,15 +54,6 @@ export default async function MorePage() {
           </Link>
         ))}
 
-        <div aria-disabled="true" className="card flex min-h-32 flex-col justify-between gap-3 p-4 opacity-60">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-muted text-foreground/60">
-            <IconFileText width={24} height={24} strokeWidth={2} />
-          </span>
-          <span>
-            <span className="block text-base font-bold">Reports</span>
-            <span className="block text-sm text-foreground/60">Coming soon</span>
-          </span>
-        </div>
       </div>
 
       <form action={logout} className="md:hidden">

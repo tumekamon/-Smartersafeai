@@ -11,20 +11,22 @@ type WorkTab = "review" | "inspections" | "fixes";
 /** The review queue, inspections and fixes as one "Work" area, shown as large tabs. */
 export function workTabsFor(user: User, caps: Capabilities) {
   const sites = siteIdsFor(user);
+  // Workers see only their own tasks unless given extra rights over fixes or reviews.
+  const tasksOnly = user.role === "WORKER" && !caps.canVerifyActions && !caps.canReviewFindings;
   const tabs: { id: WorkTab; href: string; label: string; count?: number; Icon: typeof IconSparkle }[] = [];
   if (caps.canReviewFindings) {
     const pending = listFindings(user.companyId).filter((f) => f.reviewerDecision === "pending").length;
     tabs.push({ id: "review", href: "/review", label: "To review", count: pending, Icon: IconSparkle });
   }
-  if (!caps.isReadOnly && user.role !== "WORKER") {
+  if (!caps.isReadOnly && !tasksOnly) {
     const week = nowMs() - 7 * 86_400_000;
     const recent = listInspections(user.companyId).filter((i) => sites.has(i.projectId) && new Date(i.submittedAt).getTime() >= week).length;
     tabs.push({ id: "inspections", href: "/inspections", label: "Inspections · 7d", count: recent, Icon: IconClipboardCheck });
   }
   const open = listCorrectiveActions(user.companyId).filter((a) =>
-    user.role === "WORKER" ? a.assignedToId === user.id && a.status === "open" : sites.has(a.projectId) && a.status !== "closed"
+    tasksOnly ? a.assignedToId === user.id && a.status === "open" : sites.has(a.projectId) && a.status !== "closed"
   ).length;
-  tabs.push({ id: "fixes", href: "/corrective-actions", label: user.role === "WORKER" ? "My tasks" : "Fixes", count: open, Icon: IconWrench });
+  tabs.push({ id: "fixes", href: "/corrective-actions", label: tasksOnly ? "My tasks" : "Fixes", count: open, Icon: IconWrench });
   return tabs;
 }
 

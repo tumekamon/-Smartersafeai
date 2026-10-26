@@ -10,11 +10,13 @@ import type {
   CorrectiveAction,
   CorrectiveActionStatus,
   EvidenceRequirement,
+  ExtraPermission,
   Evidence,
   Finding,
   GcNotice,
   HazardProfile,
   Incident,
+  IncidentField,
   IncidentStatus,
   Inspection,
   InspectionTemplate,
@@ -95,6 +97,31 @@ export function setRoleLayout(companyId: string, role: UserRole, layout: RoleLay
   return company;
 }
 
+export function addIncidentField(companyId: string, field: Omit<IncidentField, "id">): Company | undefined {
+  const company = getCompany(companyId);
+  if (!company) return undefined;
+  company.incidentFields = [...(company.incidentFields ?? []), { ...field, id: nextId("if") }];
+  return company;
+}
+
+export function removeIncidentField(companyId: string, fieldId: string): Company | undefined {
+  const company = getCompany(companyId);
+  if (!company) return undefined;
+  company.incidentFields = (company.incidentFields ?? []).filter((f) => f.id !== fieldId);
+  return company;
+}
+
+export function moveIncidentField(companyId: string, fieldId: string, delta: -1 | 1): Company | undefined {
+  const company = getCompany(companyId);
+  const fields = [...(company?.incidentFields ?? [])];
+  const i = fields.findIndex((f) => f.id === fieldId);
+  const j = i + delta;
+  if (!company || i < 0 || j < 0 || j >= fields.length) return company;
+  [fields[i], fields[j]] = [fields[j], fields[i]];
+  company.incidentFields = fields;
+  return company;
+}
+
 export function setAllowPersonalTiles(companyId: string, allow: boolean): Company | undefined {
   const company = getCompany(companyId);
   if (!company) return undefined;
@@ -165,6 +192,7 @@ export function updateUser(
     active?: boolean;
     readOnly?: boolean;
     dashboardTiles?: string[];
+    extraPermissions?: ExtraPermission[];
   }
 ): User | undefined {
   const user = getUser(id);
@@ -176,6 +204,7 @@ export function updateUser(
   if (input.active !== undefined) user.active = input.active;
   if (input.readOnly !== undefined) user.readOnly = input.readOnly || undefined;
   if (input.dashboardTiles !== undefined) user.dashboardTiles = input.dashboardTiles;
+  if (input.extraPermissions !== undefined) user.extraPermissions = input.extraPermissions;
   return user;
 }
 
@@ -586,6 +615,7 @@ export function createIncident(input: {
   oshaRecordable: boolean;
   lostTimeDays: number;
   reportedById: string;
+  customAnswers?: Record<string, string>;
 }): Incident {
   const incident: Incident = {
     id: nextId("inc"),
@@ -600,6 +630,7 @@ export function createIncident(input: {
     status: "open",
     reportedById: input.reportedById,
     reportedAt: new Date().toISOString(),
+    customAnswers: input.customAnswers,
   };
   store.incidents.push(incident);
   return incident;

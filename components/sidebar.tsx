@@ -24,7 +24,7 @@ export function Sidebar({
   const items = navItemsFor(user, hidden);
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border/40 bg-sidebar-bg/70 backdrop-blur-xl px-4 py-6 md:flex transition-all duration-500 ease-in-out shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
+    <aside className="sticky top-0 hidden print:hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border/40 bg-sidebar-bg/70 backdrop-blur-xl px-4 py-6 md:flex transition-all duration-500 ease-in-out shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
       <div className="mb-10 flex items-center gap-3 px-2">
         <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-lg shadow-brand/20 transition-transform duration-300 hover:scale-110 hover:rotate-3">
           <IconCheckShield width={20} height={20} />

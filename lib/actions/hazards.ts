@@ -11,6 +11,7 @@ import {
   getProject,
 } from "@/lib/db";
 import { readEvidence } from "@/lib/evidence";
+import { checkHazardPhoto } from "@/lib/mock-ai";
 import type { RiskLevel } from "@/lib/types";
 
 export type HazardReportState = { error?: string } | undefined;
@@ -47,6 +48,7 @@ export async function submitHazardReport(_state: HazardReportState, formData: Fo
   if (error) return { error };
   if (evidence.length === 0 && !note) return { error: "Add a photo or say what you saw." };
 
+  const photoCheck = checkHazardPhoto(category, evidence[0]);
   const template = ensureHazardReportTemplate(user.companyId);
   const inspection = createInspection({
     projectId: project.id,
@@ -71,6 +73,7 @@ export async function submitHazardReport(_state: HazardReportState, formData: Fo
     evidenceId: evidence[0]?.id,
     reviewerDecision: "pending",
     source: "field",
+    photoCheck,
     createdAt: new Date().toISOString(),
   });
 

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { listUsers } from "@/lib/db";
+import { getCompany, listUsers } from "@/lib/db";
 import { sitesFor } from "@/lib/scope";
 import { reportIncidentAction } from "@/lib/actions/incidents";
 
@@ -18,6 +18,7 @@ export default async function NewIncidentPage() {
   if (getCapabilities(user).isReadOnly) redirect("/dashboard");
 
   const projects = sitesFor(user);
+  const fields = getCompany(user.companyId)?.incidentFields ?? [];
   const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
 
   return (
@@ -83,6 +84,33 @@ export default async function NewIncidentPage() {
             className="w-full min-h-12 rounded-xl border border-border bg-surface px-3 py-2.5 text-[15px] outline-none focus:border-sidebar-accent"
           />
         </label>
+
+        {fields.map((f) => (
+          <fieldset key={f.id}>
+            <legend className="mb-2 text-sm font-bold text-foreground/80">
+              {f.label}
+              {f.required && <span className="ml-1 text-critical">*</span>}
+            </legend>
+            {f.kind === "text" ? (
+              <input
+                name={`field_${f.id}`}
+                required={f.required}
+                maxLength={300}
+                aria-label={f.label}
+                className="min-h-12 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[15px] outline-none focus:border-sidebar-accent"
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(f.kind === "yesno" ? ["Yes", "No"] : f.options ?? []).map((o) => (
+                  <label key={o} className="tap-option">
+                    <input type="radio" name={`field_${f.id}`} value={o} required={f.required} className="sr-only" />
+                    {o}
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
+        ))}
 
         <label className="block text-sm">
           <span className="mb-1.5 block font-bold text-foreground/80">People involved</span>
