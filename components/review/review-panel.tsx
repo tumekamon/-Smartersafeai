@@ -45,15 +45,15 @@ export function ReviewPanel({
               key={o.value}
               type="button"
               onClick={() => setDecision(o.value)}
-              className="rounded-xl border p-3 text-left transition-all"
+              className="min-h-16 rounded-xl border p-3 text-left transition-all"
               style={{
                 borderColor: active ? o.color : "var(--border)",
                 background: active ? `color-mix(in srgb, ${o.color} 10%, var(--surface))` : "var(--surface)",
                 boxShadow: active ? `0 0 0 1px ${o.color}` : undefined,
               }}
             >
-              <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: active ? o.color : undefined }}>
-                <o.Icon width={15} height={15} />
+              <span className="flex items-center gap-1.5 text-[15px] font-bold" style={{ color: active ? o.color : undefined }}>
+                <o.Icon width={18} height={18} />
                 {o.label}
               </span>
               <span className="mt-0.5 block text-[11px] text-foreground/50">{o.hint}</span>
@@ -69,7 +69,7 @@ export function ReviewPanel({
             <select
               name="riskLevel"
               defaultValue={finding.riskLevel}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm capitalize"
+              className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 py-2.5 text-[15px] capitalize"
             >
               {RISKS.map((r) => (
                 <option key={r} value={r}>
@@ -84,7 +84,7 @@ export function ReviewPanel({
               name="overrideReason"
               required
               placeholder="Why is the AI assessment being changed?"
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 py-2.5 text-[15px]"
             />
           </div>
         </div>
@@ -97,11 +97,11 @@ export function ReviewPanel({
             name="description"
             defaultValue={defaultDescription}
             required
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+            className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 py-2.5 text-[15px]"
           />
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex items-center gap-2">
-              <select name="assignedToId" required className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+              <select name="assignedToId" required className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 py-2.5 text-[15px]">
                 {assignees.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.firstName} {u.lastName} · {u.title}
@@ -114,7 +114,7 @@ export function ReviewPanel({
               name="dueDate"
               defaultValue={defaultDue}
               required
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 py-2.5 text-[15px]"
             />
           </div>
         </div>
@@ -122,7 +122,7 @@ export function ReviewPanel({
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-sidebar-accent px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className="min-h-14 w-full rounded-xl bg-sidebar-accent px-4 text-base font-bold text-white transition-opacity hover:opacity-90"
       >
         {decision === "rejected" ? "Dismiss finding" : assigning ? "Confirm and assign" : "Confirm decision"}
       </button>

@@ -81,6 +81,8 @@ export type InspectionTemplate = {
   evidenceRequirement: EvidenceRequirement;
   aiAnalysisEnabled: boolean;
   checklist: ChecklistItem[];
+  /** Built-in template (e.g. quick hazard reports): hidden from pickers and settings. */
+  system?: boolean;
 };
 
 export type ChecklistResponseValue = "pass" | "fail" | "na";
@@ -121,6 +123,8 @@ export type Finding = {
   reviewedAt?: string;
   overrideReason?: string;
   correctiveActionId?: string;
+  /** "field" = a person reported it from site; otherwise the AI raised it from an inspection. */
+  source?: "ai" | "field";
   createdAt: string;
 };
 

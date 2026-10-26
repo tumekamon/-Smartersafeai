@@ -73,8 +73,16 @@ export async function updateProjectAction(formData: FormData) {
   redirect(`/projects/${projectId}`);
 }
 
+async function requireCrewAccess() {
+  const user = await getCurrentUser();
+  if (!getCapabilities(user).canManageCrews) {
+    throw new Error("Only admins and safety managers can change a site's crew.");
+  }
+  return user;
+}
+
 export async function addCrewMemberAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireCrewAccess();
   const projectId = String(formData.get("projectId") ?? "");
   const userId = String(formData.get("userId") ?? "");
   const project = getProject(projectId);
@@ -86,7 +94,7 @@ export async function addCrewMemberAction(formData: FormData) {
 }
 
 export async function removeCrewMemberAction(formData: FormData) {
-  const user = await requireSettingsAccess();
+  const user = await requireCrewAccess();
   const projectId = String(formData.get("projectId") ?? "");
   const userId = String(formData.get("userId") ?? "");
   const project = getProject(projectId);

@@ -17,7 +17,7 @@ export default async function TemplateSettingsPage({
 
   const { templateId } = await params;
   const template = getTemplate(templateId);
-  if (!template || template.companyId !== user.companyId) notFound();
+  if (!template || template.companyId !== user.companyId || template.system) notFound();
 
   const company = getCompany(user.companyId);
   const categories = company?.hazardCategories ?? [];

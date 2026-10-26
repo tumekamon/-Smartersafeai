@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { sitesFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { listProjects, listUsers } from "@/lib/db";
+import { listUsers } from "@/lib/db";
 import { createCorrectiveActionAction } from "@/lib/actions/corrective-actions";
 
 export default async function NewCorrectiveActionPage() {
   const user = await getCurrentUser();
   if (!getCapabilities(user).canCreateCorrectiveActions) redirect("/dashboard");
 
-  const projects = listProjects(user.companyId);
+  const projects = sitesFor(user);
   const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
 
   return (

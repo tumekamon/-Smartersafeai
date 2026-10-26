@@ -20,13 +20,6 @@ import { IconArrowRight } from "@/components/ui/icons";
 import { nowMs } from "@/lib/time";
 
 const DAY = 86_400_000;
-const TABS = [
-  { id: "training", label: "Training" },
-  { id: "permits", label: "Permits" },
-  { id: "ppe", label: "PPE" },
-  { id: "equipment", label: "Equipment" },
-  { id: "notices", label: "GC notices" },
-] as const;
 
 const CERT_COLUMNS: { type: CertificationType; short: string }[] = [
   { type: "Electrical Safety (NFPA 70E)", short: "NFPA 70E" },
@@ -53,20 +46,9 @@ export default async function CompliancePage({
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold tracking-tight">Compliance</h1>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <nav className="inline-flex flex-wrap gap-1 rounded-xl bg-surface p-1 ring-1 ring-border">
-          {TABS.map((t) => (
-            <Link
-              key={t.id}
-              href={`/compliance?tab=${t.id}`}
-              className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
-                tab === t.id ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
-        </nav>
+      <StatusTiles companyId={user.companyId} active={tab} />
+
+      <div className="flex flex-wrap items-center justify-end gap-4 empty:hidden">
         
         {tab === "training" && caps.canManageCompliance && <Link href="/compliance/training/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Log training</Link>}
         {tab === "permits" && caps.canManageCompliance && <Link href="/compliance/permits/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Issue permit</Link>}
@@ -81,6 +63,87 @@ export default async function CompliancePage({
       {tab === "equipment" && <Equipment companyId={user.companyId} />}
       {tab === "notices" && <Notices companyId={user.companyId} />}
     </div>
+  );
+}
+
+type Tone = "good" | "warning" | "critical";
+const toneBg: Record<Tone, string> = {
+  good: "var(--status-good)",
+  warning: "var(--status-warning)",
+  critical: "var(--status-critical)",
+};
+
+/** One tile per area: the number that matters and a red / amber / green state, tapped to open it. */
+function StatusTiles({ companyId, active }: { companyId: string; active: string }) {
+  const training = trainingSummary(companyId);
+  const permits = permitSummary(companyId);
+  const ppe = ppeSummary(companyId);
+  const equipmentDown = equipmentSummary(companyId).filter((r) => r.failed).length;
+  const openNotices = listGcNotices(companyId).filter((n) => n.status === "open").length;
+
+  const tiles: { id: string; label: string; value: number; sub: string; tone: Tone }[] = [
+    {
+      id: "training",
+      label: "Training",
+      value: training.expired + training.expiring,
+      sub: training.expired ? `${training.expired} expired` : training.expiring ? "expiring soon" : "all valid",
+      tone: training.expired ? "critical" : training.expiring ? "warning" : "good",
+    },
+    {
+      id: "permits",
+      label: "Permits",
+      value: permits.expiredOpen || permits.active,
+      sub: permits.expiredOpen ? "expired, not closed" : "active now",
+      tone: permits.expiredOpen ? "critical" : "good",
+    },
+    {
+      id: "ppe",
+      label: "PPE",
+      value: ppe.lowCount,
+      sub: ppe.lowCount ? "below reorder point" : "stock OK",
+      tone: ppe.lowCount ? "warning" : "good",
+    },
+    {
+      id: "equipment",
+      label: "Equipment",
+      value: equipmentDown,
+      sub: equipmentDown ? "failed last check" : "all passing",
+      tone: equipmentDown ? "critical" : "good",
+    },
+    {
+      id: "notices",
+      label: "GC notices",
+      value: openNotices,
+      sub: openNotices ? "open" : "none open",
+      tone: openNotices ? "warning" : "good",
+    },
+  ];
+
+  return (
+    <nav aria-label="Compliance areas" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+      {tiles.map((t) => {
+        const on = t.id === active;
+        return (
+          <Link
+            key={t.id}
+            href={`/compliance?tab=${t.id}`}
+            aria-current={on ? "page" : undefined}
+            className={`relative flex min-h-24 flex-col justify-between gap-2 overflow-hidden rounded-2xl p-4 transition-shadow ${
+              on ? "bg-foreground text-background" : "card hover:shadow-md"
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-bold">
+              <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: toneBg[t.tone] }} />
+              {t.label}
+            </span>
+            <span className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold leading-none">{t.value}</span>
+              <span className={`text-xs font-semibold ${on ? "opacity-80" : "text-foreground/60"}`}>{t.sub}</span>
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -125,7 +188,34 @@ function Training({ companyId }: { companyId: string }) {
         </div>
       </section>
 
-      <section className="card overflow-hidden">
+      <ul className="space-y-2.5 md:hidden">
+        {rows.map(({ person, mine }) => (
+          <li key={person.id} className="card p-4">
+            <div className="mb-3 flex items-center gap-3">
+              <Avatar person={person} size={36} />
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-bold">{person.firstName} {person.lastName}</p>
+                <p className="truncate text-xs text-foreground/55">{person.title}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {mine.map((c) => {
+                const st = certStatus(c.expiresOn, now);
+                const days = Math.round((new Date(c.expiresOn).getTime() - now) / DAY);
+                const short = CERT_COLUMNS.find((col) => col.type === c.type)?.short ?? c.type;
+                return (
+                  <span key={c.id} className={`badge ${st === "current" ? "badge-good" : st === "expiring" ? "badge-warning" : "badge-critical"}`}>
+                    {short}
+                    {st !== "current" && ` · ${st === "expired" ? `${Math.abs(days)}d over` : `${days}d`}`}
+                  </span>
+                );
+              })}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <section className="card hidden overflow-hidden md:block">
         <div className="scrollbar-thin overflow-x-auto">
           <table className="w-full min-w-[820px] text-left">
             <thead>

@@ -1,11 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { setUserActiveAction, setUserReadOnlyAction, updateUserRoleAction } from "@/lib/actions/users";
 import { ROLE_OPTIONS } from "@/lib/roles";
 import { Avatar } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
 
-export function TeamRoster({ members, currentUserId }: { members: User[]; currentUserId: string }) {
+export function TeamRoster({
+  members,
+  currentUserId,
+  sitesByUser = {},
+}: {
+  members: User[];
+  currentUserId: string;
+  sitesByUser?: Record<string, { id: string; name: string }[]>;
+}) {
   return (
     <ul className="divide-y divide-border">
       {members.map((m) => {
@@ -19,6 +28,19 @@ export function TeamRoster({ members, currentUserId }: { members: User[]; curren
                 {isSelf && <span className="ml-1.5 text-[11px] font-normal text-foreground/40">(you)</span>}
               </p>
               <p className="truncate text-xs text-foreground/50">{m.email} · {m.title}</p>
+              {(m.role === "SUPERVISOR" || m.role === "WORKER") && !m.readOnly && (
+                <p className="mt-1 flex flex-wrap gap-1">
+                  {(sitesByUser[m.id] ?? []).length === 0 ? (
+                    <span className="text-[11px] font-semibold text-foreground/45">No site yet · sees all sites</span>
+                  ) : (
+                    sitesByUser[m.id].map((s) => (
+                      <Link key={s.id} href={`/projects/${s.id}?tab=crew`} className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-foreground/70 hover:text-foreground">
+                        {s.name}
+                      </Link>
+                    ))
+                  )}
+                </p>
+              )}
             </div>
 
             <form action={updateUserRoleAction}>

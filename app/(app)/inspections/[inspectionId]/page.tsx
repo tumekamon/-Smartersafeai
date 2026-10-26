@@ -27,10 +27,13 @@ const dueDays: Record<RiskLevel, number> = { critical: 1, high: 3, medium: 7, lo
 
 export default async function InspectionDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ inspectionId: string }>;
+  searchParams: Promise<{ reported?: string; submitted?: string }>;
 }) {
   const { inspectionId } = await params;
+  const sp = await searchParams;
   const user = await getCurrentUser();
   const inspection = getInspection(inspectionId);
   const project = getProject(inspection?.projectId ?? "");
@@ -45,8 +48,22 @@ export default async function InspectionDetailPage({
   const rateLevel: RiskLevel = rate >= 95 ? "low" : rate >= 85 ? "medium" : rate >= 70 ? "high" : "critical";
   const failed = inspection.responses.filter((r) => r.value === "fail").length;
 
+  const justSent = sp.reported === "1" || sp.submitted === "1";
+
   return (
     <div className="space-y-6">
+      {justSent && (
+        <div role="status" className="flex items-center gap-3 rounded-2xl bg-[#0a6b0a] p-4 text-white">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20">
+            <IconCheck width={24} height={24} strokeWidth={2.6} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-bold">{sp.reported === "1" ? "Hazard reported" : "Inspection sent"}</p>
+            <p className="text-sm text-white/90">{findings.length > 0 ? "A safety manager will review it." : "Nothing needs review."}</p>
+          </div>
+          <Link href="/dashboard" className="flex min-h-11 items-center rounded-xl bg-white/20 px-4 text-sm font-bold">Done</Link>
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href={`/projects/${inspection.projectId}`} className="text-xs font-medium text-sidebar-accent">
@@ -114,14 +131,21 @@ export default async function InspectionDetailPage({
                       <span className="ml-auto text-xs text-foreground/45">{finding.regulatoryReference}</span>
                     </div>
 
-                    <div className="mt-3 rounded-xl border border-ai/25 bg-ai-soft p-3.5">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold text-ai">
-                        <IconSparkle width={13} height={13} />
-                        What the AI saw
-                        <span className="ml-auto font-medium">{Math.round(finding.aiConfidence * 100)}% confidence</span>
-                      </p>
-                      <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
-                    </div>
+                    {finding.source === "field" ? (
+                      <div className="mt-3 rounded-xl border border-border bg-surface-muted p-3.5">
+                        <p className="text-xs font-semibold text-foreground/60">Reported on site — no AI check</p>
+                        <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 rounded-xl border border-ai/25 bg-ai-soft p-3.5">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-ai">
+                          <IconSparkle width={13} height={13} />
+                          What the AI saw
+                          <span className="ml-auto font-medium">{Math.round(finding.aiConfidence * 100)}% confidence</span>
+                        </p>
+                        <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
+                      </div>
+                    )}
 
                     {finding.reviewerDecision === "pending" ? (
                       caps.canReviewFindings ? (

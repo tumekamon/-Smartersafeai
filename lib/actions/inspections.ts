@@ -11,11 +11,10 @@ import {
   getTemplate,
 } from "@/lib/db";
 import { analyzeInspection } from "@/lib/mock-ai";
-import type { ChecklistResponse, ChecklistResponseValue, Evidence } from "@/lib/types";
+import { readEvidence } from "@/lib/evidence";
+import type { ChecklistResponse, ChecklistResponseValue } from "@/lib/types";
 
 export type SubmitInspectionState = { error?: string } | undefined;
-
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 export async function submitInspection(
   _state: SubmitInspectionState,
@@ -49,23 +48,8 @@ export async function submitInspection(
     return { itemId: item.id, value, note: note || undefined };
   });
 
-  const files = formData
-    .getAll("evidence")
-    .filter((file): file is File => file instanceof File && file.size > 0);
-
-  const evidence: Evidence[] = [];
-  for (const [index, file] of files.entries()) {
-    if (file.size > MAX_IMAGE_BYTES) {
-      return { error: `${file.name} is larger than 4 MB.` };
-    }
-    const bytes = Buffer.from(await file.arrayBuffer()).toString("base64");
-    evidence.push({
-      id: `ev_${Date.now()}_${index}`,
-      fileName: file.name,
-      dataUrl: `data:${file.type || "image/jpeg"};base64,${bytes}`,
-      capturedAt: new Date().toISOString(),
-    });
-  }
+  const { evidence, error } = await readEvidence(formData);
+  if (error) return { error };
 
   const inspection = dbCreateInspection({
     projectId,
@@ -85,5 +69,5 @@ export async function submitInspection(
     if (findings.length === 0) created.status = "reviewed";
   }
 
-  redirect(`/inspections/${inspection.id}`);
+  redirect(`/inspections/${inspection.id}?submitted=1`);
 }

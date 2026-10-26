@@ -23,6 +23,7 @@ export type Capabilities = {
   canCustomizeDashboard: boolean;
   canManageCompliance: boolean;
   canManageTemplates: boolean;
+  canManageCrews: boolean;
   canManageSettings: boolean;
   isReadOnly: boolean;
 };
@@ -46,6 +47,8 @@ export function getCapabilities(user: Pick<User, "role" | "readOnly">): Capabili
     canManageCompliance: isSafetyProfessional || isFieldLead,
     // Foremen build their own daily checklists (Oct 9 review), so L3 edits templates too.
     canManageTemplates: isSafetyProfessional || isFieldLead,
+    // Who works on which site: L1/L2 keep crews current.
+    canManageCrews: isSafetyProfessional,
     canManageSettings: !isReadOnly && role === "ADMIN",
     isReadOnly,
   };

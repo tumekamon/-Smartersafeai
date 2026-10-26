@@ -232,8 +232,25 @@ export function removeCrewMember(projectId: string, userId: string): Project | u
 
 // --- Templates ---
 
-export function listTemplates(companyId: string): InspectionTemplate[] {
-  return store.templates.filter((t) => t.companyId === companyId);
+export function listTemplates(companyId: string, opts: { includeSystem?: boolean } = {}): InspectionTemplate[] {
+  return store.templates.filter((t) => t.companyId === companyId && (opts.includeSystem || !t.system));
+}
+
+/** The built-in template quick hazard reports are filed under, created on first use. */
+export function ensureHazardReportTemplate(companyId: string): InspectionTemplate {
+  const existing = store.templates.find((t) => t.companyId === companyId && t.system && t.name === "Hazard report");
+  if (existing) return existing;
+  const template: InspectionTemplate = {
+    id: nextId("t"),
+    companyId,
+    name: "Hazard report",
+    evidenceRequirement: "optional",
+    aiAnalysisEnabled: false,
+    checklist: [],
+    system: true,
+  };
+  store.templates.push(template);
+  return template;
 }
 
 export function getTemplate(id: string): InspectionTemplate | undefined {

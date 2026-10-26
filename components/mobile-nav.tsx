@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { User } from "@/lib/types";
 import { isNavActive, navItemsFor } from "@/components/nav-items";
-import { IconAlertTriangle, IconArrowRight, IconClipboardCheck, IconFileCheck, IconPlus, IconWrench, IconX } from "@/components/ui/icons";
+import { IconAlertTriangle, IconArrowRight, IconBolt, IconClipboardCheck, IconFileCheck, IconPlus, IconWrench, IconX } from "@/components/ui/icons";
 
 export type QuickActionFlags = {
   canInspect: boolean;
@@ -119,6 +119,12 @@ export function MobileNav({
               </div>
             ) : (
               <div className="flex flex-col gap-3">
+                {flags.canInspect && (
+                  <Link href="/hazards/new" onClick={close} className="quick-action bg-[#c2410c]">
+                    <QuickIcon><IconAlertTriangle width={32} height={32} strokeWidth={2} /></QuickIcon>
+                    <QuickText title="Report hazard" sub="Snap a photo · 3 taps" />
+                  </Link>
+                )}
                 {flags.canInspect && projects.length > 0 && (
                   projects.length === 1 ? (
                     <Link href={`/projects/${projects[0].id}/inspections/new`} onClick={close} className="quick-action bg-brand">
@@ -133,8 +139,8 @@ export function MobileNav({
                   )
                 )}
                 {flags.canReportIncident && (
-                  <Link href="/incidents/new" onClick={close} className="quick-action bg-[#c2410c]">
-                    <QuickIcon><IconAlertTriangle width={32} height={32} strokeWidth={2} /></QuickIcon>
+                  <Link href="/incidents/new" onClick={close} className="quick-action bg-[#12161f]">
+                    <QuickIcon><IconBolt width={32} height={32} strokeWidth={2} /></QuickIcon>
                     <QuickText title="Report incident" sub="Injury, near miss or damage" />
                   </Link>
                 )}

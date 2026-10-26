@@ -26,7 +26,7 @@ function Chip({
 }) {
   return (
     <label
-      className={`cursor-pointer rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+      className={`flex min-h-11 cursor-pointer items-center rounded-xl px-4 text-[15px] font-semibold transition-colors ${
         checked ? "bg-foreground text-background" : "bg-surface-muted text-foreground/65 hover:text-foreground"
       }`}
     >
@@ -71,14 +71,14 @@ export function InspectionForm({
                 key={t.id}
                 type="button"
                 onClick={() => setTemplateId(t.id)}
-                className="rounded-xl border p-3.5 text-left transition-all"
+                className="min-h-16 rounded-2xl border p-4 text-left transition-all"
                 style={{
                   borderColor: active ? "var(--sidebar-accent)" : "var(--border)",
                   boxShadow: active ? "0 0 0 1px var(--sidebar-accent)" : undefined,
                   background: active ? "color-mix(in srgb, var(--sidebar-accent) 6%, var(--surface))" : "var(--surface)",
                 }}
               >
-                <span className="block text-sm font-semibold">{t.name}</span>
+                <span className="block text-[15px] font-bold">{t.name}</span>
                 <span className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
                   <span className="rounded bg-surface-muted px-1.5 py-0.5 text-foreground/60">{t.checklist.length} items</span>
                   <span className="rounded bg-surface-muted px-1.5 py-0.5 text-foreground/60">
@@ -101,13 +101,13 @@ export function InspectionForm({
         <p className="eyebrow mb-3">2 · Where are you?</p>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-12 text-xs text-foreground/50">Level</span>
+            <span className="w-full text-sm font-semibold text-foreground/60 sm:w-14">Level</span>
             {project.levels.map((l) => (
               <Chip key={l} name="level" value={l} checked={level === l} onChange={() => setLevel(l)}>{l}</Chip>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-12 text-xs text-foreground/50">Zone</span>
+            <span className="w-full text-sm font-semibold text-foreground/60 sm:w-14">Zone</span>
             {project.zones.map((z) => (
               <Chip key={z} name="zone" value={z} checked={zone === z} onChange={() => setZone(z)}>{z}</Chip>
             ))}
@@ -126,19 +126,19 @@ export function InspectionForm({
               const value = answerFor(item.id);
               return (
                 <li key={`${template.id}-${item.id}`} className="py-3.5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm font-medium">{item.label}</p>
-                    <div className="flex gap-1 rounded-xl bg-surface-muted p-1">
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[15px] font-semibold leading-snug">{item.label}</p>
+                    <div className="grid shrink-0 grid-cols-3 gap-1.5 rounded-2xl bg-surface-muted p-1.5 sm:w-72">
                       {OPTIONS.map((o) => {
                         const active = value === o.value;
                         return (
                           <label
                             key={o.value}
-                            className="flex cursor-pointer items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                            className="flex min-h-12 cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[15px] font-bold transition-colors"
                             style={{
                               background: active ? o.color : "transparent",
                               color: active ? "#fff" : "var(--foreground)",
-                              opacity: active ? 1 : 0.6,
+                              opacity: active ? 1 : 0.75,
                             }}
                           >
                             <input
@@ -149,8 +149,8 @@ export function InspectionForm({
                               onChange={() => setAnswers((a) => ({ ...a, [`${template.id}:${item.id}`]: o.value }))}
                               className="sr-only"
                             />
-                            {o.value === "pass" && <IconCheck width={12} height={12} />}
-                            {o.value === "fail" && <IconX width={12} height={12} />}
+                            {o.value === "pass" && <IconCheck width={18} height={18} strokeWidth={2.4} />}
+                            {o.value === "fail" && <IconX width={18} height={18} strokeWidth={2.4} />}
                             {o.label}
                           </label>
                         );
@@ -162,7 +162,7 @@ export function InspectionForm({
                       type="text"
                       name={`note_${item.id}`}
                       placeholder="What did you see?"
-                      className="mt-2.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-sidebar-accent"
+                      className="mt-2.5 min-h-12 w-full rounded-xl border border-border bg-surface px-3 text-[15px] outline-none focus:border-sidebar-accent"
                     />
                   )}
                 </li>
@@ -179,10 +179,12 @@ export function InspectionForm({
           </p>
           <label
             htmlFor="evidence"
-            className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border px-4 py-8 text-center transition-colors hover:border-sidebar-accent"
+            className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-2xl bg-[#2b3340] px-4 text-center text-white transition-opacity hover:opacity-95"
           >
-            <IconCamera width={26} height={26} className="text-foreground/40" />
-            <span className="text-sm font-medium">Take or upload photos</span>
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15">
+              <IconCamera width={32} height={32} strokeWidth={1.8} />
+            </span>
+            <span className="text-base font-bold">{previews.length ? "Add more photos" : "Take photos"}</span>
           </label>
           <input
             id="evidence"
@@ -201,7 +203,7 @@ export function InspectionForm({
             <div className="mt-3 flex flex-wrap gap-2.5">
               {previews.map((p) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={p.url} src={p.url} alt={p.name} className="h-20 w-20 rounded-lg object-cover ring-1 ring-border" />
+                <img key={p.url} src={p.url} alt={p.name} className="h-24 w-24 rounded-xl object-cover ring-1 ring-border" />
               ))}
             </div>
           )}
@@ -213,7 +215,7 @@ export function InspectionForm({
       <button
         type="submit"
         disabled={pending || !template}
-        className="w-full rounded-xl bg-sidebar-accent px-4 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="min-h-16 w-full rounded-2xl bg-sidebar-accent px-4 text-lg font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Submitting…" : failCount > 0 ? `Submit with ${failCount} finding${failCount === 1 ? "" : "s"}` : "Submit inspection"}
       </button>

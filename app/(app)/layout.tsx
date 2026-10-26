@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/dal";
-import { getCompany, listCorrectiveActions, listFindings, listProjects } from "@/lib/db";
+import { sitesFor } from "@/lib/scope";
+import { getCompany, listCorrectiveActions, listFindings } from "@/lib/db";
 import { getCapabilities } from "@/lib/authz";
 import { brandVars } from "@/lib/color";
 import { Sidebar } from "@/components/sidebar";
@@ -10,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getCurrentUser();
   const company = getCompany(user.companyId);
   const caps = getCapabilities(user);
-  const projects = listProjects(user.companyId).filter((p) => p.status === "active");
+  const projects = sitesFor(user).filter((p) => p.status === "active");
   // The Work badge counts what this person must act on: findings to review for
   // safety professionals, their own open tasks for everyone else.
   const workBadge = caps.canReviewFindings

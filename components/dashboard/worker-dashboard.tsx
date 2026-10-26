@@ -1,17 +1,18 @@
 import Link from "next/link";
+import { sitesFor } from "@/lib/scope";
 import type { RiskLevel, User } from "@/lib/types";
-import { getProject, getTemplate, listCertifications, listCorrectiveActions, listInspections, listProjects } from "@/lib/db";
+import { getProject, getTemplate, listCertifications, listCorrectiveActions, listInspections } from "@/lib/db";
 import { certStatus, isActionOverdue } from "@/lib/metrics";
 import { greeting, shortDate } from "@/lib/format";
 import { updateCorrectiveActionStatusAction } from "@/lib/actions/corrective-actions";
 import { CorrectiveActionStatusBadge, InspectionStatusBadge } from "@/components/ui/badges";
-import { IconArrowRight, IconBolt, IconCheck } from "@/components/ui/icons";
+import { IconAlertTriangle, IconArrowRight, IconBolt, IconCheck } from "@/components/ui/icons";
 import { nowMs } from "@/lib/time";
 
 const DAY = 86_400_000;
 
 export function WorkerDashboard({ user }: { user: User }) {
-  const projects = listProjects(user.companyId);
+  const projects = sitesFor(user).filter((p) => p.status === "active");
   const mine = listCorrectiveActions(user.companyId)
     .filter((a) => a.assignedToId === user.id && a.status !== "closed")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
@@ -37,6 +38,20 @@ export function WorkerDashboard({ user }: { user: User }) {
         <StatTile href="/corrective-actions" value={mine.length} label="My tasks" />
         <StatTile href="#certs" value={expiringCerts} label="Certs due" hot={expiringCerts > 0} />
       </div>
+
+      <Link
+        href="/hazards/new"
+        className="flex min-h-20 items-center gap-4 rounded-2xl bg-[#c2410c] px-5 text-white shadow-lg shadow-[#c2410c]/25"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
+          <IconAlertTriangle width={26} height={26} strokeWidth={2} />
+        </span>
+        <span className="flex-1">
+          <span className="block text-lg font-extrabold">Report a hazard</span>
+          <span className="block text-sm text-white/90">Photo + 3 taps</span>
+        </span>
+        <IconArrowRight width={22} height={22} />
+      </Link>
 
       <section className="hero p-5 md:p-6">
         <p className="mb-3 flex items-center gap-2 text-lg font-bold">

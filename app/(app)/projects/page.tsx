@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getCurrentUser } from "@/lib/dal";
+import { sitesFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { getTemplate, listInspectionsForProject, listProjects } from "@/lib/db";
+import { getTemplate, listInspectionsForProject } from "@/lib/db";
 import { hazardBreakdown, projectHealth, weeklySeries } from "@/lib/metrics";
 import { timeAgo } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
@@ -14,7 +15,7 @@ const levelLabel = { low: "Strong", medium: "Watch", high: "At risk", critical: 
 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();
-  const projects = listProjects(user.companyId);
+  const projects = sitesFor(user);
   const canManage = getCapabilities(user).canManageSettings;
 
   return (

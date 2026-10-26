@@ -38,7 +38,7 @@ async function requireTemplateAccess() {
 /** Re-checked in every mutating action, not just the page load, since a forged action call skips the page. */
 function requireOwnTemplate(companyId: string, templateId: string) {
   const template = getTemplate(templateId);
-  if (!template || template.companyId !== companyId) {
+  if (!template || template.companyId !== companyId || template.system) {
     throw new Error("Template not found.");
   }
   return template;

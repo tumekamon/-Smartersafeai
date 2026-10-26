@@ -418,3 +418,28 @@ body {
   padding: 1.25rem;
   color: #fff;
 }
+
+/* Large radio "tap" option; checked state comes from the hidden input inside it. */
+.tap-option {
+  display: flex;
+  min-height: 3.5rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  padding: 0 0.5rem;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.tap-option:has(input:checked) {
+  background: var(--foreground);
+  color: var(--background);
+  box-shadow: none;
+}
+.tap-option:has(input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}

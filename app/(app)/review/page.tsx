@@ -70,7 +70,8 @@ export default async function ReviewPage({
         </section>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
-          <aside className="space-y-2">
+          <aside className="order-2 space-y-2 lg:order-none">
+            <h2 className="text-sm font-bold text-foreground/60 lg:hidden">Up next</h2>
             {queue.map((f) => {
               const active = f.id === selected.id;
               const project = getProject(f.projectId);
@@ -90,12 +91,16 @@ export default async function ReviewPage({
                     {project?.shortName} · {f.location.level} {f.location.zone}
                   </p>
                   <div className="mt-2.5 flex items-center justify-between text-[11px] text-foreground/45">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-1 w-14 rounded-full bg-surface-muted">
-                        <span className="block h-1 rounded-full" style={{ width: `${f.aiConfidence * 100}%`, background: "var(--ai)" }} />
+                    {f.source === "field" ? (
+                      <span className="font-semibold text-foreground/60">Reported on site</span>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-1 w-14 rounded-full bg-surface-muted">
+                          <span className="block h-1 rounded-full" style={{ width: `${f.aiConfidence * 100}%`, background: "var(--ai)" }} />
+                        </span>
+                        {Math.round(f.aiConfidence * 100)}% confidence
                       </span>
-                      {Math.round(f.aiConfidence * 100)}% confidence
-                    </span>
+                    )}
                     <span>{timeAgo(new Date(f.createdAt).getTime())}</span>
                   </div>
                 </Link>
@@ -103,7 +108,9 @@ export default async function ReviewPage({
             })}
           </aside>
 
-          <ReviewWorkspace finding={selected} nextHref="/review" />
+          <div className="order-1 lg:order-none">
+            <ReviewWorkspace finding={selected} nextHref="/review" />
+          </div>
         </div>
       )}
 
@@ -158,14 +165,21 @@ async function ReviewWorkspace({ finding, nextHref }: { finding: Finding; nextHr
             <span>{finding.regulatoryReference}</span>
           </p>
 
-          <div className="mt-4 rounded-xl border border-ai/25 bg-ai-soft p-3.5">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-ai">
-              <IconSparkle width={13} height={13} />
-              What the AI saw
-              <span className="ml-auto font-medium">{Math.round(finding.aiConfidence * 100)}% confidence</span>
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
-          </div>
+          {finding.source === "field" ? (
+            <div className="mt-4 rounded-xl border border-border bg-surface-muted p-3.5">
+              <p className="text-xs font-semibold text-foreground/60">Reported on site — no AI check</p>
+              <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-ai/25 bg-ai-soft p-3.5">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-ai">
+                <IconSparkle width={13} height={13} />
+                What the AI saw
+                <span className="ml-auto font-medium">{Math.round(finding.aiConfidence * 100)}% confidence</span>
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed">{finding.aiExplanation}</p>
+            </div>
+          )}
 
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-4">

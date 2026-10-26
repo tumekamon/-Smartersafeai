@@ -278,8 +278,8 @@ export function attentionQueue(companyId: string, limit = 8, projectId?: string)
     items.push({
       id: `review_${f.id}`,
       kind: "review",
-      title: `Review AI finding: ${f.title}`,
-      detail: `${project?.shortName} · ${f.location.level} ${f.location.zone} · ${Math.round(f.aiConfidence * 100)}% confidence`,
+      title: f.source === "field" ? `Review site report: ${f.title}` : `Review AI finding: ${f.title}`,
+      detail: `${project?.shortName} · ${f.location.level} ${f.location.zone} · ${f.source === "field" ? "reported on site" : `${Math.round(f.aiConfidence * 100)}% confidence`}`,
       href: `/review?finding=${f.id}`,
       tone: f.riskLevel === "critical" ? "critical" : f.riskLevel === "high" ? "serious" : "warning",
       at: t(f.createdAt),

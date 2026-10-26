@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { listUsers } from "@/lib/db";
+import { listProjects, listUsers } from "@/lib/db";
 import { TeamRoster } from "@/components/settings/team-roster";
 import { InviteUserForm } from "@/components/settings/invite-user-form";
 
@@ -10,6 +10,10 @@ export default async function TeamSettingsPage() {
   if (!getCapabilities(user).canManageSettings) redirect("/dashboard");
 
   const members = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const projects = listProjects(user.companyId);
+  const sitesByUser = Object.fromEntries(
+    members.map((m) => [m.id, projects.filter((p) => p.crewIds.includes(m.id)).map((p) => ({ id: p.id, name: p.shortName }))])
+  );
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -25,7 +29,10 @@ export default async function TeamSettingsPage() {
 
       <section className="card overflow-hidden">
         <div className="border-b border-border px-5 py-3.5"><h2 className="text-sm font-semibold">Everyone</h2></div>
-        <TeamRoster members={members} currentUserId={user.id} />
+        <TeamRoster members={members} currentUserId={user.id} sitesByUser={sitesByUser} />
+        <p className="border-t border-border px-5 py-3 text-xs text-foreground/55">
+          Sites come from each project&apos;s Crew tab. Supervisors and workers only see the sites they&apos;re on.
+        </p>
       </section>
     </div>
   );

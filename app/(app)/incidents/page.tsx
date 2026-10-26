@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
+import { siteIdsFor, sitesFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { getProject, getUser, listIncidents, listProjects } from "@/lib/db";
+import { getProject, getUser, listIncidents } from "@/lib/db";
 import { updateIncidentStatusAction } from "@/lib/actions/incidents";
 import { shortDateTime } from "@/lib/format";
 import { IncidentStatusBadge, IncidentTypeBadge } from "@/components/ui/badges";
@@ -19,7 +20,7 @@ function Pill({ href, active, children }: { href: string; active: boolean; child
   return (
     <Link
       href={href}
-      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+      className={`flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors ${
         active ? "bg-foreground text-background" : "bg-surface text-foreground/65 ring-1 ring-border hover:text-foreground"
       }`}
     >
@@ -37,8 +38,9 @@ export default async function IncidentsPage({
   const caps = getCapabilities(user);
   const sp = await searchParams;
 
+  const sites = siteIdsFor(user);
   const all = listIncidents(user.companyId).filter(
-    (i) => (!sp.project || i.projectId === sp.project) && (!sp.status || i.status === sp.status)
+    (i) => sites.has(i.projectId) && (!sp.project || i.projectId === sp.project) && (!sp.status || i.status === sp.status)
   );
   const openCount = all.filter((i) => i.status !== "closed").length;
   const recordableCount = all.filter((i) => i.oshaRecordable).length;
@@ -62,21 +64,21 @@ export default async function IncidentsPage({
           </p>
         </div>
         {!caps.isReadOnly && (
-          <Link href="/incidents/new" className="flex items-center gap-1.5 rounded-lg bg-sidebar-accent px-3.5 py-2 text-sm font-semibold text-white">
-            <IconPlus width={14} height={14} />
+          <Link href="/incidents/new" className="flex min-h-12 items-center gap-2 rounded-xl bg-sidebar-accent px-5 text-[15px] font-bold text-white">
+            <IconPlus width={18} height={18} strokeWidth={2.4} />
             Report incident
           </Link>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
         <Pill href={q({ status: undefined })} active={!sp.status}>All statuses</Pill>
         <Pill href={q({ status: "open" })} active={sp.status === "open"}>Open</Pill>
         <Pill href={q({ status: "investigating" })} active={sp.status === "investigating"}>Investigating</Pill>
         <Pill href={q({ status: "closed" })} active={sp.status === "closed"}>Closed</Pill>
         <span className="mx-1 self-center text-foreground/20">|</span>
         <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-        {listProjects(user.companyId).map((p) => (
+        {sitesFor(user).map((p) => (
           <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
         ))}
       </div>
@@ -93,14 +95,19 @@ export default async function IncidentsPage({
             const reporter = getUser(incident.reportedById);
             const step = !caps.isReadOnly && caps.canReviewFindings ? NEXT[incident.status] : null;
             return (
-              <section key={incident.id} className="card p-5">
+              <section key={incident.id} className="card relative overflow-hidden p-5 pl-6">
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 w-1.5"
+                  style={{ background: incident.status === "closed" ? "var(--status-good)" : incident.oshaRecordable ? "var(--status-critical)" : "var(--status-warning)" }}
+                />
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <IncidentTypeBadge type={incident.type} />
                       {incident.oshaRecordable && <span className="badge badge-critical">OSHA recordable</span>}
                     </div>
-                    <h3 className="mt-2 text-sm font-semibold leading-snug">{incident.description}</h3>
+                    <h3 className="mt-2 text-[15px] font-semibold leading-snug">{incident.description}</h3>
                     <p className="mt-1 flex items-center gap-1 text-xs text-foreground/50">
                       <IconMapPin width={11} height={11} />
                       {project?.shortName} · {incident.location.level} {incident.location.zone}
@@ -129,10 +136,10 @@ export default async function IncidentsPage({
                     <input type="hidden" name="status" value={step.next} />
                     <button
                       type="submit"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-muted py-1.5 text-xs font-semibold transition-colors hover:bg-sidebar-accent hover:text-white"
+                      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface-muted text-sm font-bold transition-colors hover:bg-sidebar-accent hover:text-white"
                     >
                       {step.label}
-                      <IconArrowRight width={12} height={12} />
+                      <IconArrowRight width={16} height={16} />
                     </button>
                   </form>
                 )}

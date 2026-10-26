@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { WorkTabs } from "@/components/work-tabs";
 import { getCurrentUser } from "@/lib/dal";
+import { siteIdsFor, sitesFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { getProject, getUser, listCorrectiveActions, listProjects } from "@/lib/db";
+import { getProject, getUser, listCorrectiveActions } from "@/lib/db";
 import { isActionOverdue } from "@/lib/metrics";
 import { shortDate } from "@/lib/format";
 import { updateCorrectiveActionStatusAction } from "@/lib/actions/corrective-actions";
@@ -38,7 +39,7 @@ function Pill({ href, active, children }: { href: string; active: boolean; child
   return (
     <Link
       href={href}
-      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+      className={`flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors ${
         active ? "bg-foreground text-background" : "bg-surface text-foreground/65 ring-1 ring-border hover:text-foreground"
       }`}
     >
@@ -59,8 +60,10 @@ export default async function CorrectiveActionsPage({
   const view = isWorker ? "mine" : (sp.view ?? "all");
 
   const now = nowMs();
+  const sites = siteIdsFor(user);
   const all = listCorrectiveActions(user.companyId).filter(
     (a) =>
+      sites.has(a.projectId) &&
       (!sp.project || a.projectId === sp.project) &&
       (view !== "mine" || a.assignedToId === user.id) &&
       (view !== "overdue" || isActionOverdue(a, now)) &&
@@ -100,13 +103,13 @@ export default async function CorrectiveActionsPage({
         </div>
         {!isWorker && (
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-wrap gap-2">
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
               <Pill href={q({ view: undefined })} active={view === "all"}>Everything</Pill>
               <Pill href={q({ view: "overdue" })} active={view === "overdue"}>Overdue</Pill>
               <Pill href={q({ view: "mine" })} active={view === "mine"}>Mine</Pill>
               <span className="mx-1 self-center text-foreground/20">|</span>
               <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-              {listProjects(user.companyId).map((p) => (
+              {sitesFor(user).map((p) => (
                 <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
               ))}
             </div>

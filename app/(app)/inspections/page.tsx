@@ -2,8 +2,9 @@ import Link from "next/link";
 import { WorkTabs } from "@/components/work-tabs";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { siteIdsFor, sitesFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { getProject, getTemplate, getUser, listInspections, listProjects, listTemplates } from "@/lib/db";
+import { getProject, getTemplate, getUser, listInspections, listTemplates } from "@/lib/db";
 import { passRate } from "@/lib/metrics";
 import { timeAgo } from "@/lib/format";
 import { Avatar } from "@/components/ui/avatar";
@@ -18,7 +19,7 @@ function Pill({ href, active, children }: { href: string; active: boolean; child
   return (
     <Link
       href={href}
-      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+      className={`flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors ${
         active ? "bg-foreground text-background" : "bg-surface text-foreground/65 ring-1 ring-border hover:text-foreground"
       }`}
     >
@@ -38,7 +39,8 @@ export default async function InspectionsPage({
 
   const sp = await searchParams;
   const limit = Math.min(200, Number(sp.limit) || PAGE);
-  const all = listInspections(user.companyId);
+  const sites = siteIdsFor(user);
+  const all = listInspections(user.companyId).filter((i) => sites.has(i.projectId));
   const filtered = all.filter(
     (i) =>
       (!sp.project || i.projectId === sp.project) &&
@@ -81,15 +83,15 @@ export default async function InspectionsPage({
       </div>
 
       <div className="space-y-2.5">
-        <div className="flex flex-wrap gap-2">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
           <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-          {listProjects(user.companyId).map((p) => (
+          {sitesFor(user).map((p) => (
             <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
           <Pill href={q({ template: undefined })} active={!sp.template}>All types</Pill>
-          {listTemplates(user.companyId).map((t) => (
+          {listTemplates(user.companyId, { includeSystem: true }).map((t) => (
             <Pill key={t.id} href={q({ template: t.id })} active={sp.template === t.id}>{t.name.replace(" Inspection", "").replace(" Pre-Use", "")}</Pill>
           ))}
           <span className="mx-1 self-center text-foreground/20">|</span>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getTheme } from "@/lib/theme";
 import "./globals.css";
@@ -16,6 +16,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SmartSafe AI",
   description: "AI-assisted safety management for construction field teams.",
+  appleWebApp: { capable: true, title: "SmartSafe", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2f6df6",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

@@ -14,7 +14,8 @@ import {
   safetyScore,
   weeklySeries,
 } from "@/lib/metrics";
-import { listCorrectiveActions, listFindings, listProjects, getCompany } from "@/lib/db";
+import { listCorrectiveActions, listFindings, getCompany } from "@/lib/db";
+import { sitesFor } from "@/lib/scope";
 import { greeting } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
 import { StatTiles } from "@/components/dashboard/stat-tiles";
@@ -46,10 +47,20 @@ function SubScore({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ManagerDashboard({ user, project, canCustomize }: { user: User; project?: Project; canCustomize: boolean }) {
+export function ManagerDashboard({
+  user,
+  project,
+  canCustomize,
+  showAllSites = true,
+}: {
+  user: User;
+  project?: Project;
+  canCustomize: boolean;
+  showAllSites?: boolean;
+}) {
   const projectId = project?.id;
   const company = getCompany(user.companyId);
-  const projects = listProjects(user.companyId);
+  const projects = sitesFor(user);
   const score = safetyScore(user.companyId, projectId);
   const level = riskLevelFromScore(score.score);
   const series = weeklySeries(user.companyId, projectId, 12);
@@ -93,7 +104,7 @@ export function ManagerDashboard({ user, project, canCustomize }: { user: User; 
             )}
           </div>
         </div>
-        <ProjectSwitcher projects={projects} selectedId={projectId} />
+        <ProjectSwitcher projects={projects} selectedId={projectId} showAll={showAllSites} />
       </div>
 
       <section className="relative overflow-hidden rounded-3xl border border-border/50 shadow-2xl shadow-brand/5 transition-all">

@@ -315,7 +315,7 @@ export default async function ProjectDetailPage({
                       <p className="truncate text-xs text-foreground/50">{person.title}</p>
                     </div>
                   </div>
-                  {caps.canManageSettings && (
+                  {caps.canManageCrews && (
                     <form action={removeCrewMemberAction}>
                       <input type="hidden" name="projectId" value={projectId} />
                       <input type="hidden" name="userId" value={id} />
@@ -355,7 +355,7 @@ export default async function ProjectDetailPage({
           })}
         </div>
 
-        {caps.canManageSettings && available.length > 0 && (
+        {caps.canManageCrews && available.length > 0 && (
           <form action={addCrewMemberAction} className="card flex flex-wrap items-center gap-3 p-4">
             <input type="hidden" name="projectId" value={projectId} />
             <span className="text-sm font-medium text-foreground/70">Add to crew</span>
