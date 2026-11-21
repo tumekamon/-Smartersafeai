@@ -4,13 +4,14 @@ import type { Capabilities } from "@/lib/authz";
 import { listCorrectiveActions, listFindings, listInspections } from "@/lib/db";
 import { nowMs } from "@/lib/time";
 import { siteIdsFor } from "@/lib/scope";
+import { workingSiteIds } from "@/lib/site-focus";
 import { IconClipboardCheck, IconSparkle, IconWrench } from "@/components/ui/icons";
 
 type WorkTab = "review" | "inspections" | "fixes";
 
 /** The review queue, inspections and fixes as one "Work" area, shown as large tabs. */
-export function workTabsFor(user: User, caps: Capabilities) {
-  const sites = siteIdsFor(user);
+/** `sites` narrows the counts (a worker's working site); defaults to all of the person's sites. */
+export function workTabsFor(user: User, caps: Capabilities, sites: Set<string> = siteIdsFor(user)) {
   // Workers see only their own tasks unless given extra rights over fixes or reviews.
   const tasksOnly = user.role === "WORKER" && !caps.canVerifyActions && !caps.canReviewFindings;
   const tabs: { id: WorkTab; href: string; label: string; count?: number; Icon: typeof IconSparkle }[] = [];
@@ -24,14 +25,14 @@ export function workTabsFor(user: User, caps: Capabilities) {
     tabs.push({ id: "inspections", href: "/inspections", label: "Inspections · 7d", count: recent, Icon: IconClipboardCheck });
   }
   const open = listCorrectiveActions(user.companyId).filter((a) =>
-    tasksOnly ? a.assignedToId === user.id && a.status === "open" : sites.has(a.projectId) && a.status !== "closed"
+    tasksOnly ? a.assignedToId === user.id && a.status === "open" && sites.has(a.projectId) : sites.has(a.projectId) && a.status !== "closed"
   ).length;
   tabs.push({ id: "fixes", href: "/corrective-actions", label: tasksOnly ? "My tasks" : "Fixes", count: open, Icon: IconWrench });
   return tabs;
 }
 
-export function WorkTabs({ user, caps, active }: { user: User; caps: Capabilities; active: WorkTab }) {
-  const tabs = workTabsFor(user, caps);
+export async function WorkTabs({ user, caps, active }: { user: User; caps: Capabilities; active: WorkTab }) {
+  const tabs = workTabsFor(user, caps, await workingSiteIds(user));
   if (tabs.length < 2) return null;
 
   return (

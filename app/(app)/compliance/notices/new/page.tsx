@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { listProjects } from "@/lib/db";
+import { sitesFor } from "@/lib/scope";
 import { createGcNoticeAction } from "@/lib/actions/compliance";
 import Link from "next/link";
 
@@ -9,7 +9,7 @@ export default async function RaiseNoticePage() {
   const user = await getCurrentUser();
   if (!getCapabilities(user).canManageCompliance) redirect("/compliance");
 
-  const projects = listProjects(user.companyId);
+  const projects = sitesFor(user);
 
   return (
     <div className="max-w-2xl space-y-6">

@@ -14,7 +14,7 @@ export function Sidebar({
   projectCount,
   hidden = [],
 }: {
-  user: Pick<User, "role" | "readOnly">;
+  user: Pick<User, "role" | "readOnly" | "extraPermissions">;
   companyName: string;
   badges: { work: number };
   projectCount: number;

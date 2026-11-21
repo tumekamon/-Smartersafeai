@@ -1,24 +1,18 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { peopleFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { listUsers } from "@/lib/db";
 import { createCertificationAction } from "@/lib/actions/compliance";
 import Link from "next/link";
+import { CERTIFICATION_TYPES } from "@/lib/certifications";
 
-const CERT_TYPES = [
-  "Electrical Safety (NFPA 70E)",
-  "LOTO Authorized",
-  "HAZCOM",
-  "First Aid / CPR",
-  "Fall Protection",
-  "Aerial Lift Operator",
-];
+const CERT_TYPES = CERTIFICATION_TYPES.map((c) => c.type);
 
 export default async function LogTrainingPage() {
   const user = await getCurrentUser();
   if (!getCapabilities(user).canManageCompliance) redirect("/compliance");
 
-  const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const people = peopleFor(user).sort((a, b) => a.lastName.localeCompare(b.lastName));
 
   return (
     <div className="max-w-xl space-y-6">

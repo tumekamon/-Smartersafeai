@@ -2,11 +2,12 @@ import { redirect } from "next/navigation";
 import { ROLE_INFO, ROLES, roleLabel } from "@/lib/roles";
 import Image from "next/image";
 import { getSession } from "@/lib/session";
-import { listCompanies, listProjects, listUsers } from "@/lib/db";
+import { listCompanies, listUsers } from "@/lib/db";
 import { brandVars } from "@/lib/color";
 import { LoginForm, type DemoAccount, type DemoLevel } from "@/components/login-form";
 import { EvidenceScene } from "@/components/viz/evidence-scene";
 import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
+import { ClearOfflineData } from "@/components/offline/clear-offline-data";
 
 
 function hueFor(id: string) {
@@ -38,13 +39,12 @@ export default async function LoginPage() {
   })).filter((l) => l.accounts.length > 0);
   const clients = featured.filter((u) => u.readOnly).map(toAccount);
 
-  const project = listProjects(company?.id ?? "")[0];
-
   return (
     <div
       className="tenant-theme grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]"
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
+      <ClearOfflineData />
       <section className="hero relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14" style={{ borderRadius: 0 }}>
         <div className="absolute inset-0 z-0 pointer-events-none">
           <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Construction background" fill className="object-cover opacity-30 mix-blend-overlay" />
@@ -87,7 +87,6 @@ export default async function LoginPage() {
 
         <p className="relative z-10 hero-muted text-xs font-medium opacity-80 drop-shadow-sm">
           {company?.name}
-          {project ? ` · ${project.shortName} project team` : ""}
         </p>
       </section>
 

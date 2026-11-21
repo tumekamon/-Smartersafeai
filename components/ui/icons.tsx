@@ -302,3 +302,92 @@ export function IconFileText(props: IconProps) {
     </svg>
   );
 }
+
+export function IconPhone(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6.6 3.5h2.6l1.4 4-2 1.4a11.5 11.5 0 0 0 6.5 6.5l1.4-2 4 1.4v2.6a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2Z" />
+    </svg>
+  );
+}
+
+export function IconMail(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.8" />
+      <path d="m4 7 8 6 8-6" />
+    </svg>
+  );
+}
+
+export function IconLayers(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m12 4 8.5 4.5L12 13 3.5 8.5Z" />
+      <path d="m3.5 12.5 8.5 4.5 8.5-4.5" />
+      <path d="m3.5 16.5 8.5 4.5 8.5-4.5" />
+    </svg>
+  );
+}
+
+export function IconBell(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 6.2 2.5 7H3.5c.7-.8 2.5-2.5 2.5-7Z" />
+      <path d="M10 19.5a2.1 2.1 0 0 0 4 0" />
+    </svg>
+  );
+}
+
+export function IconSiren(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 18v-6a5 5 0 0 1 10 0v6" />
+      <path d="M5 21h14v-3H5z" />
+      <path d="M12 2v2M4.2 5.2l1.4 1.4M19.8 5.2l-1.4 1.4M2 12h2M20 12h2" />
+    </svg>
+  );
+}
+
+export function IconFirstAid(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="6" width="18" height="14" rx="2" />
+      <path d="M9 6V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V6M12 10v6M9 13h6" />
+    </svg>
+  );
+}
+
+export function IconHospital(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16M2 21h20" />
+      <path d="M12 7v6M9 10h6M10 21v-4h4v4" />
+    </svg>
+  );
+}
+
+export function IconFlag(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+    </svg>
+  );
+}
+
+export function IconWifiOff(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 3l18 18M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 4.2-2.4M14.8 10.5A10 10 0 0 1 19 12.9M2 9.3a15 15 0 0 1 4.4-2.8M11 5.1A15 15 0 0 1 22 9.3" />
+      <path d="M12 20h.01" />
+    </svg>
+  );
+}
+
+export function IconUpload(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
+    </svg>
+  );
+}

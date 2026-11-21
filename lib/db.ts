@@ -1,9 +1,12 @@
 import "server-only";
 import { buildSeed, type Store } from "@/lib/seed";
+import { effectiveCertifications } from "@/lib/certifications";
 import type { RoleLayout } from "@/lib/home-layout";
 import type {
   Asset,
   Certification,
+  CheckIn,
+  CheckInStatus,
   ChecklistItem,
   ChecklistResponse,
   Company,
@@ -35,12 +38,12 @@ import type {
  * Cached on `globalThis` so dev-mode module reloads don't reseed it.
  */
 
-const globalForStore = globalThis as unknown as { __smartsafeStoreV3?: Store };
+const globalForStore = globalThis as unknown as { __smartsafeStoreV8?: Store };
 
-export const store: Store = globalForStore.__smartsafeStoreV3 ?? buildSeed(new Date());
+export const store: Store = globalForStore.__smartsafeStoreV8 ?? buildSeed(new Date());
 
-if (!globalForStore.__smartsafeStoreV3) {
-  globalForStore.__smartsafeStoreV3 = store;
+if (!globalForStore.__smartsafeStoreV8) {
+  globalForStore.__smartsafeStoreV8 = store;
 }
 
 function nextId(prefix: string) {
@@ -189,6 +192,7 @@ export function updateUser(
     lastName?: string;
     role?: UserRole;
     title?: string;
+    phone?: string;
     active?: boolean;
     readOnly?: boolean;
     dashboardTiles?: string[];
@@ -201,6 +205,7 @@ export function updateUser(
   if (input.lastName?.trim()) user.lastName = input.lastName.trim();
   if (input.role) user.role = input.role;
   if (input.title?.trim()) user.title = input.title.trim();
+  if (input.phone !== undefined) user.phone = input.phone.trim() || undefined;
   if (input.active !== undefined) user.active = input.active;
   if (input.readOnly !== undefined) user.readOnly = input.readOnly || undefined;
   if (input.dashboardTiles !== undefined) user.dashboardTiles = input.dashboardTiles;
@@ -252,7 +257,7 @@ export function createProject(input: {
 
 export function updateProject(
   id: string,
-  input: Partial<Pick<Project, "name" | "shortName" | "location" | "client" | "status" | "percentComplete" | "headcount">>
+  input: Partial<Pick<Project, "name" | "shortName" | "location" | "client" | "status" | "percentComplete" | "headcount" | "geofence">>
 ): Project | undefined {
   const project = getProject(id);
   if (!project) return undefined;
@@ -501,6 +506,7 @@ export function createCorrectiveAction(input: {
   location?: SiteLocation;
   description: string;
   assignedToId: string;
+  assignedById?: string;
   dueDate: string;
 }): CorrectiveAction {
   const action: CorrectiveAction = {
@@ -513,6 +519,7 @@ export function createCorrectiveAction(input: {
     location: input.location,
     description: input.description,
     assignedToId: input.assignedToId,
+    assignedById: input.assignedById,
     dueDate: input.dueDate,
     status: "open",
     createdAt: new Date().toISOString(),
@@ -538,11 +545,68 @@ export function updateCorrectiveActionStatus(
   return action;
 }
 
+/** The assignee's "it's fixed", with the photo and note that prove it. */
+export function completeCorrectiveAction(
+  id: string,
+  input: { byId: string; photo?: Evidence; note?: string }
+): CorrectiveAction | undefined {
+  const action = updateCorrectiveActionStatus(id, "completed");
+  if (!action) return undefined;
+  action.completedById = input.byId;
+  action.completionPhoto = input.photo;
+  action.completionNote = input.note;
+  action.sentBack = undefined;
+  return action;
+}
+
+/** A checker isn't satisfied: back to open, with the reason for the assignee. */
+export function sendBackCorrectiveAction(id: string, input: { byId: string; note: string }): CorrectiveAction | undefined {
+  const action = getCorrectiveAction(id);
+  if (!action) return undefined;
+  action.status = "open";
+  action.completedAt = undefined;
+  action.sentBack = { note: input.note, byId: input.byId, at: new Date().toISOString() };
+  return action;
+}
+
 // --- Compliance ---
 
+/**
+ * The certifications that count: verified, one per person and type (the longest
+ * running). Uploads waiting for review or turned down are left out.
+ */
 export function listCertifications(companyId: string): Certification[] {
+  return effectiveCertifications(listCertificationRecords(companyId));
+}
+
+/** Every record, including uploads pending review and rejected ones. */
+export function listCertificationRecords(companyId: string, filter: { userId?: string } = {}): Certification[] {
   const ids = userIdsForCompany(companyId);
-  return store.certifications.filter((c) => ids.has(c.userId));
+  return store.certifications.filter((c) => ids.has(c.userId) && (!filter.userId || c.userId === filter.userId));
+}
+
+export function getCertification(id: string): Certification | undefined {
+  return store.certifications.find((c) => c.id === id);
+}
+
+export function reviewCertification(
+  id: string,
+  input: { review: "verified" | "rejected"; reviewedById: string; reviewNote?: string }
+): Certification | undefined {
+  const cert = getCertification(id);
+  if (!cert) return undefined;
+  cert.review = input.review;
+  cert.reviewedById = input.reviewedById;
+  cert.reviewedAt = new Date().toISOString();
+  cert.reviewNote = input.reviewNote;
+  return cert;
+}
+
+export function deleteCertification(id: string): boolean {
+  const i = store.certifications.findIndex((c) => c.id === id);
+  if (i === -1) return false;
+  store.certifications.splice(i, 1);
+  return true;
 }
 
 export function listPermits(companyId: string): Permit[] {
@@ -642,4 +706,74 @@ export function updateIncidentStatus(id: string, status: IncidentStatus): Incide
   incident.status = status;
   if (status === "closed") incident.closedAt = new Date().toISOString();
   return incident;
+}
+
+// ── Daily check-ins ──────────────────────────────────────────────────────────
+// Read by the worker's own screens and by the supervisor / safety manager review
+// screens. See docs/daily-check-in.md for the contract.
+
+/** Check-ins for a company, newest first. Filter by day (YYYY-MM-DD), site, person or status. */
+export function listCheckIns(
+  companyId: string,
+  filter: { day?: string; projectId?: string; userId?: string; status?: CheckInStatus } = {}
+): CheckIn[] {
+  return newestFirst(
+    store.checkIns.filter(
+      (c) =>
+        c.companyId === companyId &&
+        (!filter.day || c.day === filter.day) &&
+        (!filter.projectId || c.projectId === filter.projectId) &&
+        (!filter.userId || c.userId === filter.userId) &&
+        (!filter.status || c.status === filter.status)
+    ),
+    "submittedAt"
+  );
+}
+
+export function getCheckIn(id: string): CheckIn | undefined {
+  return store.checkIns.find((c) => c.id === id);
+}
+
+/** The check-in that counts for this person today: the latest one, so a redo after a rejection replaces it. */
+export function getCheckInForDay(companyId: string, userId: string, day: string): CheckIn | undefined {
+  return listCheckIns(companyId, { userId, day })[0];
+}
+
+export function createCheckIn(input: Omit<CheckIn, "id" | "status">): CheckIn {
+  const checkIn: CheckIn = { ...input, id: nextId("ci"), status: "pending" };
+  store.checkIns.push(checkIn);
+  return checkIn;
+}
+
+export function reviewCheckIn(
+  id: string,
+  input: { status: Exclude<CheckInStatus, "pending">; reviewedById: string; reviewNote?: string }
+): CheckIn | undefined {
+  const checkIn = getCheckIn(id);
+  if (!checkIn) return undefined;
+  checkIn.status = input.status;
+  checkIn.reviewedById = input.reviewedById;
+  checkIn.reviewedAt = new Date().toISOString();
+  checkIn.reviewNote = input.reviewNote;
+  return checkIn;
+}
+
+// --- Notifications & offline outbox ---
+
+/** When this person last opened their notifications; undefined if never. */
+export function getInboxSeen(userId: string): string | undefined {
+  return store.inboxSeen[userId];
+}
+
+export function setInboxSeen(userId: string, at: string) {
+  store.inboxSeen[userId] = at;
+}
+
+/** A report sent from the phone's outbox that was already filed (the phone may resend it). */
+export function getOutboxReceipt(userId: string, clientId: string) {
+  return store.outboxReceipts[`${userId}:${clientId}`];
+}
+
+export function saveOutboxReceipt(userId: string, clientId: string, receipt: { kind: "hazard" | "task"; ref: string; next: string }) {
+  store.outboxReceipts[`${userId}:${clientId}`] = { ...receipt, at: new Date().toISOString() };
 }

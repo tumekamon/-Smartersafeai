@@ -196,9 +196,10 @@ export function certStatus(expiresOn: string, now = Date.now()): CertStatus {
   return "current";
 }
 
-export function trainingSummary(companyId: string, projectId?: string) {
+/** `userIds` limits it to some people (e.g. the crews of a supervisor's or worker's sites). */
+export function trainingSummary(companyId: string, projectId?: string, userIds?: Set<string>) {
   void projectId;
-  const certs = listCertifications(companyId);
+  const certs = listCertifications(companyId).filter((c) => !userIds || userIds.has(c.userId));
   const now = Date.now();
   let current = 0;
   let expiring = 0;
@@ -220,8 +221,9 @@ export function permitState(p: Permit, now = Date.now()): "active" | "closed" | 
   return "active";
 }
 
-export function permitSummary(companyId: string) {
-  const permits = listPermits(companyId);
+/** `siteIds` limits it to some sites; omit for the whole company. */
+export function permitSummary(companyId: string, siteIds?: Set<string>) {
+  const permits = listPermits(companyId).filter((p) => !siteIds || siteIds.has(p.projectId));
   const now = Date.now();
   return {
     active: permits.filter((p) => permitState(p, now) === "active").length,
@@ -242,8 +244,9 @@ export function ppeSummary(companyId: string) {
   return { low, lowCount: low.length, spent, budget: 52_000 };
 }
 
-export function equipmentSummary(companyId: string) {
-  const assets = listAssets(companyId);
+/** `siteIds` limits it to some sites; omit for the whole company. */
+export function equipmentSummary(companyId: string, siteIds?: Set<string>) {
+  const assets = listAssets(companyId).filter((a) => !siteIds || siteIds.has(a.projectId));
   const lifts = listInspections(companyId).filter((i) => i.templateId === "t_scissor_lift");
   const rows = assets.map((a) => {
     const logs = lifts.filter((i) => i.assetTag === a.tag);

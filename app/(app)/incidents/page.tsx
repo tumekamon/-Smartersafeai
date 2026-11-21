@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
-import { siteIdsFor, sitesFor } from "@/lib/scope";
+import { workingSites } from "@/lib/site-focus";
 import { getCapabilities } from "@/lib/authz";
 import { getCompany, getProject, getUser, listIncidents } from "@/lib/db";
 import { updateIncidentStatusAction } from "@/lib/actions/incidents";
@@ -38,7 +38,9 @@ export default async function IncidentsPage({
   const caps = getCapabilities(user);
   const sp = await searchParams;
 
-  const sites = siteIdsFor(user);
+  // A worker sees only their working site; supervisors and managers all of theirs.
+  const siteList = await workingSites(user);
+  const sites = new Set(siteList.map((p) => p.id));
   const fields = getCompany(user.companyId)?.incidentFields ?? [];
   const all = listIncidents(user.companyId).filter(
     (i) => sites.has(i.projectId) && (!sp.project || i.projectId === sp.project) && (!sp.status || i.status === sp.status)
@@ -77,11 +79,15 @@ export default async function IncidentsPage({
         <Pill href={q({ status: "open" })} active={sp.status === "open"}>Open</Pill>
         <Pill href={q({ status: "investigating" })} active={sp.status === "investigating"}>Investigating</Pill>
         <Pill href={q({ status: "closed" })} active={sp.status === "closed"}>Closed</Pill>
-        <span className="mx-1 self-center text-foreground/20">|</span>
-        <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-        {sitesFor(user).map((p) => (
-          <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
-        ))}
+        {siteList.length > 1 && (
+          <>
+            <span className="mx-1 self-center text-foreground/20">|</span>
+            <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
+            {siteList.map((p) => (
+              <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
+            ))}
+          </>
+        )}
       </div>
 
       {all.length === 0 ? (

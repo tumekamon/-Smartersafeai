@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { WorkTabs } from "@/components/work-tabs";
 import { getCurrentUser } from "@/lib/dal";
-import { siteIdsFor, sitesFor } from "@/lib/scope";
+import { workingSite, workingSiteIds, workingSites } from "@/lib/site-focus";
+import { tasksOnly } from "@/lib/tasks";
+import { WorkerTasks } from "@/components/tasks/worker-tasks";
 import { getCapabilities } from "@/lib/authz";
 import { getProject, getUser, listCorrectiveActions } from "@/lib/db";
 import { isActionOverdue } from "@/lib/metrics";
@@ -51,17 +53,25 @@ function Pill({ href, active, children }: { href: string; active: boolean; child
 export default async function CorrectiveActionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; project?: string; col?: string }>;
+  searchParams: Promise<{ view?: string; project?: string; col?: string; tab?: string }>;
 }) {
   const user = await getCurrentUser();
   const caps = getCapabilities(user);
   // A worker sees only their own tasks unless they were given rights over fixes.
-  const isWorker = user.role === "WORKER" && !caps.canVerifyActions && !caps.canReviewFindings;
+  const isWorker = tasksOnly(user, caps);
   const sp = await searchParams;
+
+  if (isWorker) {
+    const site = await workingSite(user);
+    const mine = listCorrectiveActions(user.companyId).filter((a) => a.assignedToId === user.id && a.projectId === site?.id);
+    const tab = sp.tab === "check" || sp.tab === "done" ? sp.tab : "todo";
+    return <WorkerTasks tasks={mine} site={site} tab={tab} now={nowMs()} />;
+  }
   const view = isWorker ? "mine" : (sp.view ?? "all");
 
   const now = nowMs();
-  const sites = siteIdsFor(user);
+  // A worker sees only their working site; supervisors and managers all of theirs.
+  const sites = await workingSiteIds(user);
   const all = listCorrectiveActions(user.companyId).filter(
     (a) =>
       sites.has(a.projectId) &&
@@ -112,7 +122,7 @@ export default async function CorrectiveActionsPage({
               <Pill href={q({ view: "mine" })} active={view === "mine"}>Mine</Pill>
               <span className="mx-1 self-center text-foreground/20">|</span>
               <Pill href={q({ project: undefined })} active={!sp.project}>All sites</Pill>
-              {sitesFor(user).map((p) => (
+              {(await workingSites(user)).map((p) => (
                 <Pill key={p.id} href={q({ project: p.id })} active={sp.project === p.id}>{p.shortName}</Pill>
               ))}
             </div>
@@ -165,7 +175,9 @@ export default async function CorrectiveActionsPage({
                   return (
                     <article key={a.id} className="card relative overflow-hidden p-4 pl-5">
                       <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: stripe[a.priority] }} />
-                      <p className="text-[15px] font-semibold leading-snug">{a.description.split(" — ")[0]}</p>
+                      <Link href={`/corrective-actions/${a.id}`} className="text-[15px] font-semibold leading-snug after:absolute after:inset-0 hover:underline">
+                        {a.description.split(" — ")[0]}
+                      </Link>
                       <p className="mt-1.5 flex items-center gap-1 text-xs text-foreground/55">
                         <IconMapPin width={13} height={13} />
                         {project?.shortName}{a.location ? ` · ${a.location.level} ${a.location.zone}` : ""}
@@ -187,8 +199,17 @@ export default async function CorrectiveActionsPage({
                           </span>
                         )}
                       </div>
-                      {step && (
-                        <form action={updateCorrectiveActionStatusAction} className="mt-3">
+                      {step?.next === "completed" && (
+                        <Link
+                          href={`/corrective-actions/${a.id}`}
+                          className="relative z-10 mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-foreground text-sm font-bold text-background hover:opacity-90"
+                        >
+                          Mark fixed (photo)
+                          <IconArrowRight width={16} height={16} />
+                        </Link>
+                      )}
+                      {step && step.next !== "completed" && (
+                        <form action={updateCorrectiveActionStatusAction} className="relative z-10 mt-3">
                           <input type="hidden" name="correctiveActionId" value={a.id} />
                           <input type="hidden" name="status" value={step.next} />
                           <button

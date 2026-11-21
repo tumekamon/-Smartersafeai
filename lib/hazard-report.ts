@@ -1,36 +1,27 @@
-"use server";
-
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/dal";
+import "server-only";
 import { getCapabilities } from "@/lib/authz";
-import {
-  addFindingToInspection,
-  createInspection,
-  ensureHazardReportTemplate,
-  getCompany,
-  getProject,
-} from "@/lib/db";
+import { addFindingToInspection, createInspection, ensureHazardReportTemplate, getCompany } from "@/lib/db";
+import { accessibleProject } from "@/lib/scope";
 import { readEvidence } from "@/lib/evidence";
 import { checkHazardPhoto } from "@/lib/mock-ai";
-import type { RiskLevel } from "@/lib/types";
-
-export type HazardReportState = { error?: string } | undefined;
+import type { RiskLevel, User } from "@/lib/types";
 
 const RISKS: RiskLevel[] = ["low", "medium", "high", "critical"];
 
-/**
- * Quick hazard report from site: one photo, a category tap, a severity tap. It is filed as a
- * "Hazard report" inspection with one pending finding, so it lands in the same review queue
- * and corrective-action flow as everything else.
- */
-export async function submitHazardReport(_state: HazardReportState, formData: FormData): Promise<HazardReportState> {
-  const user = await getCurrentUser();
-  if (!getCapabilities(user).canSubmitInspections) {
-    return { error: "Your account can't report hazards." };
-  }
+export type HazardReportResult = { error: string } | { inspectionId: string; findingId: string };
 
-  const project = getProject(String(formData.get("projectId") ?? ""));
-  if (!project || project.companyId !== user.companyId) return { error: "Pick the site." };
+/**
+ * Files a quick hazard report: one photo, a category, a severity and where. It becomes a
+ * "Hazard report" inspection with one pending finding, so it lands in the same review
+ * queue and fix flow as everything else. Used by the form's server action and by the
+ * phone's offline outbox (app/api/outbox/hazard), so both apply exactly the same rules.
+ */
+export async function fileHazardReport(user: User, formData: FormData): Promise<HazardReportResult> {
+  if (!getCapabilities(user).canSubmitInspections) return { error: "Your account can't report hazards." };
+
+  // Only a site this person is on the crew of (L1/L2: any site of their company).
+  const project = accessibleProject(user, String(formData.get("projectId") ?? ""));
+  if (!project || project.status !== "active") return { error: "Pick one of your sites." };
 
   const level = String(formData.get("level") ?? "");
   const zone = String(formData.get("zone") ?? "");
@@ -43,10 +34,14 @@ export async function submitHazardReport(_state: HazardReportState, formData: Fo
   const risk = String(formData.get("risk") ?? "") as RiskLevel;
   if (!RISKS.includes(risk)) return { error: "Pick how serious it is." };
 
-  const note = String(formData.get("note") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim().slice(0, 200);
   const { evidence, error } = await readEvidence(formData);
   if (error) return { error };
   if (evidence.length === 0 && !note) return { error: "Add a photo or say what you saw." };
+
+  // When it was seen, if the phone held it back for lack of signal (never in the future).
+  const seen = Date.parse(String(formData.get("seenAt") ?? ""));
+  const createdAt = new Date(Number.isFinite(seen) && seen <= Date.now() && seen > Date.now() - 7 * 86_400_000 ? seen : Date.now()).toISOString();
 
   const photoCheck = checkHazardPhoto(category, evidence[0]);
   const template = ensureHazardReportTemplate(user.companyId);
@@ -59,8 +54,9 @@ export async function submitHazardReport(_state: HazardReportState, formData: Fo
     evidence,
   });
 
+  const findingId = `f_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   addFindingToInspection(inspection.id, {
-    id: `f_${Date.now()}`,
+    id: findingId,
     inspectionId: inspection.id,
     projectId: project.id,
     location: { level, zone },
@@ -74,8 +70,8 @@ export async function submitHazardReport(_state: HazardReportState, formData: Fo
     reviewerDecision: "pending",
     source: "field",
     photoCheck,
-    createdAt: new Date().toISOString(),
+    createdAt,
   });
 
-  redirect(`/inspections/${inspection.id}?reported=1`);
+  return { inspectionId: inspection.id, findingId };
 }

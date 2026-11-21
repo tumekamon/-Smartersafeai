@@ -1,12 +1,17 @@
 import { getCurrentUser } from "@/lib/dal";
 import { updateProfileAction } from "@/lib/actions/users";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
+import { MyCertifications } from "@/components/certifications/my-certifications";
+import { listCertificationRecords } from "@/lib/db";
+import { nowMs } from "@/lib/time";
 
-export default async function ProfileSettingsPage() {
+export default async function ProfileSettingsPage({ searchParams }: { searchParams: Promise<{ sent?: string }> }) {
   const user = await getCurrentUser();
+  const { sent } = await searchParams;
+  const records = user.readOnly ? [] : listCertificationRecords(user.companyId, { userId: user.id });
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="max-w-2xl space-y-8">
       <h1 className="text-3xl font-semibold tracking-tight">Your profile</h1>
 
       <form action={updateProfileAction} className="card space-y-4 p-5">
@@ -40,6 +45,19 @@ export default async function ProfileSettingsPage() {
           />
         </label>
         
+        <label className="block text-sm">
+          <span className="mb-1.5 block font-medium text-foreground/80">Work phone</span>
+          <input
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            placeholder="+1 859 555 0100"
+            defaultValue={user.phone ?? ""}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-sidebar-accent"
+          />
+          <span className="mt-1 block text-[11px] text-foreground/45">Your crew sees this as a call button on their site card.</span>
+        </label>
+
         <label className="block text-sm opacity-60">
           <span className="mb-1.5 block font-medium text-foreground/80">Email</span>
           <input
@@ -57,6 +75,8 @@ export default async function ProfileSettingsPage() {
           </button>
         </div>
       </form>
+
+      {!user.readOnly && <MyCertifications records={records} now={nowMs()} justSent={sent === "1"} />}
 
       <ChangePasswordForm />
     </div>

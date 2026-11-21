@@ -1,7 +1,9 @@
 import "server-only";
+import { CHECK_IN_PPE, checkInDay, distanceMeters } from "@/lib/check-in";
 import type {
   Asset,
   Certification,
+  CheckIn,
   CertificationType,
   ChecklistResponse,
   Company,
@@ -38,6 +40,11 @@ export type Store = {
   assets: Asset[];
   gcNotices: GcNotice[];
   incidents: Incident[];
+  checkIns: CheckIn[];
+  /** When each person last opened their notifications (userId → ISO time). */
+  inboxSeen: Record<string, string>;
+  /** Offline reports already filed, keyed `${userId}:${clientId}`, so a resend never files twice. */
+  outboxReceipts: Record<string, { kind: "hazard" | "task"; ref: string; next: string; at: string }>;
 };
 
 const DAY = 86_400_000;
@@ -399,6 +406,17 @@ export function buildSeed(now: Date): Store {
     mk("u_ethan", "Ethan", "Cole", "WORKER", "Lift Operator"),
   ];
 
+  // Work phones (fictional 555 numbers) for the people workers need to reach.
+  const phones: Record<string, string> = {
+    u_lawrence: "+1 859 555 0110",
+    u_amon: "+1 859 555 0114",
+    u_justus: "+1 859 555 0121",
+    u_marcus: "+1 859 555 0127",
+    u_luis: "+1 859 555 0133",
+    u_tanya: "+1 502 555 0141",
+  };
+  for (const u of users) if (phones[u.id]) u.phone = phones[u.id];
+
   const projects: Project[] = [
     {
       id: "p_markey",
@@ -415,6 +433,14 @@ export function buildSeed(now: Date): Store {
       levels: ["B1", "L1", "L2", "L3", "L4", "L5"],
       zones: ["North", "East", "South", "West"],
       crewIds: [],
+      geofence: { lat: 38.0314, lng: -84.5079, radiusM: 300 },
+      emergency: {
+        sitePhone: "+1 859 555 0190",
+        siteAddress: "Gate 2, 800 Rose St, Lexington, KY 40536",
+        musterPoint: "Parking lot C, north of Gate 2 (green flag)",
+        firstAidStation: "Site office trailer, by Gate 2. AED on the wall inside the door.",
+        hospital: { name: "UK Albert B. Chandler Hospital ER", address: "1000 S Limestone, Lexington, KY 40536", phone: "+1 859 323 5000" },
+      },
     },
     {
       id: "p_lex_medical",
@@ -431,6 +457,14 @@ export function buildSeed(now: Date): Store {
       levels: ["L1", "L2", "L3", "L4"],
       zones: ["North", "East", "South", "West"],
       crewIds: [],
+      geofence: { lat: 38.0462, lng: -84.4968, radiusM: 200 },
+      emergency: {
+        sitePhone: "+1 859 555 0194",
+        siteAddress: "1740 Nicholasville Rd, Lexington, KY 40503",
+        musterPoint: "Grass island at the main entrance, by the site sign",
+        firstAidStation: "Ground floor, North stair lobby gang box",
+        hospital: { name: "Baptist Health Lexington ER", address: "1740 Nicholasville Rd, Lexington, KY 40503", phone: "+1 859 260 6100" },
+      },
     },
     {
       id: "p_louisville",
@@ -447,12 +481,20 @@ export function buildSeed(now: Date): Store {
       levels: ["L1", "L2", "L3"],
       zones: ["North", "East", "South", "West"],
       crewIds: [],
+      geofence: { lat: 38.2484, lng: -85.7488, radiusM: 250 },
+      emergency: {
+        sitePhone: "+1 502 555 0196",
+        siteAddress: "530 S Jackson St, Louisville, KY 40202",
+        musterPoint: "East laydown yard gate",
+        hospital: { name: "UofL Hospital ER", address: "530 S Jackson St, Louisville, KY 40202", phone: "+1 502 562 3000" },
+      },
     },
   ];
 
   const crews: Record<string, string[]> = {
     p_markey: ["u_justus", "u_marcus", "u_kevin", "u_brian", "u_sofia", "u_devon", "u_miguel", "u_priya"],
-    p_lex_medical: ["u_luis", "u_omar", "u_jake", "u_rosa", "u_ethan", "u_tyler"],
+    // Kevin works two sites, so the demo worker can switch between them.
+    p_lex_medical: ["u_luis", "u_omar", "u_jake", "u_rosa", "u_ethan", "u_tyler", "u_kevin"],
     p_louisville: ["u_tanya", "u_grace", "u_jake", "u_ethan"],
   };
   for (const pr of projects) pr.crewIds = crews[pr.id];
@@ -933,6 +975,132 @@ export function buildSeed(now: Date): Store {
   for (const a of kevinTasks) a.assignedToId = "u_kevin";
   const kevinDone = correctiveActions.find((a) => a.projectId === "p_markey" && a.status === "completed" && a.assignedToId !== "u_kevin");
   if (kevinDone) kevinDone.assignedToId = "u_kevin";
+  // Kevin also has one task on his second site, so switching sites changes his list.
+  const kevinLex = correctiveActions.find((a) => a.projectId === "p_lex_medical" && a.status === "open" && a.priority !== "critical");
+  if (kevinLex) kevinLex.assignedToId = "u_kevin";
+  // And one assigned job (no photo needed), to show marking a job done with a note.
+  const kevinJob = correctiveActions.find((a) => a.description === "Schedule LOTO refresher for the L3 East crew");
+  if (kevinJob) {
+    Object.assign(kevinJob, { assignedToId: "u_kevin", status: "open", completedAt: undefined, verifiedAt: undefined, closedAt: undefined });
+    kevinJob.dueDate = dateOnly(new Date(now.getTime() + 2 * DAY));
+  }
+
+  // Who gave each task out: the site's foreman, or the safety manager for a foreman's own.
+  for (const a of correctiveActions) {
+    const foreman = crews[a.projectId].find((id) => foremen.has(id) && id !== a.assignedToId);
+    a.assignedById = foreman ?? "u_amon";
+    if (a.completedAt) a.completedById = a.assignedToId;
+  }
+  // One of Kevin's was marked done but the check found it unfinished.
+  const sentBack = kevinTasks[kevinTasks.length - 1];
+  if (sentBack) {
+    sentBack.sentBack = {
+      note: "The photo still shows material in the way. Clear it fully and send a new photo.",
+      byId: sentBack.assignedById ?? "u_justus",
+      at: iso(new Date(now.getTime() - 5 * 3_600_000)),
+    };
+  }
+
+  // Kevin's own hazard reports from site, at each stage, so "My reports" shows the loop:
+  // waiting for review, confirmed with a fix under way, fixed, and not taken forward.
+  const hazardTemplate: InspectionTemplate = {
+    id: "t_hazard_report",
+    companyId: "co_besco",
+    name: "Hazard report",
+    evidenceRequirement: "optional",
+    aiAnalysisEnabled: false,
+    checklist: [],
+    system: true,
+  };
+  const kevinReports: {
+    id: string;
+    hoursAgo: number;
+    level: string;
+    zone: string;
+    category: string;
+    risk: RiskLevel;
+    scene: Evidence["scene"];
+    note: string;
+    decision: ReviewerDecision;
+    reason?: string;
+    fix?: { to: string; text: string; status: CorrectiveActionStatus; doneHoursAgo?: number };
+  }[] = [
+    { id: "kr1", hoursAgo: 2, level: "L3", zone: "North", category: "Electrical", risk: "high", scene: "cord", note: "Extension cord run through standing water by the L3 North stair", decision: "pending" },
+    {
+      id: "kr2", hoursAgo: 30, level: "L4", zone: "East", category: "Fall Protection", risk: "critical", scene: "egress",
+      note: "Floor opening cover moved off the L4 East shaft, nothing marking it", decision: "approved",
+      fix: { to: "u_marcus", text: "Re-secure and mark the floor opening cover at the L4 East shaft", status: "open" },
+    },
+    {
+      id: "kr3", hoursAgo: 75, level: "B1", zone: "South", category: "Housekeeping", risk: "medium", scene: "generic",
+      note: "Wire spools and offcuts blocking the B1 South exit route", decision: "approved",
+      fix: { to: "u_brian", text: "Clear the B1 South exit route of spools and offcuts", status: "verified", doneHoursAgo: 52 },
+    },
+    {
+      id: "kr4", hoursAgo: 120, level: "L2", zone: "West", category: "PPE", risk: "low", scene: "vest",
+      note: "Visitor on L2 West without a hard hat", decision: "rejected",
+      reason: "That was the building inspector inside the marked walkway, which is allowed. Thanks for flagging it — keep doing it.",
+    },
+  ];
+  for (const r of kevinReports) {
+    const created = clampNow(new Date(now.getTime() - r.hoursAgo * HOUR));
+    const evidence: Evidence = { id: `ev_${r.id}`, fileName: "hazard.jpg", scene: r.scene, capturedAt: iso(created) };
+    const inspectionId = `i_${r.id}`;
+    const findingId = `f_${r.id}`;
+    const reviewedAt = r.decision === "pending" ? undefined : new Date(created.getTime() + 45 * 60_000);
+    inspections.push({
+      id: inspectionId,
+      projectId: "p_markey",
+      templateId: hazardTemplate.id,
+      inspectorId: "u_kevin",
+      location: { level: r.level, zone: r.zone },
+      date: dateOnly(created),
+      submittedAt: iso(created),
+      status: reviewedAt ? "reviewed" : "submitted",
+      responses: [],
+      evidence: [evidence],
+      findingIds: [findingId],
+    });
+    const finding: Finding = {
+      id: findingId,
+      inspectionId,
+      projectId: "p_markey",
+      location: { level: r.level, zone: r.zone },
+      hazardCategory: r.category,
+      title: r.note.slice(0, 80),
+      aiConfidence: 1,
+      riskLevel: r.risk,
+      aiExplanation: r.note,
+      regulatoryReference: "To be classified on review",
+      evidenceId: evidence.id,
+      reviewerDecision: r.decision,
+      source: "field",
+      createdAt: iso(created),
+      ...(reviewedAt ? { reviewerId: "u_justus", reviewedAt: iso(reviewedAt), overrideReason: r.reason } : {}),
+    };
+    findings.push(finding);
+    if (r.fix && reviewedAt) {
+      const done = r.fix.doneHoursAgo !== undefined ? new Date(now.getTime() - r.fix.doneHoursAgo * HOUR) : undefined;
+      const task: CorrectiveAction = {
+        id: `ca_${r.id}`,
+        projectId: "p_markey",
+        source: "finding",
+        findingId,
+        category: r.category,
+        priority: r.risk,
+        location: { level: r.level, zone: r.zone },
+        description: `${r.fix.text} — Markey Cancer Center, ${r.level} ${r.zone}`,
+        assignedToId: r.fix.to,
+        assignedById: "u_justus",
+        dueDate: dateOnly(new Date(reviewedAt.getTime() + (r.risk === "critical" ? 1 : 7) * DAY)),
+        status: r.fix.status,
+        createdAt: iso(reviewedAt),
+        ...(done ? { completedAt: iso(new Date(done.getTime() - 3 * HOUR)), completedById: r.fix.to, verifiedAt: iso(done) } : {}),
+      };
+      correctiveActions.push(task);
+      finding.correctiveActionId = task.id;
+    }
+  }
 
   // Certifications ---------------------------------------------------------
   const certifications: Certification[] = [];
@@ -1110,13 +1278,61 @@ export function buildSeed(now: Date): Store {
       reportedById: "u_grace",
       reportedAt: iso(at(1, 16)),
     },
+    {
+      id: "inc_05",
+      projectId: "p_markey",
+      type: "near_miss",
+      description: "Bundle of conduit slid off the L3 East scaffold deck and landed a few feet from the crew below.",
+      location: { level: "L3", zone: "East" },
+      involvedUserIds: ["u_kevin"],
+      immediateAction: "Area below cordoned off; remaining conduit lashed down and toe boards checked.",
+      oshaRecordable: false,
+      lostTimeDays: 0,
+      status: "investigating",
+      reportedById: "u_kevin",
+      reportedAt: iso(at(2, 10)),
+    },
   ];
+
+  // This morning's check-ins on the two Lexington sites. Kevin (the demo worker) is
+  // left out on purpose so signing in as him shows the check-in prompt.
+  const checkIns: CheckIn[] = [];
+  const today = checkInDay(now.getTime());
+  const seedCheckIn = (userId: string, projectId: string, minutesAgo: number, status: CheckIn["status"], offsetM = 40) => {
+    const project = projects.find((p) => p.id === projectId)!;
+    const fence = project.geofence!;
+    const position = { lat: fence.lat + offsetM / 111_000, lng: fence.lng, accuracyM: 12 };
+    const taken = clampNow(new Date(now.getTime() - minutesAgo * 60_000));
+    if (checkInDay(taken.getTime()) !== today) return;
+    checkIns.push({
+      id: `ci_${userId}`,
+      companyId: project.companyId,
+      userId,
+      projectId,
+      day: today,
+      photo: { id: `ev_ci_${userId}`, fileName: "check-in.jpg", scene: "vest", capturedAt: iso(taken) },
+      capturedAt: iso(taken),
+      submittedAt: iso(new Date(taken.getTime() + 20_000)),
+      position,
+      distanceM: Math.round(distanceMeters(position, fence)),
+      locationCheck: "inside",
+      ppeConfirmed: CHECK_IN_PPE,
+      status,
+      ...(status !== "pending" ? { reviewedById: "u_justus", reviewedAt: iso(new Date(taken.getTime() + 15 * 60_000)) } : {}),
+      ...(status === "rejected" ? { reviewNote: "No safety glasses in the photo. Put them on and check in again." } : {}),
+    });
+  };
+  seedCheckIn("u_brian", "p_markey", 95, "approved");
+  seedCheckIn("u_sofia", "p_markey", 70, "pending", 120);
+  seedCheckIn("u_devon", "p_markey", 64, "rejected");
+  seedCheckIn("u_miguel", "p_markey", 22, "pending", 60);
+  seedCheckIn("u_omar", "p_lex_medical", 48, "pending");
 
   return {
     companies,
     users,
     projects,
-    templates: TEMPLATES,
+    templates: [...TEMPLATES, hazardTemplate],
     inspections,
     findings,
     correctiveActions,
@@ -1126,5 +1342,8 @@ export function buildSeed(now: Date): Store {
     assets,
     gcNotices,
     incidents,
+    checkIns,
+    inboxSeen: {},
+    outboxReceipts: {},
   };
 }

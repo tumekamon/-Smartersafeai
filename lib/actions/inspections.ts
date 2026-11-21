@@ -7,9 +7,9 @@ import {
   addFindingToInspection,
   createInspection as dbCreateInspection,
   getInspection,
-  getProject,
   getTemplate,
 } from "@/lib/db";
+import { accessibleProject } from "@/lib/scope";
 import { analyzeInspection } from "@/lib/mock-ai";
 import { readEvidence } from "@/lib/evidence";
 import type { ChecklistResponse, ChecklistResponseValue } from "@/lib/types";
@@ -29,13 +29,14 @@ export async function submitInspection(
   const templateId = String(formData.get("templateId") ?? "");
   const level = String(formData.get("level") ?? "");
   const zone = String(formData.get("zone") ?? "");
-  const project = getProject(projectId);
+  // Only a site this person works on; anything else reads as "not found".
+  const project = accessibleProject(user, projectId);
   const template = getTemplate(templateId);
 
   if (!project || !template) {
     return { error: "Missing project or inspection template." };
   }
-  if (project.companyId !== user.companyId || template.companyId !== user.companyId) {
+  if (template.companyId !== user.companyId) {
     return { error: "Missing project or inspection template." };
   }
   if (!project.levels.includes(level) || !project.zones.includes(zone)) {

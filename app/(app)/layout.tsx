@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/dal";
-import { sitesFor } from "@/lib/scope";
+import { switchableSites, usesWorkingSite, workingSite, workingSites } from "@/lib/site-focus";
 import { hiddenModules } from "@/lib/home-layout";
 import { getCompany, listCorrectiveActions, listFindings } from "@/lib/db";
 import { getCapabilities } from "@/lib/authz";
@@ -7,20 +7,37 @@ import { brandVars } from "@/lib/color";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { MobileNav } from "@/components/mobile-nav";
+import { OutboxSync } from "@/components/offline/outbox-sync";
+import { unreadCount } from "@/lib/notifications";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   const company = getCompany(user.companyId);
   const caps = getCapabilities(user);
-  const projects = sitesFor(user).filter((p) => p.status === "active");
+  // Workers see one working site at a time; quick actions and badges follow it.
+  const projects = (await workingSites(user)).filter((p) => p.status === "active");
+  const siteIds = new Set(projects.map((p) => p.id));
+  const myOpen = listCorrectiveActions(user.companyId).filter((a) => a.assignedToId === user.id && a.status === "open");
+  const current = usesWorkingSite(user) ? await workingSite(user) : undefined;
+  const siteSwitch = current
+    ? {
+        currentId: current.id,
+        sites: switchableSites(user).map((p) => ({
+          id: p.id,
+          shortName: p.shortName,
+          location: p.location,
+          openTasks: myOpen.filter((a) => a.projectId === p.id).length,
+        })),
+      }
+    : undefined;
   // The Work badge counts what this person must act on: findings to review for
   // safety professionals, their own open tasks for everyone else.
   const workBadge = caps.canReviewFindings
     ? listFindings(user.companyId).filter((f) => f.reviewerDecision === "pending").length
     : caps.isReadOnly
       ? 0
-      : listCorrectiveActions(user.companyId).filter((a) => a.assignedToId === user.id && a.status === "open").length;
-  const navUser = { role: user.role, readOnly: user.readOnly };
+      : myOpen.filter((a) => !usesWorkingSite(user) || siteIds.has(a.projectId)).length;
+  const navUser = { role: user.role, readOnly: user.readOnly, extraPermissions: user.extraPermissions };
   const hidden = hiddenModules(company, user);
 
   return (
@@ -28,11 +45,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       className="tenant-theme flex min-h-screen w-full bg-background"
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
-      <Sidebar user={navUser} companyName={company?.name ?? ""} badges={{ work: workBadge }} projectCount={projects.length} hidden={hidden} />
+      <Sidebar user={navUser} companyName={company?.name ?? ""} badges={{ work: workBadge }} projectCount={usesWorkingSite(user) ? switchableSites(user).length : projects.length} hidden={hidden} />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <Topbar user={user} />
+        <Topbar user={user} siteSwitch={siteSwitch} unread={usesWorkingSite(user) ? unreadCount(user) : undefined} />
         <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:py-8">{children}</main>
       </div>
+      {!caps.isReadOnly && <OutboxSync userId={user.id} />}
       <MobileNav
         user={navUser}
         workBadge={workBadge}

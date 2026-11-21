@@ -4,6 +4,7 @@ import { getCapabilities } from "@/lib/authz";
 import { getProject } from "@/lib/db";
 import { updateProjectAction } from "@/lib/actions/projects";
 import Link from "next/link";
+import { GeofenceFields } from "@/components/geofence-fields";
 
 export default async function EditProjectPage({
   params,
@@ -53,6 +54,8 @@ export default async function EditProjectPage({
         </div>
         
         <Field label="Headcount" name="headcount" type="number" min={0} defaultValue={project.headcount} />
+
+        <GeofenceFields geofence={project.geofence} />
         
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 opacity-60">
           <Field label="Project number" name="projectNumber" defaultValue={project.projectNumber} readOnly hint="Cannot be changed" />

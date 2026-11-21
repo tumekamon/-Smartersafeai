@@ -10,8 +10,10 @@ import {
   createPpeItem,
   createAsset,
   createGcNotice,
-  getProject,
+  getUser,
 } from "@/lib/db";
+import { isCertificationType } from "@/lib/certifications";
+import { accessibleProject, sitesFor, worksOnSite } from "@/lib/scope";
 import type { CertificationType, SiteLocation, GcNoticeStatus, GcNoticePriority, PermitType } from "@/lib/types";
 
 const PERMIT_TYPES: PermitType[] = ["Hot Work", "Confined Space", "Excavation", "Energized Work"];
@@ -28,6 +30,10 @@ export async function createCertificationAction(formData: FormData) {
   const expiresOn = String(formData.get("expiresOn") ?? "");
 
   if (!userId || !type || !issuedOn || !expiresOn) throw new Error("Missing required fields.");
+  if (!isCertificationType(type)) throw new Error("Unknown certification type.");
+  // The person must be in this company and, for a supervisor, on one of their sites.
+  const person = getUser(userId);
+  if (!person || !sitesFor(user).some((p) => worksOnSite(person, p))) throw new Error("Person not found.");
 
   createCertification({
     userId,
@@ -55,9 +61,14 @@ export async function createPermitAction(formData: FormData) {
   const expiresAt = String(formData.get("expiresAt") ?? "");
   const attendantId = String(formData.get("attendantId") ?? "") || undefined;
 
-  const project = getProject(projectId);
-  if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
+  // Only a site this person works on; anything else reads as "not found".
+  const project = accessibleProject(user, projectId);
+  if (!project) throw new Error("Project not found.");
   if (!type || !description || !startsAt || !expiresAt) throw new Error("Missing required fields.");
+  if (attendantId) {
+    const attendant = getUser(attendantId);
+    if (!attendant || !worksOnSite(attendant, project)) throw new Error("The fire/safety watch must be on this site's crew.");
+  }
   if (!PERMIT_TYPES.includes(type)) throw new Error("Unknown permit type.");
 
   createPermit({
@@ -113,8 +124,9 @@ export async function createAssetAction(formData: FormData) {
   const name = String(formData.get("name") ?? "");
   const category = String(formData.get("category") ?? "Lifting Equipment");
 
-  const project = getProject(projectId);
-  if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
+  // Only a site this person works on; anything else reads as "not found".
+  const project = accessibleProject(user, projectId);
+  if (!project) throw new Error("Project not found.");
   if (!tag || !name) throw new Error("Tag and name are required.");
 
   createAsset({
@@ -141,8 +153,9 @@ export async function createGcNoticeAction(formData: FormData) {
   const priority = String(formData.get("priority") ?? "medium") as GcNoticePriority;
   const status = String(formData.get("status") ?? "open") as GcNoticeStatus;
 
-  const project = getProject(projectId);
-  if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
+  // Only a site this person works on; anything else reads as "not found".
+  const project = accessibleProject(user, projectId);
+  if (!project) throw new Error("Project not found.");
   if (!trade || !issue) throw new Error("Trade and issue description are required.");
 
   createGcNotice({

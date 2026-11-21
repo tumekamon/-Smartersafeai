@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>No signal · SmartSafe</title>
+<style>
+  :root { --bg: #f3f4f8; --fg: #111827; --muted: #6b7280; --card: #fff; --border: #e5e7eb; --red: #dc2626; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0b0f17; --fg: #f3f4f6; --muted: #9ca3af; --card: #141a24; --border: #263040; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  main { width: 100%; max-width: 420px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 24px; }
+  h1 { font-size: 24px; margin: 12px 0 4px; }
+  p { color: var(--muted); margin: 0 0 16px; }
+  a { display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; font-weight: 800; text-decoration: none; margin-top: 10px; }
+  .call { background: var(--red); color: #fff; font-size: 20px; }
+  .alt { border: 1px solid var(--border); color: var(--fg); }
+  .icon { width: 48px; height: 48px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="icon" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 4.2-2.4M14.8 10.5A10 10 0 0 1 19 12.9M2 9.3a15 15 0 0 1 4.4-2.8M11 5.1A15 15 0 0 1 22 9.3M12 20h.01"/></svg>
+    </div>
+    <h1>No signal</h1>
+    <p>This page isn't saved on your phone yet. Your saved pages still open, and hazard reports and fixes you make are kept until you have signal.</p>
+    <a class="call" href="tel:911">Call 911</a>
+    <a class="alt" href="/emergency">Site emergency info</a>
+    <a class="alt" href="/hazards/new">Report a hazard</a>
+    <a class="alt" href="/dashboard">My Day</a>
+  </div>
+</main>
+</body>
+</html>

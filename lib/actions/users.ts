@@ -75,10 +75,12 @@ export async function updateProfileAction(formData: FormData) {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (phone && !/^\+?[\d\s().-]{7,20}$/.test(phone)) throw new Error("Enter a valid phone number.");
 
   if (!firstName || !lastName) throw new Error("First and last name are required.");
 
-  updateUser(user.id, { firstName, lastName, title });
+  updateUser(user.id, { firstName, lastName, title, phone });
   revalidatePath("/settings/profile");
   revalidatePath("/dashboard");
 }

@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { NoSiteNotice } from "@/components/site/no-site-notice";
 import { getCapabilities } from "@/lib/authz";
-import { getCompany, listUsers } from "@/lib/db";
-import { sitesFor } from "@/lib/scope";
+import { getCompany } from "@/lib/db";
+import { workingPeople, workingSites } from "@/lib/site-focus";
 import { reportIncidentAction } from "@/lib/actions/incidents";
 
 const TYPES: { value: string; label: string }[] = [
@@ -17,9 +18,17 @@ export default async function NewIncidentPage() {
   const user = await getCurrentUser();
   if (getCapabilities(user).isReadOnly) redirect("/dashboard");
 
-  const projects = sitesFor(user);
+  const projects = await workingSites(user);
   const fields = getCompany(user.companyId)?.incidentFields ?? [];
-  const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const people = (await workingPeople(user)).sort((a, b) => a.lastName.localeCompare(b.lastName));
+  if (projects.length === 0) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <h1 className="text-3xl font-semibold tracking-tight">Report an incident</h1>
+        <NoSiteNotice action="report an incident" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">

@@ -57,6 +57,7 @@ export async function reviewFindingAction(formData: FormData) {
       location: reviewed.location,
       description,
       assignedToId,
+      assignedById: user.id,
       dueDate,
     });
   }

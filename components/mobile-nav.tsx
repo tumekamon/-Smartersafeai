@@ -26,7 +26,7 @@ export function MobileNav({
   flags,
   hidden = [],
 }: {
-  user: Pick<User, "role" | "readOnly">;
+  user: Pick<User, "role" | "readOnly" | "extraPermissions">;
   workBadge: number;
   projects: { id: string; shortName: string }[];
   flags: QuickActionFlags;

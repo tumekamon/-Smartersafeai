@@ -5,7 +5,6 @@ import { getCapabilities } from "@/lib/authz";
 import {
   getTemplate,
   getUser,
-  getProject,
   listCertifications,
   listCorrectiveActionsForProject,
   listGcNotices,
@@ -13,6 +12,8 @@ import {
   listFindings,
   listUsers,
 } from "@/lib/db";
+import { accessibleProject } from "@/lib/scope";
+import { WorkerSiteView } from "@/components/site/worker-site-view";
 import { addCrewMemberAction, removeCrewMemberAction } from "@/lib/actions/projects";
 import {
   activityFeed,
@@ -58,10 +59,15 @@ export default async function ProjectDetailPage({
   const { projectId } = await params;
   const { tab = "overview" } = await searchParams;
   const user = await getCurrentUser();
-  const project = getProject(projectId);
-  if (!project || project.companyId !== user.companyId) notFound();
+  // Supervisors and workers only open the sites they're crewed on; others read as "not found".
+  const project = accessibleProject(user, projectId);
+  if (!project) notFound();
 
   const caps = getCapabilities(user);
+  // Field workers get a simple site page; the full project page is for people who manage it.
+  if (!caps.canViewOrgDashboard && !caps.isReadOnly) {
+    return <WorkerSiteView user={user} project={project} canCheckIn={caps.mustCheckIn} />;
+  }
   const h = projectHealth(project);
   const inspections = listInspectionsForProject(projectId);
   const actions = listCorrectiveActionsForProject(projectId);

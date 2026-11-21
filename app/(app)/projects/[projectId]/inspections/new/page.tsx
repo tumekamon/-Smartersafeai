@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { getProject, listTemplates } from "@/lib/db";
+import { listTemplates } from "@/lib/db";
+import { accessibleProject } from "@/lib/scope";
 import { InspectionForm } from "@/components/inspection-form";
 
 export default async function NewInspectionPage({
@@ -15,8 +16,9 @@ export default async function NewInspectionPage({
   const { projectId } = await params;
   const { templateId } = await searchParams;
   const user = await getCurrentUser();
-  const project = getProject(projectId);
-  if (!project || project.companyId !== user.companyId) notFound();
+  // Only sites this person works on; others read as "not found".
+  const project = accessibleProject(user, projectId);
+  if (!project) notFound();
 
   if (!getCapabilities(user).canSubmitInspections) {
     redirect(`/projects/${projectId}`);

@@ -39,7 +39,7 @@ export default async function ProjectsPage() {
           <p className="max-w-sm text-xs text-foreground/50">
             {canManage
               ? "Create the first project to start logging inspections and tracking safety."
-              : "An administrator needs to create a project before there is anything to inspect."}
+              : "You aren't on a site's crew yet. Ask your supervisor or safety manager to add you."}
           </p>
         </div>
       ) : (

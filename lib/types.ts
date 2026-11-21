@@ -13,6 +13,8 @@ export type User = {
   email: string;
   role: UserRole;
   title: string;
+  /** Work phone, shown to crew as a call button. */
+  phone?: string;
   active: boolean;
   /** Read-only access (e.g. a client) — can view, never change anything. */
   readOnly?: boolean;
@@ -65,6 +67,60 @@ export type Project = {
   levels: string[];
   zones: string[];
   crewIds: string[];
+  /** Site boundary for the daily check-in: a centre point and radius. Unset = location is recorded but not enforced. */
+  geofence?: Geofence;
+  /** What a worker needs in an emergency on this site. Shown on the worker's Emergency screen. */
+  emergency?: SiteEmergency;
+};
+
+export type SiteEmergency = {
+  /** Site emergency line (gate, site office or GC safety). 911 is always shown as well. */
+  sitePhone?: string;
+  /** Where everyone gathers in an evacuation. */
+  musterPoint?: string;
+  /** Where the first-aid kit, eyewash and AED are kept. */
+  firstAidStation?: string;
+  hospital?: { name: string; address: string; phone?: string };
+  /** Street address to give the 911 dispatcher (gate or entrance). */
+  siteAddress?: string;
+};
+
+export type Geofence = {
+  lat: number;
+  lng: number;
+  radiusM: number;
+};
+
+export type CheckInStatus = "pending" | "approved" | "rejected";
+
+/**
+ * A worker's start-of-day check-in: a live camera photo showing their PPE, taken on
+ * site. One per worker per day; a rejected one can be redone. Reviewed by the
+ * site's supervisor or a safety manager (see docs/daily-check-in.md).
+ */
+export type CheckIn = {
+  id: string;
+  companyId: string;
+  userId: string;
+  projectId: string;
+  /** Calendar day the check-in counts for, YYYY-MM-DD in server time. */
+  day: string;
+  photo: Evidence;
+  /** When the photo was taken, worked out on the server (receive time minus how long ago the phone says it was taken). */
+  capturedAt: string;
+  submittedAt: string;
+  position: { lat: number; lng: number; accuracyM: number };
+  /** Metres from the site centre; undefined when the site has no boundary set. */
+  distanceM?: number;
+  /** "inside" = within the boundary; "no_boundary" = site has none, so it could not be checked. */
+  locationCheck: "inside" | "no_boundary";
+  /** PPE items the worker confirmed they are wearing. */
+  ppeConfirmed: string[];
+  status: CheckInStatus;
+  reviewedById?: string;
+  reviewedAt?: string;
+  /** Required when rejecting, shown to the worker. */
+  reviewNote?: string;
 };
 
 export type SiteLocation = {
@@ -190,6 +246,19 @@ export type CorrectiveAction = {
   completedAt?: string;
   verifiedAt?: string;
   closedAt?: string;
+  /** Who gave the task out (supervisor or safety manager). */
+  assignedById?: string;
+  /**
+   * Whether marking it fixed needs a photo. Missing means the default for the source:
+   * required for hazard fixes and equipment checks, optional for assigned jobs.
+   */
+  proof?: EvidenceRequirement;
+  /** Proof of the fix, added by the person who marked it done. */
+  completionPhoto?: Evidence;
+  completionNote?: string;
+  completedById?: string;
+  /** Set when a checker sent the fix back to be redone; cleared when it's done again. */
+  sentBack?: { note: string; byId: string; at: string };
 };
 
 export type CertificationType =
@@ -200,12 +269,28 @@ export type CertificationType =
   | "First Aid / CPR"
   | "HAZCOM";
 
+/** "verified" counts toward compliance; a worker's own upload starts as "pending". */
+export type CertificationReview = "verified" | "pending" | "rejected";
+
 export type Certification = {
   id: string;
   userId: string;
   type: CertificationType;
   issuedOn: string;
   expiresOn: string;
+  /** Number printed on the card, if any. */
+  certificateNo?: string;
+  /** Training provider or body that issued it. */
+  issuer?: string;
+  /** Photo or PDF of the certificate. Records logged by a manager may have none. */
+  document?: Evidence & { mimeType: string; sizeBytes: number };
+  /** Missing means verified (logged by a manager, or seeded). */
+  review?: CertificationReview;
+  submittedById?: string;
+  submittedAt?: string;
+  reviewedById?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
 };
 
 export type PermitType = "Hot Work" | "Confined Space" | "Excavation" | "Energized Work";

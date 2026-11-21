@@ -1,7 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import type { User } from "@/lib/types";
 import type { ModuleId } from "@/lib/home-layout";
-import { IconClipboardCheck, IconFileCheck, IconHome, IconMenu } from "@/components/ui/icons";
+import { IconCamera, IconClipboardCheck, IconFileCheck, IconHome, IconMenu } from "@/components/ui/icons";
 
 /**
  * One four-item navigation for every role (Oct 9 review: fewer, combined nav items).
@@ -18,10 +18,22 @@ export type NavItem = {
   badgeKey?: "work";
 };
 
-export function navItemsFor(user: Pick<User, "role" | "readOnly">, hidden: ModuleId[] = []): NavItem[] {
+export type NavUser = Pick<User, "role" | "readOnly" | "extraPermissions">;
+
+/**
+ * A plain worker has no use for Compliance (it's the manager's view of everyone's
+ * certificates, permits, stock and notices); their own certificates live under My
+ * profile. That slot goes to My reports instead. A worker with the "compliance"
+ * extra right keeps Compliance.
+ */
+export function isPlainWorker(user: NavUser): boolean {
+  return user.role === "WORKER" && !user.readOnly && !user.extraPermissions?.includes("compliance");
+}
+
+export function navItemsFor(user: NavUser, hidden: ModuleId[] = []): NavItem[] {
   const isWorker = user.role === "WORKER" && !user.readOnly;
   const items: NavItem[] = [
-    { href: "/dashboard", label: isWorker ? "My Day" : "Home", Icon: IconHome, match: ["/dashboard"] },
+    { href: "/dashboard", label: isWorker ? "My Day" : "Home", Icon: IconHome, match: ["/dashboard", "/check-in"] },
     {
       href: "/work",
       label: isWorker ? "My Tasks" : "Work",
@@ -29,8 +41,10 @@ export function navItemsFor(user: Pick<User, "role" | "readOnly">, hidden: Modul
       match: ["/work", "/review", "/inspections", "/corrective-actions"],
       badgeKey: "work",
     },
-    { href: "/compliance", label: "Compliance", Icon: IconFileCheck, match: ["/compliance"] },
-    { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings", "/reports"] },
+    isPlainWorker(user)
+      ? { href: "/my-reports", label: "Reports", Icon: IconCamera, match: ["/my-reports", "/hazards"] }
+      : { href: "/compliance", label: "Compliance", Icon: IconFileCheck, match: ["/compliance"] },
+    { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings", "/reports", "/my-reports", "/notifications", "/emergency"] },
   ];
   return hidden.includes("compliance") ? items.filter((i) => i.href !== "/compliance") : items;
 }

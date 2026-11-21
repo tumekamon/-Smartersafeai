@@ -66,6 +66,23 @@ export async function updateProjectAction(formData: FormData) {
   if (formData.has("client")) updates.client = String(formData.get("client")).trim();
   if (formData.has("headcount")) updates.headcount = Number(formData.get("headcount")) || 0;
   if (formData.has("percentComplete")) updates.percentComplete = Number(formData.get("percentComplete")) || 0;
+  if (formData.has("geofenceLat")) {
+    // Blank centre clears the boundary; otherwise all three values must make sense.
+    const latRaw = String(formData.get("geofenceLat") ?? "").trim();
+    const lngRaw = String(formData.get("geofenceLng") ?? "").trim();
+    if (!latRaw && !lngRaw) {
+      updates.geofence = undefined;
+    } else {
+      const lat = Number(latRaw);
+      const lng = Number(lngRaw);
+      const radiusM = Math.round(Number(formData.get("geofenceRadius")));
+      if (!latRaw || !lngRaw || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+        throw new Error("Enter both latitude and longitude for the check-in boundary, or leave both blank.");
+      }
+      if (!Number.isFinite(radiusM) || radiusM < 50 || radiusM > 2000) throw new Error("Boundary radius must be 50–2000 m.");
+      updates.geofence = { lat, lng, radiusM };
+    }
+  }
 
   updateProject(projectId, updates);
   revalidatePath(`/projects/${projectId}`);

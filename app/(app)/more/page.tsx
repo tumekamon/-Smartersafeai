@@ -2,10 +2,20 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { moduleVisible } from "@/lib/home-layout";
-import { getCompany, listIncidents, listProjects } from "@/lib/db";
+import { getCompany, listIncidents } from "@/lib/db";
+import { sitesFor } from "@/lib/scope";
+import { usesWorkingSite, workingSiteIds } from "@/lib/site-focus";
+import { isOpenReport, myReports } from "@/lib/my-reports";
+import { unreadCount } from "@/lib/notifications";
+import { isPlainWorker } from "@/components/nav-items";
 import { logout } from "@/lib/actions/auth";
+import { getTheme } from "@/lib/theme";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   IconAlertTriangle,
+  IconBell,
+  IconCamera,
+  IconSiren,
   IconFileText,
   IconFolder,
   IconGrid,
@@ -19,10 +29,21 @@ import {
 export default async function MorePage() {
   const user = await getCurrentUser();
   const caps = getCapabilities(user);
-  const activeProjects = listProjects(user.companyId).filter((p) => p.status === "active").length;
-  const openIncidents = listIncidents(user.companyId).filter((i) => i.status !== "closed").length;
+  // Count only the sites this person works on, matching the list behind the tile.
+  const activeProjects = sitesFor(user).filter((p) => p.status === "active").length;
+  // Same scope as the Incidents page: a worker's working site, everyone else their sites.
+  const incidentSites = await workingSiteIds(user);
+  const openIncidents = listIncidents(user.companyId).filter((i) => i.status !== "closed" && incidentSites.has(i.projectId)).length;
+
+  // Worker-only tiles: their own reports, notifications and the emergency screen.
+  const worker = usesWorkingSite(user);
+  const reportsOpen = worker ? myReports(user).filter(isOpenReport).length : 0;
+  const unread = worker ? unreadCount(user) : 0;
 
   const tiles = [
+    { href: "/emergency", label: "Emergency", meta: "911, first aid, muster", Icon: IconSiren, show: worker },
+    { href: "/my-reports", label: "My reports", meta: reportsOpen ? `${reportsOpen} in progress` : "What you reported", Icon: IconCamera, show: worker && !isPlainWorker(user) },
+    { href: "/notifications", label: "Notifications", meta: unread ? `${unread} new` : "All caught up", Icon: IconBell, show: worker },
     { href: "/projects", label: "Projects", meta: `${activeProjects} active`, Icon: IconFolder, show: true },
     { href: "/incidents", label: "Incidents", meta: `${openIncidents} open`, Icon: IconAlertTriangle, show: moduleVisible(getCompany(user.companyId), user, "incidents") },
     { href: "/reports", label: "Reports", meta: "Print, PDF or CSV", Icon: IconFileText, show: caps.canViewReports },
@@ -30,7 +51,7 @@ export default async function MorePage() {
     { href: "/settings/home", label: "Role screens", meta: "What each role sees", Icon: IconGrid, show: caps.canManageSettings },
     { href: "/settings/team", label: "Team", meta: "People & role levels", Icon: IconUsers, show: caps.canManageSettings },
     { href: "/settings", label: "Settings", meta: caps.canManageSettings ? "Branding, hazards" : "Preferences", Icon: IconSettings, show: true },
-    { href: "/settings/profile", label: "My profile", meta: "Name & title", Icon: IconUser, show: true },
+    { href: "/settings/profile", label: "My profile", meta: "Details & certifications", Icon: IconUser, show: true },
   ].filter((t) => t.show);
 
   return (
@@ -55,6 +76,14 @@ export default async function MorePage() {
         ))}
 
       </div>
+
+      <section className="card flex items-center justify-between gap-4 p-4 sm:hidden">
+        <span>
+          <span className="block text-base font-bold">Appearance</span>
+          <span className="block text-sm text-foreground/60">Light, dark or match the phone</span>
+        </span>
+        <ThemeToggle theme={await getTheme()} />
+      </section>
 
       <form action={logout} className="md:hidden">
         <button type="submit" className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-surface text-base font-bold text-critical ring-1 ring-border">

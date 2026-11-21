@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { addIncidentField, createIncident, getCompany, getIncident, getProject, moveIncidentField, removeIncidentField, updateIncidentStatus } from "@/lib/db";
+import { addIncidentField, createIncident, getCompany, getIncident, getProject, getUser, moveIncidentField, removeIncidentField, updateIncidentStatus } from "@/lib/db";
+import { accessibleProject, worksOnSite } from "@/lib/scope";
 import type { IncidentStatus, IncidentType } from "@/lib/types";
 
 const TYPES: IncidentType[] = ["near_miss", "first_aid", "recordable", "property_damage", "illness"];
@@ -16,8 +17,9 @@ export async function reportIncidentAction(formData: FormData) {
   }
 
   const projectId = String(formData.get("projectId") ?? "");
-  const project = getProject(projectId);
-  if (!project || project.companyId !== user.companyId) throw new Error("Project not found.");
+  // Only a site this person works on; anything else reads as "not found".
+  const project = accessibleProject(user, projectId);
+  if (!project) throw new Error("Project not found.");
 
   const type = String(formData.get("type") ?? "") as IncidentType;
   if (!TYPES.includes(type)) throw new Error("Not a valid incident type.");
@@ -28,7 +30,14 @@ export async function reportIncidentAction(formData: FormData) {
   const zone = String(formData.get("zone") ?? "").trim();
   const oshaRecordable = formData.get("oshaRecordable") === "on";
   const lostTimeDays = Math.max(0, Number(formData.get("lostTimeDays") ?? 0) || 0);
-  const involvedUserIds = formData.getAll("involvedUserIds").map(String).filter(Boolean);
+  // Only people on this site can be named; drop anything else.
+  const involvedUserIds = formData
+    .getAll("involvedUserIds")
+    .map(String)
+    .filter((id) => {
+      const person = getUser(id);
+      return !!person && worksOnSite(person, project);
+    });
 
   if (!description) throw new Error("Describe what happened.");
 

@@ -1,12 +1,25 @@
 import Link from "next/link";
+import { Suspense, type ComponentProps } from "react";
 import { roleLabel } from "@/lib/roles";
 import { logout } from "@/lib/actions/auth";
 import { getTheme } from "@/lib/theme";
 import type { User } from "@/lib/types";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteSwitcher } from "@/components/site/site-switcher";
+import { NotificationBell } from "@/components/notifications/bell";
 import { IconCheckShield, IconLogout, IconUser } from "@/components/ui/icons";
 
-export async function Topbar({ user }: { user: User }) {
+export async function Topbar({
+  user,
+  siteSwitch,
+  unread,
+}: {
+  user: User;
+  /** A worker's working site and the sites they can switch to. */
+  siteSwitch?: ComponentProps<typeof SiteSwitcher>;
+  /** Workers only: new notifications since they last looked. */
+  unread?: number;
+}) {
   const theme = await getTheme();
 
   return (
@@ -15,10 +28,21 @@ export async function Topbar({ user }: { user: User }) {
         <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
           <IconCheckShield width={19} height={19} />
         </span>
-        <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight">SmartSafe AI</span>
+        {!siteSwitch && <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight">SmartSafe AI</span>}
       </Link>
+      {siteSwitch && (
+        <div className="ml-2 min-w-0 md:ml-0">
+          <Suspense fallback={null}>
+            <SiteSwitcher {...siteSwitch} />
+          </Suspense>
+        </div>
+      )}
       <div className="ml-auto flex items-center gap-2 md:gap-4">
-        <ThemeToggle theme={theme} />
+        {/* On phones the site switcher needs the room; the theme toggle moves to the More page. */}
+        <div className={siteSwitch ? "hidden sm:block" : undefined}>
+          <ThemeToggle theme={theme} />
+        </div>
+        {unread !== undefined && <NotificationBell unread={unread} />}
         <span className="hidden h-8 w-[1px] bg-border/50 md:block" />
         <Link href="/settings/profile" className="group flex items-center gap-3 rounded-full border border-transparent px-2 py-1.5 transition-all duration-300 hover:bg-surface-muted/80 hover:border-border/60 hover:shadow-sm">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-surface-muted to-background text-foreground/70 shadow-inner group-hover:text-brand transition-colors">

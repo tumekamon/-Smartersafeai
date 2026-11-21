@@ -1,33 +1,51 @@
 import Link from "next/link";
-import { sitesFor } from "@/lib/scope";
 import { visibleSections } from "@/lib/home-layout";
-import type { RiskLevel, User } from "@/lib/types";
-import { getCompany, getProject, getTemplate, listCertifications, listCorrectiveActions, listInspections } from "@/lib/db";
+import type { Project, RiskLevel, User } from "@/lib/types";
+import { getCheckInForDay, getCompany, getTemplate, listCertificationRecords, listCertifications, listCorrectiveActions, listInspections } from "@/lib/db";
+import { certReview } from "@/lib/certifications";
+import { checkInDay } from "@/lib/check-in";
+import { CheckInBanner } from "@/components/check-in-status";
+import { MySiteCard } from "@/components/site/my-site-card";
+import { EmergencyStrip } from "@/components/site/emergency-strip";
+import { isOpenReport, myReports } from "@/lib/my-reports";
+import { NoSiteNotice } from "@/components/site/no-site-notice";
 import { certStatus, isActionOverdue } from "@/lib/metrics";
 import { greeting, shortDate } from "@/lib/format";
-import { updateCorrectiveActionStatusAction } from "@/lib/actions/corrective-actions";
 import { CorrectiveActionStatusBadge, InspectionStatusBadge } from "@/components/ui/badges";
 import { IconAlertTriangle, IconArrowRight, IconBolt, IconCheck } from "@/components/ui/icons";
 import { nowMs } from "@/lib/time";
 
 const DAY = 86_400_000;
 
-export function WorkerDashboard({ user }: { user: User }) {
-  const projects = sitesFor(user).filter((p) => p.status === "active");
+/**
+ * My Day for a worker. Everything here is about their working site (switched in the
+ * top bar): tasks, counts, inspections and quick actions. Certifications and the daily
+ * check-in belong to the person, so they show whichever site is selected.
+ */
+export function WorkerDashboard({ user, site, sites }: { user: User; site?: Project; sites: Project[] }) {
   const mine = listCorrectiveActions(user.companyId)
-    .filter((a) => a.assignedToId === user.id && a.status !== "closed")
+    .filter((a) => a.assignedToId === user.id && a.status !== "closed" && a.projectId === site?.id)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  const mineInspections = listInspections(user.companyId).filter((i) => i.inspectorId === user.id);
+  const mineInspections = listInspections(user.companyId).filter((i) => i.inspectorId === user.id && i.projectId === site?.id);
   const inspections = [
     ...mineInspections.filter((i) => i.templateId !== "t_scissor_lift"),
     ...mineInspections.filter((i) => i.templateId === "t_scissor_lift"),
   ].slice(0, 4);
   const certs = listCertifications(user.companyId).filter((c) => c.userId === user.id);
+  const inReview = new Set(
+    listCertificationRecords(user.companyId, { userId: user.id })
+      .filter((c) => certReview(c) === "pending")
+      .map((c) => c.type)
+  );
   const overdue = mine.filter((a) => isActionOverdue(a)).length;
   const now = nowMs();
 
   const expiringCerts = certs.filter((c) => certStatus(c.expiresOn, now) !== "current").length;
   const show = visibleSections(getCompany(user.companyId), "WORKER");
+  const checkIn = getCheckInForDay(user.companyId, user.id, checkInDay(now));
+  const reports = myReports(user).filter((r) => r.site.id === site?.id);
+  const reportsOpen = reports.filter(isOpenReport).length;
+  const reportsFixed = reports.filter((r) => r.kind === "hazard" && r.stage === "fixed").length;
 
   return (
     <div className="space-y-6">
@@ -35,17 +53,24 @@ export function WorkerDashboard({ user }: { user: User }) {
         {greeting()}, {user.firstName}
       </h1>
 
+      {/* Daily check-in is always shown: it's a site rule, not a layout choice. */}
+      <CheckInBanner checkIn={checkIn} />
+
+      {site ? <MySiteCard project={site} sites={sites} now={now} /> : <NoSiteNotice action="check in, inspect or report on a site" />}
+
+      {site && <EmergencyStrip project={site} />}
+
       {show.has("tiles") && (
         <div className="grid grid-cols-3 gap-2.5 md:gap-4">
           <StatTile href="/corrective-actions" value={overdue} label="Overdue" hot={overdue > 0} />
           <StatTile href="/corrective-actions" value={mine.length} label="My tasks" />
-          <StatTile href="#certs" value={expiringCerts} label="Certs due" hot={expiringCerts > 0} />
+          <StatTile href="/settings/profile#certs" value={expiringCerts} label="Certs due" hot={expiringCerts > 0} />
         </div>
       )}
 
       {show.has("hazard") && (
         <Link
-          href="/hazards/new"
+          href={site ? `/hazards/new?project=${site.id}` : "/hazards/new"}
           className="flex min-h-20 items-center gap-4 rounded-2xl bg-[#c2410c] px-5 text-white shadow-lg shadow-[#c2410c]/25"
         >
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
@@ -59,23 +84,36 @@ export function WorkerDashboard({ user }: { user: User }) {
         </Link>
       )}
 
-      {show.has("inspect") && projects.length > 0 && (
+      {reportsOpen + reportsFixed > 0 && (
+        <Link href="/my-reports" className="card -mt-3 flex min-h-12 items-center gap-3 px-4 text-sm transition-colors hover:bg-surface-muted">
+          <span className="flex-1">
+            <span className="font-bold">My reports</span>
+            <span className="text-foreground/55">
+              {reportsOpen > 0 && ` · ${reportsOpen} in progress`}
+              {reportsFixed > 0 && ` · ${reportsFixed} fixed`}
+            </span>
+          </span>
+          <IconArrowRight width={16} height={16} className="text-foreground/45" />
+        </Link>
+      )}
+
+      {show.has("inspect") && site && (
         <section className="hero p-5 md:p-6">
           <p className="mb-3 flex items-center gap-2 text-lg font-bold">
             <IconBolt width={22} height={22} />
             Start an inspection
           </p>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            {projects.map((p) => (
-              <Link
-                key={p.id}
-                href={`/projects/${p.id}/inspections/new`}
-                className="hero-tile hero-tile-hover flex min-h-14 items-center justify-between gap-2 rounded-2xl px-4 text-[15px] font-bold transition-colors"
-              >
-                {p.shortName}
-                <IconArrowRight width={18} height={18} />
-              </Link>
-            ))}
+          <div className="grid grid-cols-1 gap-2.5">
+            <Link
+              href={`/projects/${site.id}/inspections/new`}
+              className="hero-tile hero-tile-hover flex min-h-14 items-center justify-between gap-2 rounded-2xl px-4 text-[15px] font-bold transition-colors"
+            >
+              <span>
+                Choose a checklist
+                <span className="hero-muted ml-2 text-sm font-medium">at {site.shortName}</span>
+              </span>
+              <IconArrowRight width={18} height={18} />
+            </Link>
           </div>
         </section>
       )}
@@ -93,34 +131,31 @@ export function WorkerDashboard({ user }: { user: User }) {
               <ul className="space-y-2.5">
                 {mine.map((a) => {
                   const late = isActionOverdue(a);
-                  const project = getProject(a.projectId);
                   return (
-                    <li key={a.id} className="card flex items-center gap-3 p-3">
+                    <li key={a.id} className="card relative flex items-center gap-3 p-3">
                       <span
                         aria-hidden="true"
                         className="h-14 w-1.5 shrink-0 rounded-full"
                         style={{ background: late ? "var(--status-critical)" : priorityColor[a.priority] }}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[15px] font-semibold leading-snug">{a.description.split(" — ")[0]}</p>
+                        <Link href={`/corrective-actions/${a.id}`} className="text-[15px] font-semibold leading-snug after:absolute after:inset-0">
+                          {a.description.split(" — ")[0]}
+                        </Link>
                         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-foreground/60">
-                          <span>{project?.shortName}</span>
-                          {a.location && <span>· {a.location.level} {a.location.zone}</span>}
-                          <span className={late ? "font-bold text-critical" : ""}>· {late ? "Overdue" : `Due ${shortDate(a.dueDate)}`}</span>
+                          {a.location && <span>{a.location.level} {a.location.zone} ·</span>}
+                          <span className={late ? "font-bold text-critical" : ""}>{late ? "Overdue" : `Due ${shortDate(a.dueDate)}`}</span>
+                          {a.sentBack && <span className="font-bold text-status-critical">· Sent back</span>}
                         </p>
                       </div>
                       {a.status === "open" ? (
-                        <form action={updateCorrectiveActionStatusAction}>
-                          <input type="hidden" name="correctiveActionId" value={a.id} />
-                          <input type="hidden" name="status" value="completed" />
-                          <button
-                            type="submit"
-                            aria-label={`Mark done: ${a.description.split(" — ")[0]}`}
-                            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground text-background"
-                          >
-                            <IconCheck width={26} height={26} strokeWidth={2.6} />
-                          </button>
-                        </form>
+                        <Link
+                          href={`/corrective-actions/${a.id}`}
+                          aria-label={`Mark fixed: ${a.description.split(" — ")[0]}`}
+                          className="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground text-background"
+                        >
+                          <IconCheck width={26} height={26} strokeWidth={2.6} />
+                        </Link>
                       ) : (
                         <CorrectiveActionStatusBadge status={a.status} />
                       )}
@@ -136,9 +171,16 @@ export function WorkerDashboard({ user }: { user: User }) {
           <div className={`space-y-4 ${show.has("tasks") ? "lg:col-span-2" : "lg:col-span-5"}`}>
             {show.has("certs") && (
               <section id="certs" className="card p-5">
-                <h2 className="mb-3 text-base font-bold">My certifications</h2>
+                <div className="mb-3 flex items-baseline justify-between gap-2">
+                  <h2 className="text-base font-bold">My certifications</h2>
+                  <Link href="/settings/profile#certs" className="text-sm font-semibold text-sidebar-accent">
+                    {certs.length === 0 ? "Add" : "Manage"}
+                  </Link>
+                </div>
                 {certs.length === 0 ? (
-                  <p className="text-sm text-foreground/50">No certifications on file.</p>
+                  <p className="text-sm text-foreground/50">
+                    {inReview.size > 0 ? `${inReview.size} waiting for review.` : "No certifications on file."}
+                  </p>
                 ) : (
                   <ul className="space-y-2">
                     {certs.map((c) => {
@@ -154,8 +196,10 @@ export function WorkerDashboard({ user }: { user: User }) {
                             />
                             <span className="truncate font-medium">{c.type}</span>
                           </span>
-                          <span className={`badge ${status === "current" ? "badge-good" : status === "expiring" ? "badge-warning" : "badge-critical"}`}>
-                            {status === "expired" ? `Expired ${Math.abs(days)}d` : status === "expiring" ? `${days}d left` : "Valid"}
+                          <span className={`badge ${inReview.has(c.type) && status !== "current" ? "badge-info" : status === "current" ? "badge-good" : status === "expiring" ? "badge-warning" : "badge-critical"}`}>
+                            {inReview.has(c.type) && status !== "current"
+                              ? "Renewal in review"
+                              : status === "expired" ? `Expired ${Math.abs(days)}d` : status === "expiring" ? `${days}d left` : "Valid"}
                           </span>
                         </li>
                       );
@@ -177,7 +221,7 @@ export function WorkerDashboard({ user }: { user: User }) {
                         <Link href={`/inspections/${i.id}`} className="flex min-h-14 items-center justify-between gap-3 py-2">
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-semibold">{getTemplate(i.templateId)?.name}</span>
-                            <span className="block text-xs text-foreground/55">{getProject(i.projectId)?.shortName} · {shortDate(i.submittedAt)}</span>
+                            <span className="block text-xs text-foreground/55">{shortDate(i.submittedAt)}</span>
                           </span>
                           <span className="flex items-center gap-2">
                             <InspectionStatusBadge status={i.status} />

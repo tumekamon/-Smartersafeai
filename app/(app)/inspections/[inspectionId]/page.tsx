@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
+import { accessibleProject } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
 import {
   getCorrectiveAction,
   getInspection,
-  getProject,
   getTemplate,
   getUser,
   listFindingsForInspection,
@@ -36,8 +36,9 @@ export default async function InspectionDetailPage({
   const sp = await searchParams;
   const user = await getCurrentUser();
   const inspection = getInspection(inspectionId);
-  const project = getProject(inspection?.projectId ?? "");
-  if (!inspection || !project || project.companyId !== user.companyId) notFound();
+  // Only inspections on sites this person works on; others read as "not found".
+  const project = accessibleProject(user, inspection?.projectId);
+  if (!inspection || !project) notFound();
 
   const caps = getCapabilities(user);
   const template = getTemplate(inspection.templateId);

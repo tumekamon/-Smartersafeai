@@ -26,6 +26,10 @@ export type Capabilities = {
   canManageTemplates: boolean;
   canManageCrews: boolean;
   canManageSettings: boolean;
+  /** Must do the daily PPE check-in before starting work. */
+  mustCheckIn: boolean;
+  /** Can approve or reject daily check-ins (on their own sites; see lib/actions/check-in.ts). */
+  canReviewCheckIns: boolean;
   isReadOnly: boolean;
 };
 
@@ -55,6 +59,9 @@ export function getCapabilities(user: Pick<User, "role" | "readOnly" | "extraPer
     // Who works on which site: L1/L2 keep crews current.
     canManageCrews: isSafetyProfessional,
     canManageSettings: !isReadOnly && role === "ADMIN",
+    mustCheckIn: !isReadOnly && role === "WORKER",
+    // Supervisors check their own crews each morning; L1/L2 can step in on any site.
+    canReviewCheckIns: isSafetyProfessional || isFieldLead,
     isReadOnly,
   };
 }

@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
-import { sitesFor } from "@/lib/scope";
+import { sitesFor, peopleFor } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
-import { listUsers } from "@/lib/db";
 import { createPermitAction } from "@/lib/actions/compliance";
 import Link from "next/link";
 
@@ -19,7 +18,7 @@ export default async function IssuePermitPage() {
   if (!getCapabilities(user).canManageCompliance) redirect("/compliance");
 
   const projects = sitesFor(user);
-  const people = listUsers(user.companyId).sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const people = peopleFor(user).sort((a, b) => a.lastName.localeCompare(b.lastName));
 
   return (
     <div className="max-w-2xl space-y-6">

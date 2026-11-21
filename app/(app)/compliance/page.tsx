@@ -18,6 +18,14 @@ import { Donut } from "@/components/viz/donut";
 import { Avatar } from "@/components/ui/avatar";
 import { IconArrowRight } from "@/components/ui/icons";
 import { nowMs } from "@/lib/time";
+import { seesAllSites } from "@/lib/scope";
+import { workingPeople, workingSiteIds } from "@/lib/site-focus";
+
+/**
+ * What this person may see: the whole company for L1/L2 and clients; for supervisors
+ * and workers only their own sites and the people on those sites' crews.
+ */
+type Scope = { companyId: string; siteIds?: Set<string>; userIds?: Set<string> };
 
 const DAY = 86_400_000;
 
@@ -41,12 +49,16 @@ export default async function CompliancePage({
   const user = await getCurrentUser();
   const { tab = "training" } = await searchParams;
   const caps = getCapabilities(user);
+  const scope: Scope = seesAllSites(user)
+    ? { companyId: user.companyId }
+    : // Supervisors: their sites. Workers: just their working site.
+      { companyId: user.companyId, siteIds: await workingSiteIds(user), userIds: new Set((await workingPeople(user)).map((u) => u.id)) };
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold tracking-tight">Compliance</h1>
 
-      <StatusTiles companyId={user.companyId} active={tab} />
+      <StatusTiles scope={scope} active={tab} />
 
       <div className="flex flex-wrap items-center justify-end gap-4 empty:hidden">
         
@@ -57,11 +69,11 @@ export default async function CompliancePage({
         {tab === "notices" && caps.canManageCompliance && <Link href="/compliance/notices/new" className="rounded-lg bg-sidebar-accent px-4 py-1.5 text-sm font-semibold text-white">+ Raise notice</Link>}
       </div>
 
-      {tab === "training" && <Training companyId={user.companyId} />}
-      {tab === "permits" && <Permits companyId={user.companyId} />}
+      {tab === "training" && <Training scope={scope} />}
+      {tab === "permits" && <Permits scope={scope} />}
       {tab === "ppe" && <Ppe companyId={user.companyId} />}
-      {tab === "equipment" && <Equipment companyId={user.companyId} />}
-      {tab === "notices" && <Notices companyId={user.companyId} />}
+      {tab === "equipment" && <Equipment scope={scope} />}
+      {tab === "notices" && <Notices scope={scope} />}
     </div>
   );
 }
@@ -74,12 +86,13 @@ const toneBg: Record<Tone, string> = {
 };
 
 /** One tile per area: the number that matters and a red / amber / green state, tapped to open it. */
-function StatusTiles({ companyId, active }: { companyId: string; active: string }) {
-  const training = trainingSummary(companyId);
-  const permits = permitSummary(companyId);
+function StatusTiles({ scope, active }: { scope: Scope; active: string }) {
+  const { companyId, siteIds, userIds } = scope;
+  const training = trainingSummary(companyId, undefined, userIds);
+  const permits = permitSummary(companyId, siteIds);
   const ppe = ppeSummary(companyId);
-  const equipmentDown = equipmentSummary(companyId).filter((r) => r.failed).length;
-  const openNotices = listGcNotices(companyId).filter((n) => n.status === "open").length;
+  const equipmentDown = equipmentSummary(companyId, siteIds).filter((r) => r.failed).length;
+  const openNotices = scopedNotices(scope).filter((n) => n.status === "open").length;
 
   const tiles: { id: string; label: string; value: number; sub: string; tone: Tone }[] = [
     {
@@ -147,10 +160,11 @@ function StatusTiles({ companyId, active }: { companyId: string; active: string 
   );
 }
 
-function Training({ companyId }: { companyId: string }) {
+function Training({ scope }: { scope: Scope }) {
+  const { companyId, userIds } = scope;
   const now = nowMs();
-  const summary = trainingSummary(companyId);
-  const certs = listCertifications(companyId);
+  const summary = trainingSummary(companyId, undefined, userIds);
+  const certs = listCertifications(companyId).filter((c) => !userIds || userIds.has(c.userId));
   const people = listUsers(companyId).filter((u) => certs.some((c) => c.userId === u.id));
   const rows = people
     .map((p) => {
@@ -265,10 +279,11 @@ function Training({ companyId }: { companyId: string }) {
   );
 }
 
-function Permits({ companyId }: { companyId: string }) {
+function Permits({ scope }: { scope: Scope }) {
+  const { companyId, siteIds } = scope;
   const now = nowMs();
-  const permits = listPermits(companyId);
-  const summary = permitSummary(companyId);
+  const permits = listPermits(companyId).filter((p) => !siteIds || siteIds.has(p.projectId));
+  const summary = permitSummary(companyId, siteIds);
   const active = permits.filter((p) => permitState(p, now) === "active");
   const log = permits.filter((p) => new Date(p.startsAt).getTime() <= now).slice(0, 30);
   const stateBadge = { active: "badge-good", closed: "badge-neutral", expired: "badge-serious", upcoming: "badge-info" } as const;
@@ -420,9 +435,10 @@ function Ppe({ companyId }: { companyId: string }) {
   );
 }
 
-function Equipment({ companyId }: { companyId: string }) {
-  const rows = equipmentSummary(companyId);
-  const lifts = listInspections(companyId).filter((i) => i.templateId === "t_scissor_lift");
+function Equipment({ scope }: { scope: Scope }) {
+  const { companyId, siteIds } = scope;
+  const rows = equipmentSummary(companyId, siteIds);
+  const lifts = listInspections(companyId).filter((i) => i.templateId === "t_scissor_lift" && (!siteIds || siteIds.has(i.projectId)));
   const days = Array.from({ length: 21 }, (_, n) => {
     const d = new Date(nowMs() - (20 - n) * DAY);
     return d.toISOString().slice(0, 10);
@@ -462,8 +478,12 @@ function Equipment({ companyId }: { companyId: string }) {
   );
 }
 
-function Notices({ companyId }: { companyId: string }) {
-  const notices = listGcNotices(companyId);
+function scopedNotices({ companyId, siteIds }: Scope) {
+  return listGcNotices(companyId).filter((n) => !siteIds || siteIds.has(n.projectId));
+}
+
+function Notices({ scope }: { scope: Scope }) {
+  const notices = scopedNotices(scope);
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {notices.map((n) => (
