@@ -11,9 +11,11 @@ export function analyzeInspection(
   template: InspectionTemplate,
   inspection: Inspection
 ): Array<Omit<Finding, "id">> {
-  if (!template.aiAnalysisEnabled) return [];
-
+  // Flow rule 1 (agreed 23 Nov): a failed checklist item is a hazard whether or not the
+  // template's AI photo check is on, and it skips review. The person who ran the
+  // checklist saw it on site, so it goes straight to the supervisor's "To assign" list.
   const evidence = inspection.evidence[0];
+  const now = new Date().toISOString();
 
   return inspection.responses
     .filter((r) => r.value === "fail")
@@ -35,8 +37,11 @@ export function analyzeInspection(
         }`,
         regulatoryReference: hazard?.regulatoryReference ?? "OSHA 1926 Subpart C",
         evidenceId: evidence?.id,
-        reviewerDecision: "pending" as const,
-        createdAt: new Date().toISOString(),
+        source: "checklist" as const,
+        reviewerDecision: "approved" as const,
+        reviewerId: inspection.inspectorId,
+        reviewedAt: now,
+        createdAt: now,
       };
     });
 }

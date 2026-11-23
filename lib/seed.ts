@@ -4,6 +4,7 @@ import type {
   Asset,
   Certification,
   CheckIn,
+  DailyReport,
   CertificationType,
   ChecklistResponse,
   Company,
@@ -41,6 +42,8 @@ export type Store = {
   gcNotices: GcNotice[];
   incidents: Incident[];
   checkIns: CheckIn[];
+  /** Supervisors' 08:00 daily site reports. */
+  dailyReports: DailyReport[];
   /** When each person last opened their notifications (userId → ISO time). */
   inboxSeen: Record<string, string>;
   /** Offline reports already filed, keyed `${userId}:${clientId}`, so a resend never files twice. */
@@ -373,8 +376,10 @@ export function buildSeed(now: Date): Store {
   });
 
   const users: User[] = [
-    mk("u_patrick", "Patrick", "Murani", "ADMIN", "Platform Administrator", "patrick@besco.example", true),
-    mk("u_lawrence", "Lawrence", "Kibet", "SAFETY_MANAGER", "EHS Director", "lawrence@besco.example", true),
+    // Design decision (23 Nov): Lawrence owns the app, so he is the L1 Admin in the demo;
+    // Patrick plays the L2 Safety Manager.
+    mk("u_lawrence", "Lawrence", "Kibet", "ADMIN", "Owner · Administrator", "lawrence@besco.example", true),
+    mk("u_patrick", "Patrick", "Murani", "SAFETY_MANAGER", "Safety Manager", "patrick@besco.example", true),
     mk("u_amon", "Amon", "Tumek", "SAFETY_MANAGER", "Site Safety Manager", "amon@besco.example", true),
     mk("u_justus", "Justus", "Gitau", "SUPERVISOR", "Electrical Superintendent", "justus@besco.example", true),
     mk("u_kevin", "Kevin", "Otieno", "WORKER", "Journeyman Electrician", "kevin@besco.example", true),
@@ -388,7 +393,8 @@ export function buildSeed(now: Date): Store {
       readOnly: true,
       title: "Project Executive, Walsh Construction",
       active: true,
-      featured: true,
+      // Client role dropped from the design (23 Nov): kept as data, not offered on sign-in.
+      featured: false,
     },
     mk("u_marcus", "Marcus", "Reed", "SUPERVISOR", "Electrical Foreman"),
     mk("u_tanya", "Tanya", "Brooks", "SUPERVISOR", "Electrical Foreman"),
@@ -499,8 +505,8 @@ export function buildSeed(now: Date): Store {
   };
   for (const pr of projects) pr.crewIds = crews[pr.id];
   const foremen = new Set(["u_justus", "u_marcus", "u_luis", "u_tanya"]);
-  const safetyStaff = ["u_amon", "u_amon", "u_lawrence"];
-  const reviewers = ["u_amon", "u_amon", "u_amon", "u_lawrence"];
+  const safetyStaff = ["u_amon", "u_amon", "u_patrick"];
+  const reviewers = ["u_amon", "u_amon", "u_amon", "u_patrick"];
 
   const assets: Asset[] = [
     { id: "a_sl01", tag: "SL-01", name: "Scissor lift 19 ft", projectId: "p_markey" },
@@ -1328,6 +1334,31 @@ export function buildSeed(now: Date): Store {
   seedCheckIn("u_miguel", "p_markey", 22, "pending", 60);
   seedCheckIn("u_omar", "p_lex_medical", 48, "pending");
 
+  // Two of today's three daily site reports are in, so the "2 of 3 in" prompt shows (design X05).
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const dailyReports: DailyReport[] = [
+    {
+      id: "dr_markey_today",
+      companyId: "co_besco",
+      projectId: "p_markey",
+      supervisorId: "u_justus",
+      day: todayKey,
+      submittedAt: new Date(now.getTime() - 2 * HOUR).toISOString(),
+      highRiskWork: "Energizing panel LP-3E at 10:00. Work at height on the L4 edge all day.",
+      snapshot: { crewIn: 6, crewTotal: 8, hazardsLastDay: 2, openFixes: 5, overdueFixes: 1, permitsToday: ["Hot work"] },
+    },
+    {
+      id: "dr_lex_today",
+      companyId: "co_besco",
+      projectId: "p_lex_medical",
+      supervisorId: "u_luis",
+      day: todayKey,
+      submittedAt: new Date(now.getTime() - 2.3 * HOUR).toISOString(),
+      highRiskWork: "No high-risk work planned.",
+      snapshot: { crewIn: 6, crewTotal: 7, hazardsLastDay: 0, openFixes: 2, overdueFixes: 0, permitsToday: [] },
+    },
+  ];
+
   return {
     companies,
     users,
@@ -1343,6 +1374,7 @@ export function buildSeed(now: Date): Store {
     gcNotices,
     incidents,
     checkIns,
+    dailyReports,
     inboxSeen: {},
     outboxReceipts: {},
   };

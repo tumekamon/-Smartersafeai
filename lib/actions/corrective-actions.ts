@@ -16,6 +16,7 @@ import {
 import { accessibleProject, worksOnSite } from "@/lib/scope";
 import { visibleTask } from "@/lib/task-access";
 import type { CorrectiveAction, CorrectiveActionStatus, HazardCategory, RiskLevel } from "@/lib/types";
+import { windowById } from "@/lib/fix-window";
 
 export type TaskFormState = { error?: string } | undefined;
 
@@ -29,7 +30,10 @@ export async function createCorrectiveActionAction(formData: FormData) {
   const findingId = String(formData.get("findingId") ?? "") || undefined;
   const description = String(formData.get("description") ?? "").trim();
   const assignedToId = String(formData.get("assignedToId") ?? "");
-  const dueDate = String(formData.get("dueDate") ?? "");
+  // A fix window (2h/5h/24h/7d, design S04) sets an exact due time; a plain date still works.
+  const window = windowById(String(formData.get("window") ?? ""));
+  const dueAt = window ? new Date(Date.now() + window.ms).toISOString() : undefined;
+  const dueDate = dueAt ? dueAt.slice(0, 10) : String(formData.get("dueDate") ?? "");
 
   if (!projectId || !description || !assignedToId || !dueDate) {
     throw new Error("Missing required corrective action fields.");
@@ -43,6 +47,7 @@ export async function createCorrectiveActionAction(formData: FormData) {
 
   const finding = findingId ? getFinding(findingId) : undefined;
   if (finding && finding.projectId !== projectId) throw new Error("Finding does not match project.");
+  if (finding?.correctiveActionId) throw new Error("This hazard already has a fix assigned.");
 
   dbCreateCorrectiveAction({
     projectId,
@@ -55,9 +60,11 @@ export async function createCorrectiveActionAction(formData: FormData) {
     assignedToId,
     assignedById: user.id,
     dueDate,
+    dueAt,
   });
 
   if (finding) revalidatePath(`/inspections/${finding.inspectionId}`);
+  revalidatePath("/assign");
   revalidatePath("/corrective-actions");
   revalidatePath("/review");
   revalidatePath("/dashboard");

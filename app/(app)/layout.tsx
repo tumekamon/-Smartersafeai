@@ -4,7 +4,6 @@ import { hiddenModules } from "@/lib/home-layout";
 import { getCompany, listCorrectiveActions, listFindings } from "@/lib/db";
 import { getCapabilities } from "@/lib/authz";
 import { brandVars } from "@/lib/color";
-import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { MobileNav } from "@/components/mobile-nav";
 import { OutboxSync } from "@/components/offline/outbox-sync";
@@ -39,30 +38,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       : myOpen.filter((a) => !usesWorkingSite(user) || siteIds.has(a.projectId)).length;
   const navUser = { role: user.role, readOnly: user.readOnly, extraPermissions: user.extraPermissions };
   const hidden = hiddenModules(company, user);
+  // Anyone who can submit field reports gets the yellow Report button (phone tab bar + desktop top bar).
+  const canReport = caps.canSubmitInspections;
 
+  // Mobile first: one column, a navy top bar, the tab bar at the bottom on phones.
+  // Desktop is the same work on a bigger screen, with the tabs in the top bar.
   return (
     <div
-      className="tenant-theme flex min-h-screen w-full bg-background"
+      className="tenant-theme flex min-h-screen w-full flex-col bg-background"
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
-      <Sidebar user={navUser} companyName={company?.name ?? ""} badges={{ work: workBadge }} projectCount={usesWorkingSite(user) ? switchableSites(user).length : projects.length} hidden={hidden} />
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <Topbar user={user} siteSwitch={siteSwitch} unread={usesWorkingSite(user) ? unreadCount(user) : undefined} />
-        <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:py-8">{children}</main>
-      </div>
-      {!caps.isReadOnly && <OutboxSync userId={user.id} />}
-      <MobileNav
-        user={navUser}
-        workBadge={workBadge}
+      <Topbar
+        user={user}
+        navUser={navUser}
         hidden={hidden}
-        projects={projects.map((p) => ({ id: p.id, shortName: p.shortName }))}
-        flags={{
-          canInspect: caps.canSubmitInspections,
-          canReportIncident: !caps.isReadOnly && !hidden.includes("incidents"),
-          canCreateAction: caps.canCreateCorrectiveActions,
-          canManageCompliance: caps.canManageCompliance && !hidden.includes("compliance"),
-        }}
+        workBadge={workBadge}
+        canReport={canReport}
+        siteSwitch={siteSwitch}
+        unread={usesWorkingSite(user) ? unreadCount(user) : undefined}
       />
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-12 md:pt-10">{children}</main>
+      {!caps.isReadOnly && <OutboxSync userId={user.id} />}
+      <MobileNav user={navUser} workBadge={workBadge} hidden={hidden} canReport={canReport} />
     </div>
   );
 }

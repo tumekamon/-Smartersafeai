@@ -8,10 +8,12 @@ import {
   IconFileCheck,
   IconSparkle,
   IconUsers,
+  IconWrench,
 } from "@/components/ui/icons";
 
 const kindIcon = {
   review: IconSparkle,
+  assign: IconWrench,
   overdue: IconClock,
   permit: IconFileCheck,
   cert: IconUsers,

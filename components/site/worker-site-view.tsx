@@ -4,8 +4,8 @@ import { getUser, listCorrectiveActionsForProject } from "@/lib/db";
 import { switchableSites, workingSite } from "@/lib/site-focus";
 import { switchSiteAction } from "@/lib/actions/site";
 import { isActionOverdue } from "@/lib/metrics";
-import { shortDate } from "@/lib/format";
 import { nowMs } from "@/lib/time";
+import { dueLabel } from "@/lib/tasks";
 import { MySiteCard } from "@/components/site/my-site-card";
 import { EmergencyStrip } from "@/components/site/emergency-strip";
 import { Avatar } from "@/components/ui/avatar";
@@ -111,7 +111,7 @@ export async function WorkerSiteView({ user, project, canCheckIn }: { user: User
                       </Link>
                       <p className="mt-0.5 text-xs text-foreground/55">
                         {a.location ? `${a.location.level} ${a.location.zone} · ` : ""}
-                        <span className={late ? "font-bold text-status-critical" : ""}>{late ? "Overdue" : `Due ${shortDate(a.dueDate)}`}</span>
+                        <span className={late ? "font-bold text-status-critical" : ""}>{dueLabel(a, now).text}</span>
                       </p>
                     </div>
                     <CorrectiveActionStatusBadge status={a.status} />

@@ -1,65 +1,110 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
-import { sitesFor, peopleFor } from "@/lib/scope";
+import { getFinding, getUser } from "@/lib/db";
+import { accessibleProject, peopleFor, sitesFor, worksOnSite } from "@/lib/scope";
 import { getCapabilities } from "@/lib/authz";
 import { createCorrectiveActionAction } from "@/lib/actions/corrective-actions";
+import { DEFAULT_WINDOW, FIX_WINDOWS } from "@/lib/fix-window";
 
-export default async function NewCorrectiveActionPage() {
+/**
+ * Assign a fix (design S04, flow rule 2). From "To assign" it arrives with a finding:
+ * the hazard is already decided, so the supervisor only picks who and how fast.
+ * Without a finding it's a job the supervisor gives out directly.
+ */
+export default async function NewCorrectiveActionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ findingId?: string; projectId?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!getCapabilities(user).canCreateCorrectiveActions) redirect("/dashboard");
 
-  const projects = sitesFor(user);
-  const people = peopleFor(user).sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const { findingId, projectId: projectParam } = await searchParams;
+  const finding = findingId ? getFinding(findingId) : undefined;
+  if (findingId && !finding) notFound();
+  if (finding?.correctiveActionId) redirect(`/corrective-actions/${finding.correctiveActionId}`);
+
+  const sites = sitesFor(user);
+  const project = accessibleProject(user, finding?.projectId ?? projectParam ?? (sites.length === 1 ? sites[0].id : undefined));
+  if (finding && !project) notFound();
+
+  const crew = project
+    ? peopleFor(user)
+        // The site's crew only: office roles (admin, safety) see every site but don't fix on it.
+        .filter((p) => (p.role === "WORKER" || p.role === "SUPERVISOR") && worksOnSite(p, project) && p.id !== user.id)
+        .sort((a, b) => a.role.localeCompare(b.role) || a.lastName.localeCompare(b.lastName))
+    : [];
+  const reviewer = finding?.reviewerId ? getUser(finding.reviewerId) : undefined;
+  const defaultWindow = DEFAULT_WINDOW[finding?.riskLevel ?? "medium"];
+  const chip = "flex min-h-12 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-[rgba(11,31,51,0.2)] bg-surface px-4 text-[15px] font-medium has-[:checked]:border-brand has-[:checked]:bg-brand has-[:checked]:text-white";
+  const field = "min-h-[52px] w-full rounded-lg border-[1.5px] border-[rgba(11,31,51,0.2)] bg-surface px-3.5 text-base";
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Create corrective action</h1>
-        <p className="mt-1 text-sm text-foreground/60">Manually assign a task to remediate an issue.</p>
+    <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <Link href="/assign" className="inline-flex min-h-11 items-center text-[15px] font-medium text-brand">← Work</Link>
+      <div className="flex flex-col gap-2.5">
+        {finding && (
+          <span className="eyebrow text-brand">
+            {finding.source === "checklist" ? "Failed checklist item" : `Approved by ${reviewer ? `${reviewer.firstName} ${reviewer.lastName}` : "safety"}`} · {finding.riskLevel}
+          </span>
+        )}
+        <h1 className="disp text-[34px] leading-none">Assign a fix</h1>
       </div>
 
-      <form action={createCorrectiveActionAction} className="card space-y-4 p-5">
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium text-foreground/80">Project</span>
-          <select name="projectId" required defaultValue="" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-            <option value="" disabled>Choose a project…</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.shortName}</option>
-            ))}
+      {!project ? (
+        <form className="flex flex-col gap-3">
+          <label htmlFor="projectId" className="text-[15px] font-medium">Which site?</label>
+          <select id="projectId" name="projectId" required defaultValue="" className={field}>
+            <option value="" disabled>Choose a site…</option>
+            {sites.map((p) => <option key={p.id} value={p.id}>{p.shortName}</option>)}
           </select>
-        </label>
+          <button type="submit" className="min-h-[52px] rounded-full bg-brand px-6 font-semibold text-white">Next</button>
+        </form>
+      ) : (
+        <form action={createCorrectiveActionAction} className="flex flex-col gap-6">
+          <input type="hidden" name="projectId" value={project.id} />
+          {finding && <input type="hidden" name="findingId" value={finding.id} />}
 
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium text-foreground/80">Description</span>
-          <textarea
-            name="description"
-            required
-            rows={3}
-            placeholder="What needs to be fixed?"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-sidebar-accent"
-          />
-        </label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="description" className="text-[15px] font-medium">What needs fixing</label>
+            <textarea
+              id="description"
+              name="description"
+              required
+              rows={2}
+              defaultValue={finding ? `${finding.title}${finding.location ? ` — ${finding.location.level} ${finding.location.zone}` : ""}` : ""}
+              className={`${field} py-3`}
+            />
+          </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-medium text-foreground/80">Assign to</span>
-            <select name="assignedToId" required defaultValue="" className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-              <option value="" disabled>Choose a team member…</option>
-              {people.map((p) => (
+          <div className="flex flex-col gap-2">
+            <label htmlFor="assignedToId" className="text-[15px] font-medium">Who</label>
+            <select id="assignedToId" name="assignedToId" required defaultValue="" className={field}>
+              <option value="" disabled>Choose someone on {project.shortName}…</option>
+              {crew.map((p) => (
                 <option key={p.id} value={p.id}>{p.firstName} {p.lastName} · {p.title}</option>
               ))}
             </select>
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-medium text-foreground/80">Due date</span>
-            <input type="date" name="dueDate" required className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-sidebar-accent" />
-          </label>
-        </div>
+            <span className="text-[13px] text-body">Only people on this site&apos;s crew are listed.</span>
+          </div>
 
-        <button type="submit" className="rounded-lg bg-sidebar-accent px-4 py-2 text-sm font-semibold text-white">
-          Create action
-        </button>
-      </form>
+          <fieldset className="flex flex-col gap-2.5">
+            <legend className="mb-2.5 text-[15px] font-medium">Fix within</legend>
+            <div className="grid grid-cols-4 gap-2">
+              {FIX_WINDOWS.map((w) => (
+                <label key={w.id} className={chip}>
+                  <input type="radio" name="window" value={w.id} defaultChecked={w.id === defaultWindow} className="sr-only" />
+                  {w.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <button type="submit" className="min-h-[54px] rounded-full bg-brand px-6 text-base font-semibold text-white">Assign</button>
+          <p className="-mt-3 text-center text-[13px] text-body">They see it on My Day straight away, with the time counting down.</p>
+        </form>
+      )}
     </div>
   );
 }

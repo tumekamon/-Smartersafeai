@@ -98,6 +98,31 @@ export type CheckInStatus = "pending" | "approved" | "rejected";
  * site. One per worker per day; a rejected one can be redone. Reviewed by the
  * site's supervisor or a safety manager (see docs/daily-check-in.md).
  */
+/**
+ * The supervisor's 08:00 daily site report (design S05/X05, Nov 8 meeting). Numbers are
+ * filled in from the site's records when sent (a snapshot); the supervisor adds the
+ * high-risk work planned today and anything the safety manager should know.
+ */
+export type DailyReport = {
+  id: string;
+  companyId: string;
+  projectId: string;
+  supervisorId: string;
+  /** Local calendar day it covers, YYYY-MM-DD. */
+  day: string;
+  submittedAt: string;
+  highRiskWork: string;
+  note?: string;
+  snapshot: {
+    crewIn: number;
+    crewTotal: number;
+    hazardsLastDay: number;
+    openFixes: number;
+    overdueFixes: number;
+    permitsToday: string[];
+  };
+};
+
 export type CheckIn = {
   id: string;
   companyId: string;
@@ -202,8 +227,12 @@ export type Finding = {
   reviewedAt?: string;
   overrideReason?: string;
   correctiveActionId?: string;
-  /** "field" = a person reported it from site; otherwise the AI raised it from an inspection. */
-  source?: "ai" | "field";
+  /**
+   * "field" = a person reported it from site; "checklist" = a failed checklist item, which
+   * skips review and goes straight to the supervisor to assign (flow rule 1);
+   * otherwise the AI raised it from an inspection.
+   */
+  source?: "ai" | "field" | "checklist";
   /** What the (simulated) photo check saw on a site report, shown next to the person's own words. */
   photoCheck?: { label: string; confidence: number; simulated: true };
   createdAt: string;
@@ -241,6 +270,11 @@ export type CorrectiveAction = {
   description: string;
   assignedToId: string;
   dueDate: string;
+  /**
+   * Exact due time when the fix was given a window (2h / 5h / 24h / 7d, design flow
+   * rule 2). `dueDate` stays as its calendar day so date-based views keep working.
+   */
+  dueAt?: string;
   status: CorrectiveActionStatus;
   createdAt: string;
   completedAt?: string;

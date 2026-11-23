@@ -20,12 +20,11 @@ The sign-in page has one-tap buttons for each:
 
 | Level | Person | Email |
 |---|---|---|
-| L1 Admin | Patrick Murani | patrick@besco.example |
-| L2 Safety Manager | Lawrence Kibet | lawrence@besco.example |
+| L1 Admin (owner) | Lawrence Kibet | lawrence@besco.example |
+| L2 Safety Manager | Patrick Murani | patrick@besco.example |
 | L2 Safety Manager | Amon Tumek | amon@besco.example |
 | L3 Supervisor | Justus Gitau | justus@besco.example |
 | L4 Worker | Kevin Otieno | kevin@besco.example |
-| Client (read-only) | Dana Whitfield | dana@walsh.example |
 
 ### Settings
 

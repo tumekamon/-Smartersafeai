@@ -16,6 +16,8 @@ import {
 } from "@/lib/metrics";
 import { listCorrectiveActions, listFindings, getCompany } from "@/lib/db";
 import { sitesFor } from "@/lib/scope";
+import { getCapabilities } from "@/lib/authz";
+import { DailyReportPrompt } from "@/components/dashboard/daily-report-prompt";
 import { greeting } from "@/lib/format";
 import { ScoreRing } from "@/components/viz/score-ring";
 import { StatTiles } from "@/components/dashboard/stat-tiles";
@@ -71,7 +73,14 @@ export function ManagerDashboard({
   const overdue = actions.filter((a) => isActionOverdue(a)).length;
   const pending = findings.filter((f) => f.reviewerDecision === "pending").length;
 
-  const attention = attentionQueue(user.companyId, 8, projectId);
+  // Flow rules 1-4: reviewers get the review queue and escalated fixes; supervisors get
+  // Critical alerts, "to assign" and every overdue fix on their sites.
+  const caps = getCapabilities(user);
+  const attention = attentionQueue(user.companyId, 8, projectId, {
+    canReview: caps.canReviewFindings,
+    canAssign: caps.canCreateCorrectiveActions,
+    escalatedOnly: caps.canReviewFindings && user.role !== "SUPERVISOR",
+  });
   const aiInsights = insights(user.companyId, projectId);
   const hazards = hazardBreakdown(user.companyId, projectId).slice(0, 6);
   const feed = activityFeed(user.companyId, 8, projectId);
@@ -86,13 +95,14 @@ export function ManagerDashboard({
 
   return (
     <div className="space-y-6">
+      <DailyReportPrompt user={user} project={project} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
             {greeting()}, {user.firstName}
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {pending > 0 && (
+            {caps.canReviewFindings && pending > 0 && (
               <Link href="/review" className="badge badge-serious min-h-9 px-3 text-sm">
                 <IconSparkle width={15} height={15} />
                 {pending} to review

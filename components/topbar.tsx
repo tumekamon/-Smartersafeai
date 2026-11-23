@@ -4,68 +4,90 @@ import { roleLabel } from "@/lib/roles";
 import { logout } from "@/lib/actions/auth";
 import { getTheme } from "@/lib/theme";
 import type { User } from "@/lib/types";
+import type { ModuleId } from "@/lib/home-layout";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteSwitcher } from "@/components/site/site-switcher";
 import { NotificationBell } from "@/components/notifications/bell";
-import { IconCheckShield, IconLogout, IconUser } from "@/components/ui/icons";
+import { TopNav } from "@/components/top-nav";
+import { BrandLockup, BrandMark } from "@/components/ui/brand-mark";
+import { IconLogout, IconPlus } from "@/components/ui/icons";
+import type { NavUser } from "@/components/nav-items";
 
+/**
+ * The navy top bar on every screen (design canvas: "navy top bar like a site office board").
+ * Desktop: logo, the main tabs, the yellow Report button, then the person.
+ * Phone: logo mark, working site and bell; the tabs live in the bottom bar.
+ */
 export async function Topbar({
   user,
+  navUser,
+  hidden,
+  workBadge,
+  canReport,
   siteSwitch,
   unread,
 }: {
   user: User;
+  navUser: NavUser;
+  hidden: ModuleId[];
+  workBadge: number;
+  canReport: boolean;
   /** A worker's working site and the sites they can switch to. */
   siteSwitch?: ComponentProps<typeof SiteSwitcher>;
   /** Workers only: new notifications since they last looked. */
   unread?: number;
 }) {
   const theme = await getTheme();
+  const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`;
 
   return (
-    <header className="sticky top-0 z-40 flex print:hidden items-center justify-between border-b border-border/40 bg-surface/70 backdrop-blur-xl px-4 py-3 md:px-6 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] transition-all duration-300">
-      <Link href="/dashboard" aria-label="Home" className="flex items-center gap-2 md:hidden">
-        <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-white">
-          <IconCheckShield width={19} height={19} />
-        </span>
-        {!siteSwitch && <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight">SmartSafe AI</span>}
-      </Link>
-      {siteSwitch && (
-        <div className="ml-2 min-w-0 md:ml-0">
-          <Suspense fallback={null}>
-            <SiteSwitcher {...siteSwitch} />
-          </Suspense>
-        </div>
-      )}
-      <div className="ml-auto flex items-center gap-2 md:gap-4">
-        {/* On phones the site switcher needs the room; the theme toggle moves to the More page. */}
-        <div className={siteSwitch ? "hidden sm:block" : undefined}>
-          <ThemeToggle theme={theme} />
-        </div>
-        {unread !== undefined && <NotificationBell unread={unread} />}
-        <span className="hidden h-8 w-[1px] bg-border/50 md:block" />
-        <Link href="/settings/profile" className="group flex items-center gap-3 rounded-full border border-transparent px-2 py-1.5 transition-all duration-300 hover:bg-surface-muted/80 hover:border-border/60 hover:shadow-sm">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-surface-muted to-background text-foreground/70 shadow-inner group-hover:text-brand transition-colors">
-            <IconUser width={18} height={18} />
-          </span>
-          <div className="text-right pr-2 hidden sm:block">
-            <p className="text-[13px] font-bold text-foreground/90 group-hover:text-brand transition-colors">
-              {user.firstName} {user.lastName}
-            </p>
-            <p className="text-[10px] font-semibold tracking-wide text-foreground/50 uppercase">{roleLabel(user)}</p>
-          </div>
+    <header className="navy-scope sticky top-0 z-40 print:hidden">
+      <div className="mx-auto flex min-h-16 max-w-[1280px] items-center gap-4 px-4 md:gap-8 md:px-8">
+        <Link href="/dashboard" aria-label="SmartSafe home" className="flex shrink-0 items-center">
+          <span className="md:hidden"><BrandMark size={32} /></span>
+          <BrandLockup className="hidden md:inline-flex" />
         </Link>
-        {/* On phones, log out lives on the More page. */}
-        <form action={logout} className="hidden md:block">
-          <button
-            type="submit"
-            aria-label="Log out"
-            title="Log out"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-surface/50 text-foreground/60 transition-all hover:bg-status-critical/10 hover:border-status-critical/30 hover:text-status-critical hover:shadow-sm"
-          >
-            <IconLogout width={16} height={16} />
-          </button>
-        </form>
+
+        <TopNav user={navUser} hidden={hidden} workBadge={workBadge} />
+
+        {siteSwitch && (
+          <div className="min-w-0">
+            <Suspense fallback={null}>
+              <SiteSwitcher {...siteSwitch} />
+            </Suspense>
+          </div>
+        )}
+
+        <div className="ml-auto flex items-center gap-2 md:gap-3">
+          {canReport && (
+            <Link href="/hazards/new" className="report-pill hidden md:inline-flex">
+              <IconPlus width={18} height={18} strokeWidth={2.4} />
+              Report
+            </Link>
+          )}
+          <div className={siteSwitch ? "hidden sm:block" : undefined}>
+            <ThemeToggle theme={theme} />
+          </div>
+          {unread !== undefined && <NotificationBell unread={unread} />}
+          <Link href="/settings/profile" className="flex items-center gap-2.5" title={`${user.firstName} ${user.lastName} · ${roleLabel(user)}`}>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-tint text-sm font-semibold text-ink">{initials}</span>
+            <span className="hidden text-left lg:block">
+              <span className="block text-[13px] font-semibold leading-tight">{user.firstName} {user.lastName}</span>
+              <span className="block font-mono text-[10px] uppercase tracking-wider text-[#c9daec]">{roleLabel(user)}</span>
+            </span>
+          </Link>
+          {/* On phones, sign out lives on the More page. */}
+          <form action={logout} className="hidden md:block">
+            <button
+              type="submit"
+              aria-label="Sign out"
+              title="Sign out"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-[#c9daec] hover:text-white"
+            >
+              <IconLogout width={16} height={16} />
+            </button>
+          </form>
+        </div>
       </div>
     </header>
   );

@@ -32,13 +32,15 @@ export function isPlainWorker(user: NavUser): boolean {
 
 export function navItemsFor(user: NavUser, hidden: ModuleId[] = []): NavItem[] {
   const isWorker = user.role === "WORKER" && !user.readOnly;
+  // Labels from the design canvas: Worker "My Day · Tasks", Supervisor "Site · Work".
+  const homeLabel = isWorker ? "My Day" : user.role === "SUPERVISOR" ? "Site" : "Home";
   const items: NavItem[] = [
-    { href: "/dashboard", label: isWorker ? "My Day" : "Home", Icon: IconHome, match: ["/dashboard", "/check-in"] },
+    { href: "/dashboard", label: homeLabel, Icon: IconHome, match: ["/dashboard", "/check-in"] },
     {
       href: "/work",
-      label: isWorker ? "My Tasks" : "Work",
+      label: isWorker ? "Tasks" : "Work",
       Icon: IconClipboardCheck,
-      match: ["/work", "/review", "/inspections", "/corrective-actions"],
+      match: ["/work", "/review", "/assign", "/inspections", "/corrective-actions"],
       badgeKey: "work",
     },
     isPlainWorker(user)

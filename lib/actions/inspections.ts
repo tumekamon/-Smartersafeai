@@ -67,7 +67,8 @@ export async function submitInspection(
     findings.forEach((finding, index) => {
       addFindingToInspection(inspection.id, { ...finding, id: `f_${Date.now()}_${index}` });
     });
-    if (findings.length === 0) created.status = "reviewed";
+    // Failed items skip review (flow rule 1), so the inspection is done once submitted.
+    created.status = "reviewed";
   }
 
   redirect(`/inspections/${inspection.id}?submitted=1`);

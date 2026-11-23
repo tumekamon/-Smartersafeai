@@ -25,8 +25,9 @@ export async function reviewFindingAction(formData: FormData) {
   const findingProject = getProject(finding.projectId);
   if (!findingProject || findingProject.companyId !== user.companyId) return;
 
-  if (decision === "overridden" && !overrideReason) {
-    throw new Error("An override reason is required.");
+  // Changing severity or rejecting needs a reason; the reporter sees it in My reports.
+  if ((decision === "overridden" || decision === "rejected") && !overrideReason) {
+    throw new Error("A reason is required.");
   }
 
   const reviewed = dbReviewFinding(findingId, {

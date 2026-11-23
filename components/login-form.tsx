@@ -5,17 +5,16 @@ import { login } from "@/lib/actions/auth";
 
 export type DemoAccount = {
   id: string;
+  level: number;
   name: string;
   role: string;
   email: string;
-  initials: string;
-  hue: number;
 };
 
-/** One row per role level; read-only client accounts sit apart, since they aren't a level. */
-export type DemoLevel = { level: number; label: string; accounts: DemoAccount[] };
+const field =
+  "h-[52px] w-full rounded-lg border-[1.5px] border-[rgba(11,31,51,0.2)] bg-surface px-3.5 text-base outline-none focus:border-brand";
 
-export function LoginForm({ levels, clients }: { levels: DemoLevel[]; clients: DemoAccount[] }) {
+export function LoginForm({ accounts }: { accounts: DemoAccount[] }) {
   const [state, action, pending] = useActionState(login, undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -29,88 +28,42 @@ export function LoginForm({ levels, clients }: { levels: DemoLevel[]; clients: D
   }
 
   return (
-    <div>
-      <p className="eyebrow mb-3">Explore as</p>
-      <div className="space-y-2">
-        {levels.map((l) => (
-          <div key={l.level} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-2 pl-3">
-            <span className="flex w-24 shrink-0 flex-col">
-              <span className="text-[11px] font-bold text-foreground/50">L{l.level}</span>
-              <span className="text-sm font-bold leading-tight">{l.label}</span>
-            </span>
-            <span className="flex min-w-0 flex-1 flex-wrap justify-end gap-1.5">
-              {l.accounts.map((a) => (
-                <AccountButton key={a.id} account={a} disabled={pending} onPick={signInAs} />
-              ))}
-            </span>
-          </div>
-        ))}
-      </div>
-      {clients.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-border px-3 py-2">
-          <span className="text-sm font-semibold text-foreground/60">Client · read-only</span>
-          <span className="flex flex-wrap gap-1.5">
-            {clients.map((a) => (
-              <AccountButton key={a.id} account={a} disabled={pending} onPick={signInAs} />
-            ))}
-          </span>
+    <div className="flex flex-col gap-10">
+      <form ref={formRef} action={action} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="email" className="text-[15px] font-medium">Work email</label>
+          <input ref={emailRef} id="email" name="email" type="email" required autoComplete="username" className={field} />
         </div>
-      )}
-
-      <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-wider text-foreground/35">
-        <span className="h-px flex-1 bg-border" />
-        or sign in
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <form ref={formRef} action={action} className="space-y-3.5">
-        <input
-          ref={emailRef}
-          id="email"
-          name="email"
-          type="email"
-          required
-          placeholder="Work email"
-          className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-sidebar-accent"
-        />
-        <input
-          ref={passRef}
-          id="password"
-          name="password"
-          type="password"
-          required
-          placeholder="Password"
-          className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-sidebar-accent"
-        />
+        <div className="flex flex-col gap-2">
+          <label htmlFor="password" className="text-[15px] font-medium">Password</label>
+          <input ref={passRef} id="password" name="password" type="password" required autoComplete="current-password" className={field} />
+        </div>
         {state?.error && <p className="form-error">{state.error}</p>}
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-xl bg-sidebar-accent px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="mt-1 inline-flex min-h-[52px] items-center justify-center rounded-full bg-brand px-6 text-base font-semibold text-white disabled:opacity-60"
         >
           {pending ? "Signing in…" : "Sign in"}
         </button>
       </form>
-    </div>
-  );
-}
 
-function AccountButton({ account: a, disabled, onPick }: { account: DemoAccount; disabled: boolean; onPick: (email: string) => void }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onPick(a.email)}
-      title={`${a.name} · ${a.role}`}
-      className="flex min-h-11 items-center gap-2 rounded-xl px-2 pr-3 text-left transition-colors hover:bg-surface-muted disabled:opacity-60"
-    >
-      <span
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-        style={{ background: `linear-gradient(135deg, hsl(${a.hue} 58% 46%), hsl(${(a.hue + 32) % 360} 60% 38%))` }}
-      >
-        {a.initials}
-      </span>
-      <span className="truncate text-sm font-semibold">{a.name.split(" ")[0]}</span>
-    </button>
+      <div className="flex flex-col">
+        <span className="eyebrow section-rule">Demo accounts · password demo1234</span>
+        {accounts.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            disabled={pending}
+            onClick={() => signInAs(a.email)}
+            className="flex min-h-[52px] items-center gap-3.5 border-b border-border text-left disabled:opacity-60"
+          >
+            <span className="eyebrow w-6 text-brand">L{a.level}</span>
+            <span className="flex-1 text-base">{a.name}</span>
+            <span className="text-sm text-body">{a.role}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
