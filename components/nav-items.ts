@@ -1,7 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import type { User } from "@/lib/types";
 import type { ModuleId } from "@/lib/home-layout";
-import { IconCamera, IconClipboardCheck, IconFileCheck, IconHome, IconMenu } from "@/components/ui/icons";
+import { IconCamera, IconClipboardCheck, IconFileCheck, IconHome, IconMapPin, IconMenu, IconUsers } from "@/components/ui/icons";
 
 /**
  * One four-item navigation for every role (Oct 9 review: fewer, combined nav items).
@@ -31,6 +31,15 @@ export function isPlainWorker(user: NavUser): boolean {
 }
 
 export function navItemsFor(user: NavUser, hidden: ModuleId[] = []): NavItem[] {
+  // The owner's tabs (design AP1): Setup · Team · [Report] · Sites · More.
+  if (user.role === "ADMIN" && !user.readOnly) {
+    return [
+      { href: "/dashboard", label: "Setup", Icon: IconHome, match: ["/dashboard"] },
+      { href: "/settings/team", label: "Team", Icon: IconUsers, match: ["/settings/team"] },
+      { href: "/projects", label: "Sites", Icon: IconMapPin, match: ["/projects"] },
+      { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/settings", "/settings/home", "/settings/profile", "/settings/templates", "/settings/incident-form", "/work", "/review", "/assign", "/inspections", "/corrective-actions", "/compliance", "/incidents", "/reports", "/notifications", "/emergency", "/daily-reports"] },
+    ];
+  }
   const isWorker = user.role === "WORKER" && !user.readOnly;
   // Labels from the design canvas: Worker "My Day · Tasks", Supervisor "Site · Work".
   const homeLabel = isWorker ? "My Day" : user.role === "SUPERVISOR" ? "Site" : "Home";
@@ -46,11 +55,12 @@ export function navItemsFor(user: NavUser, hidden: ModuleId[] = []): NavItem[] {
     isPlainWorker(user)
       ? { href: "/my-reports", label: "Reports", Icon: IconCamera, match: ["/my-reports", "/hazards"] }
       : { href: "/compliance", label: "Compliance", Icon: IconFileCheck, match: ["/compliance"] },
-    { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings", "/reports", "/my-reports", "/notifications", "/emergency"] },
+    { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings", "/settings/home", "/settings/profile", "/settings/templates", "/settings/incident-form", "/settings/team", "/reports", "/my-reports", "/notifications", "/emergency"] },
   ];
   return hidden.includes("compliance") ? items.filter((i) => i.href !== "/compliance") : items;
 }
 
 export function isNavActive(item: NavItem, pathname: string) {
-  return item.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
+  // "/settings" alone matches only exactly, so Team (/settings/team) doesn't also light up More.
+  return item.match.some((m) => pathname === m || (m !== "/settings" && pathname.startsWith(`${m}/`)));
 }

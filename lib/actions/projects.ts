@@ -25,7 +25,7 @@ function splitList(raw: string): string[] {
 export async function createProjectAction(formData: FormData) {
   const user = await requireSettingsAccess();
   const name = String(formData.get("name") ?? "").trim();
-  const shortName = String(formData.get("shortName") ?? "").trim();
+  const shortName = String(formData.get("shortName") ?? "").trim() || name;
   const projectNumber = String(formData.get("projectNumber") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const client = String(formData.get("client") ?? "").trim();
@@ -49,7 +49,9 @@ export async function createProjectAction(formData: FormData) {
   });
 
   revalidatePath("/projects");
-  redirect(`/projects/${project.id}`);
+  revalidatePath("/dashboard");
+  // Design AP2: "Create site · next, add crew".
+  redirect(`/settings/team?site=${project.id}`);
 }
 
 export async function updateProjectAction(formData: FormData) {

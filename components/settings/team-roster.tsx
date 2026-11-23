@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { setUserActiveAction, setUserReadOnlyAction, toggleExtraPermissionAction, updateUserRoleAction } from "@/lib/actions/users";
+import { setUserActiveAction, toggleExtraPermissionAction, updateUserRoleAction } from "@/lib/actions/users";
 import { EXTRA_PERMISSIONS, ROLE_INCLUDES, ROLE_OPTIONS } from "@/lib/roles";
 import { Avatar } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
@@ -82,21 +82,7 @@ export function TeamRoster({
               </select>
             </form>
 
-            <form action={setUserReadOnlyAction}>
-              <input type="hidden" name="userId" value={m.id} />
-              <input type="hidden" name="readOnly" value={(!m.readOnly).toString()} />
-              <button
-                type="submit"
-                disabled={isSelf}
-                aria-pressed={m.readOnly === true}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
-                  m.readOnly ? "bg-foreground text-background" : "bg-surface-muted text-foreground/60 hover:text-foreground"
-                }`}
-              >
-                Read-only
-              </button>
-            </form>
-
+            {/* No client role in the MVP (design decision), so no read-only toggle here. */}
             <form action={setUserActiveAction}>
               <input type="hidden" name="userId" value={m.id} />
               <input type="hidden" name="active" value={(!m.active).toString()} />

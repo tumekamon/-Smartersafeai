@@ -6,17 +6,20 @@ import { switchableSites, workingSite } from "@/lib/site-focus";
 import { ManagerDashboard } from "@/components/dashboard/manager-dashboard";
 import { WorkerDashboard } from "@/components/dashboard/worker-dashboard";
 import { ClientDashboard } from "@/components/dashboard/client-dashboard";
+import { AdminSetup } from "@/components/dashboard/admin-setup";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<{ project?: string; view?: string }>;
 }) {
   const user = await getCurrentUser();
   const capabilities = getCapabilities(user);
-  const { project } = await searchParams;
+  const { project, view } = await searchParams;
 
   if (capabilities.isReadOnly) return <ClientDashboard user={user} />;
+  // The owner lands on Setup (design AP1); the safety picture is one tap away.
+  if (user.role === "ADMIN" && view !== "safety") return <AdminSetup user={user} />;
 
   // Someone on only some sites always sees one of their sites, never company-wide numbers.
   const sites = sitesFor(user);
