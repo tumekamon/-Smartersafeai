@@ -40,11 +40,17 @@ export default async function MorePage() {
   const reportsOpen = worker ? myReports(user).filter(isOpenReport).length : 0;
   const unread = worker ? unreadCount(user) : 0;
 
+  const isOwner = user.role === "ADMIN" && !user.readOnly;
   const tiles = [
     { href: "/emergency", label: "Emergency", meta: "911, first aid, muster", Icon: IconSiren, show: worker },
     { href: "/my-reports", label: "My reports", meta: reportsOpen ? `${reportsOpen} in progress` : "What you reported", Icon: IconCamera, show: worker && !isPlainWorker(user) },
     { href: "/notifications", label: "Notifications", meta: unread ? `${unread} new` : "All caught up", Icon: IconBell, show: worker },
-    { href: "/projects", label: "Projects", meta: `${activeProjects} active`, Icon: IconFolder, show: true },
+    // The owner's tabs are Setup/Team/Sites, so the day-to-day areas live here for them.
+    { href: "/dashboard?view=safety", label: "Safety picture", meta: "Score, trends, hotspots", Icon: IconGrid, show: isOwner },
+    { href: "/work", label: "Work", meta: "Review, assign, fixes", Icon: IconFileText, show: isOwner },
+    { href: "/compliance", label: "Compliance", meta: "Certs, permits, PPE", Icon: IconFileText, show: isOwner },
+    { href: "/daily-reports", label: "Daily site reports", meta: "Due 08:00", Icon: IconFileText, show: isOwner },
+    { href: "/projects", label: isOwner ? "Sites" : "Projects", meta: `${activeProjects} active`, Icon: IconFolder, show: !isOwner },
     { href: "/incidents", label: "Incidents", meta: `${openIncidents} open`, Icon: IconAlertTriangle, show: moduleVisible(getCompany(user.companyId), user, "incidents") },
     { href: "/reports", label: "Reports", meta: "Print, PDF or CSV", Icon: IconFileText, show: caps.canViewReports },
     { href: "/settings#templates", label: "Templates", meta: "Daily checklists", Icon: IconFileText, show: caps.canManageTemplates },

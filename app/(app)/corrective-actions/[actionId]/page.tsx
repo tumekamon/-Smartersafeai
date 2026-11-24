@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { getFinding, getInspection, getProject, getUser } from "@/lib/db";
 import { visibleTask } from "@/lib/task-access";
+import { formatSpan, windowMs } from "@/lib/fix-window";
 import { PRIORITY, TASK_SOURCE, dueLabel, photoProof, taskDetail, taskTitle, tasksOnly } from "@/lib/tasks";
 import { siteContacts } from "@/lib/site";
 import { shortDate, shortDateTime } from "@/lib/format";
@@ -113,7 +114,7 @@ export default async function TaskPage({
           </div>
           <div>
             <dt className="text-xs text-foreground/50">Fix within</dt>
-            <dd className="mt-0.5 font-semibold">{p.within.replace("Fix within ", "")}</dd>
+            <dd className="mt-0.5 font-semibold">{a.dueAt ? formatSpan(windowMs(a)) : p.within.replace("Fix within ", "")}</dd>
           </div>
         </dl>
       </section>

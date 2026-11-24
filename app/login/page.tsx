@@ -1,21 +1,16 @@
 import { redirect } from "next/navigation";
-import { ROLE_INFO, ROLES, roleLabel } from "@/lib/roles";
-import Image from "next/image";
+import { ROLE_INFO, ROLES } from "@/lib/roles";
 import { getSession } from "@/lib/session";
 import { listCompanies, listUsers } from "@/lib/db";
 import { brandVars } from "@/lib/color";
-import { LoginForm, type DemoAccount, type DemoLevel } from "@/components/login-form";
-import { EvidenceScene } from "@/components/viz/evidence-scene";
-import { IconCheckShield, IconSparkle } from "@/components/ui/icons";
+import { LoginForm, type DemoAccount } from "@/components/login-form";
+import { BrandLockup } from "@/components/ui/brand-mark";
 import { ClearOfflineData } from "@/components/offline/clear-offline-data";
 
-
-function hueFor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
-  return h;
-}
-
+/**
+ * Sign in (design canvas W01). Mobile first: one column. On wide screens a navy
+ * band carries the brand promise next to the form.
+ */
 export default async function LoginPage() {
   const session = await getSession();
   if (session?.userId) {
@@ -23,83 +18,48 @@ export default async function LoginPage() {
   }
 
   const company = listCompanies()[0];
-  const featured = listUsers(company?.id ?? "").filter((u) => u.featured);
-  const toAccount = (u: (typeof featured)[number]): DemoAccount => ({
-    id: u.id,
-    name: `${u.firstName} ${u.lastName}`,
-    role: roleLabel(u),
-    email: u.email,
-    initials: `${u.firstName[0]}${u.lastName[0]}`,
-    hue: hueFor(u.id),
-  });
-  const levels: DemoLevel[] = ROLES.map((r) => ({
-    level: ROLE_INFO[r].level,
-    label: ROLE_INFO[r].label,
-    accounts: featured.filter((u) => u.role === r && !u.readOnly).map(toAccount),
-  })).filter((l) => l.accounts.length > 0);
-  const clients = featured.filter((u) => u.readOnly).map(toAccount);
+  const featured = listUsers(company?.id ?? "").filter((u) => u.featured && !u.readOnly);
+  // One demo account per level, L1 to L4, in level order.
+  const accounts: DemoAccount[] = ROLES.flatMap((r) =>
+    featured
+      .filter((u) => u.role === r)
+      .map((u) => ({
+        id: u.id,
+        level: ROLE_INFO[r].level,
+        name: `${u.firstName} ${u.lastName}`,
+        role: u.role === "ADMIN" ? "Owner · admin" : ROLE_INFO[r].label,
+        email: u.email,
+      }))
+  );
 
   return (
     <div
-      className="tenant-theme grid min-h-screen flex-1 lg:grid-cols-[1.1fr_1fr]"
+      className="tenant-theme grid min-h-screen flex-1 bg-background lg:grid-cols-[1fr_1fr]"
       style={company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined}
     >
       <ClearOfflineData />
-      <section className="hero relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14" style={{ borderRadius: 0 }}>
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <Image src={company?.heroImage ?? "/bg-hero.jpg"} alt="Construction background" fill className="object-cover opacity-30 mix-blend-overlay" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-transparent mix-blend-multiply" />
+      <section className="navy-scope hidden flex-col justify-between p-12 lg:flex xl:p-16">
+        <BrandLockup size={40} />
+        <div className="max-w-lg">
+          <p className="eyebrow" style={{ color: "#c9daec" }}>Field safety, proved</p>
+          <h1 className="disp mt-4 text-5xl leading-[1.05] xl:text-6xl">Nothing counts as safe until someone has proved it.</h1>
+          <p className="mt-6 text-lg leading-relaxed text-[#c9daec]">
+            Report in three taps, fix with a photo, and every record closes with a name and a time on it.
+          </p>
         </div>
-        
-        <div className="relative z-10 flex items-center gap-2.5">
-          <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-lg text-white shadow-md">
-            <IconCheckShield width={21} height={21} />
-          </span>
-          <div>
-            <p className="text-base font-semibold drop-shadow-sm">SmartSafe AI</p>
-            <p className="hero-muted text-xs font-medium drop-shadow-sm">Safety Intelligence Platform</p>
-          </div>
-        </div>
-
-        <div className="relative z-10 max-w-xl">
-          <span className="ai-chip shadow-sm backdrop-blur-md">
-            <IconSparkle width={12} height={12} />
-            AI-assisted, human-decided
-          </span>
-          <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight drop-shadow-md xl:text-5xl text-foreground">
-            See the hazard before it becomes an incident.
-          </h1>
-          <div
-            className="mt-6 overflow-hidden rounded-lg shadow-2xl backdrop-blur-sm"
-            style={{ border: "1px solid var(--hero-tile-border)" }}
-          >
-            <EvidenceScene
-              scene="panel"
-              title="Missing GFCI protection"
-              confidence={0.91}
-              risk="high"
-              fileName="IMG_2184.jpg"
-              capturedAt={new Date().toISOString()}
-              location="L3 · East"
-            />
-          </div>
-        </div>
-
-        <p className="relative z-10 hero-muted text-xs font-medium opacity-80 drop-shadow-sm">
-          {company?.name}
-        </p>
+        <p className="eyebrow" style={{ color: "#c9daec" }}>{company?.name}</p>
       </section>
 
-      <section className="flex items-center justify-center bg-background px-5 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-md text-white">
-              <IconCheckShield width={19} height={19} />
-            </span>
-            <p className="text-sm font-semibold">SmartSafe AI</p>
+      <section className="flex justify-center px-6 py-14 lg:items-center">
+        <div className="flex w-full max-w-md flex-col gap-8">
+          <div className="flex flex-col gap-4 lg:hidden">
+            <BrandLockup />
           </div>
-          <h2 className="mb-7 text-2xl font-semibold tracking-tight">Welcome back</h2>
-          <LoginForm levels={levels} clients={clients} />
+          <div className="flex flex-col gap-3">
+            <span className="eyebrow">{company?.name}</span>
+            <h2 className="disp text-[44px] leading-none">Sign in</h2>
+          </div>
+          <LoginForm accounts={accounts} />
         </div>
       </section>
     </div>

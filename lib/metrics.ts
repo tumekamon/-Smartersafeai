@@ -22,13 +22,15 @@ import type {
   Project,
   RiskLevel,
 } from "@/lib/types";
+import { dueTime, isEscalated, isOverdue } from "@/lib/fix-window";
 
 const DAY = 86_400_000;
 
 const t = (iso: string) => new Date(iso).getTime();
 
 export function isActionOverdue(action: CorrectiveAction, now = Date.now()) {
-  return action.status === "open" && t(action.dueDate) + DAY <= now;
+  // Exact window when one was set (2h/5h/24h/7d), else the end of the due day.
+  return isOverdue(action, now);
 }
 
 function inScope<T extends { projectId: string }>(items: T[], projectId?: string) {
@@ -263,7 +265,7 @@ export function equipmentSummary(companyId: string, siteIds?: Set<string>) {
 
 export type AttentionItem = {
   id: string;
-  kind: "review" | "overdue" | "permit" | "cert" | "notice";
+  kind: "review" | "assign" | "overdue" | "permit" | "cert" | "notice";
   title: string;
   detail: string;
   href: string;
@@ -271,36 +273,77 @@ export type AttentionItem = {
   at: number;
 };
 
-export function attentionQueue(companyId: string, limit = 8, projectId?: string): AttentionItem[] {
+/**
+ * What needs this person today (design flow rule 6: each person's home list is the
+ * signal). The options follow the agreed flow rules:
+ * - canReview: safety managers get the review queue (rule 1). Others still see a
+ *   Critical report at once, so they can stop work while it waits for review (rule 3).
+ * - canAssign: approved findings with no fix yet, waiting for someone to be picked (rule 2).
+ * - escalatedOnly: overdue fixes reach the safety manager only at twice their window;
+ *   the supervisor sees them as soon as the window ends (rule 4).
+ */
+export function attentionQueue(
+  companyId: string,
+  limit = 8,
+  projectId?: string,
+  opts: { canReview?: boolean; canAssign?: boolean; escalatedOnly?: boolean } = { canReview: true }
+): AttentionItem[] {
   const now = Date.now();
   const items: AttentionItem[] = [];
 
   for (const f of inScope(listFindings(companyId), projectId)) {
-    if (f.reviewerDecision !== "pending") continue;
     const project = getProject(f.projectId);
-    items.push({
-      id: `review_${f.id}`,
-      kind: "review",
-      title: f.source === "field" ? `Review site report: ${f.title}` : `Review AI finding: ${f.title}`,
-      detail: `${project?.shortName} · ${f.location.level} ${f.location.zone} · ${f.source === "field" ? "reported on site" : `${Math.round(f.aiConfidence * 100)}% confidence`}`,
-      href: `/review?finding=${f.id}`,
-      tone: f.riskLevel === "critical" ? "critical" : f.riskLevel === "high" ? "serious" : "warning",
-      at: t(f.createdAt),
-    });
+    const where = `${project?.shortName} · ${f.location.level} ${f.location.zone}`;
+    if (f.reviewerDecision === "pending") {
+      if (opts.canReview) {
+        items.push({
+          id: `review_${f.id}`,
+          kind: "review",
+          title: f.source === "field" ? `Review site report: ${f.title}` : `Review AI finding: ${f.title}`,
+          detail: `${where} · ${f.source === "field" ? "reported on site" : `${Math.round(f.aiConfidence * 100)}% confidence`}`,
+          href: `/review?finding=${f.id}`,
+          tone: f.riskLevel === "critical" ? "critical" : f.riskLevel === "high" ? "serious" : "warning",
+          at: t(f.createdAt),
+        });
+      } else if (f.riskLevel === "critical") {
+        items.push({
+          id: `critical_${f.id}`,
+          kind: "review",
+          title: `Critical reported: ${f.title}`,
+          detail: `${where} · act now if needed, safety will review it`,
+          href: `/inspections/${f.inspectionId}`,
+          tone: "critical",
+          at: t(f.createdAt),
+        });
+      }
+      continue;
+    }
+    if (opts.canAssign && (f.reviewerDecision === "approved" || f.reviewerDecision === "overridden") && !f.correctiveActionId) {
+      items.push({
+        id: `assign_${f.id}`,
+        kind: "assign",
+        title: `To assign: ${f.title}`,
+        detail: `${where} · ${f.source === "checklist" ? "failed checklist item" : "approved by safety"} · pick who and how fast`,
+        href: `/corrective-actions/new?findingId=${f.id}`,
+        tone: f.riskLevel === "critical" ? "critical" : f.riskLevel === "high" ? "serious" : "warning",
+        at: t(f.reviewedAt ?? f.createdAt),
+      });
+    }
   }
 
   for (const a of inScope(listCorrectiveActions(companyId), projectId)) {
-    if (!isActionOverdue(a, now)) continue;
-    const days = Math.max(1, Math.floor((now - t(a.dueDate)) / DAY));
+    if (!(opts.escalatedOnly ? isEscalated(a, now) : isActionOverdue(a, now))) continue;
+    const late = now - dueTime(a);
+    const span = late >= DAY ? `${Math.floor(late / DAY)}d` : `${Math.max(1, Math.floor(late / 3_600_000))}h`;
     const owner = getUser(a.assignedToId);
     items.push({
       id: `overdue_${a.id}`,
       kind: "overdue",
       title: a.description.split(" — ")[0],
-      detail: `${getProject(a.projectId)?.shortName}${a.location ? ` · ${a.location.level} ${a.location.zone}` : ""} · ${days} day${days === 1 ? "" : "s"} overdue · ${owner?.firstName} ${owner?.lastName}`,
-      href: "/corrective-actions",
+      detail: `${getProject(a.projectId)?.shortName}${a.location ? ` · ${a.location.level} ${a.location.zone}` : ""} · ${span} overdue${opts.escalatedOnly ? " · escalated" : ""} · ${owner?.firstName} ${owner?.lastName}`,
+      href: `/corrective-actions/${a.id}`,
       tone: a.priority === "critical" || a.priority === "high" ? "critical" : "serious",
-      at: t(a.dueDate),
+      at: dueTime(a),
     });
   }
 
@@ -346,7 +389,7 @@ export function attentionQueue(companyId: string, limit = 8, projectId?: string)
   }
 
   const weight = { critical: 4, serious: 3, warning: 2, info: 1 };
-  const caps: Record<AttentionItem["kind"], number> = { review: 3, overdue: 3, permit: 1, cert: 1, notice: 1 };
+  const caps: Record<AttentionItem["kind"], number> = { review: 3, assign: 3, overdue: 3, permit: 1, cert: 1, notice: 1 };
   const seen: Record<string, number> = {};
   return items
     .sort((a, b) => weight[b.tone] - weight[a.tone] || b.at - a.at)

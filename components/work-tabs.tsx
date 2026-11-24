@@ -6,8 +6,9 @@ import { nowMs } from "@/lib/time";
 import { siteIdsFor } from "@/lib/scope";
 import { workingSiteIds } from "@/lib/site-focus";
 import { IconClipboardCheck, IconSparkle, IconWrench } from "@/components/ui/icons";
+import { findingsToAssign } from "@/lib/to-assign";
 
-type WorkTab = "review" | "inspections" | "fixes";
+type WorkTab = "review" | "assign" | "inspections" | "fixes";
 
 /** The review queue, inspections and fixes as one "Work" area, shown as large tabs. */
 /** `sites` narrows the counts (a worker's working site); defaults to all of the person's sites. */
@@ -18,6 +19,11 @@ export function workTabsFor(user: User, caps: Capabilities, sites: Set<string> =
   if (caps.canReviewFindings) {
     const pending = listFindings(user.companyId).filter((f) => f.reviewerDecision === "pending").length;
     tabs.push({ id: "review", href: "/review", label: "To review", count: pending, Icon: IconSparkle });
+  }
+  // Flow rule 2: confirmed hazards wait here until someone is picked to fix them.
+  if (caps.canCreateCorrectiveActions && !caps.isReadOnly) {
+    const toAssign = findingsToAssign(user).filter((f) => sites.has(f.projectId)).length;
+    tabs.push({ id: "assign", href: "/assign", label: "To assign", count: toAssign, Icon: IconWrench });
   }
   if (!caps.isReadOnly && !tasksOnly) {
     const week = nowMs() - 7 * 86_400_000;

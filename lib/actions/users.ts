@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
-import { createUser, findUserByEmail, getUser, updateUser } from "@/lib/db";
+import { addCrewMember, createUser, findUserByEmail, getProject, getUser, updateUser } from "@/lib/db";
 import { EXTRA_PERMISSIONS, ROLES, ROLE_INFO } from "@/lib/roles";
 import { checkPassword, setPassword } from "@/lib/password";
 import type { UserRole } from "@/lib/types";
@@ -18,19 +18,26 @@ async function requireSettingsAccess() {
 
 export async function inviteUserAction(formData: FormData) {
   const user = await requireSettingsAccess();
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
+  // The design asks for one "Full name" field; older forms still send first/last.
+  const full = String(formData.get("name") ?? "").trim().split(/\s+/).filter(Boolean);
+  const firstName = String(formData.get("firstName") ?? "").trim() || full[0] || "";
+  const lastName = String(formData.get("lastName") ?? "").trim() || full.slice(1).join(" ");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = String(formData.get("role") ?? "WORKER") as UserRole;
   const title = String(formData.get("title") ?? "").trim();
   const readOnly = formData.get("readOnly") === "on";
+  const projectId = String(formData.get("projectId") ?? "");
 
-  if (!firstName || !lastName || !email) throw new Error("First name, last name, and email are required.");
+  if (!firstName || !email) throw new Error("A name and an email or phone are required.");
   if (!ROLES.includes(role)) throw new Error("Not a valid role.");
   if (findUserByEmail(email)) throw new Error("Someone with that email already has an account.");
 
-  createUser({ companyId: user.companyId, firstName, lastName, email, role, readOnly, title: title || ROLE_INFO[role].label });
+  const created = createUser({ companyId: user.companyId, firstName, lastName, email, role, readOnly, title: title || ROLE_INFO[role].label });
+  // Workers and supervisors join the chosen site's crew straight away (design AP3).
+  const site = projectId ? getProject(projectId) : undefined;
+  if (site && site.companyId === user.companyId && (role === "WORKER" || role === "SUPERVISOR")) addCrewMember(site.id, created.id);
   revalidatePath("/settings/team");
+  revalidatePath("/dashboard");
 }
 
 export async function updateUserRoleAction(formData: FormData) {

@@ -14,6 +14,7 @@ import { greeting, shortDate } from "@/lib/format";
 import { CorrectiveActionStatusBadge, InspectionStatusBadge } from "@/components/ui/badges";
 import { IconAlertTriangle, IconArrowRight, IconBolt, IconCheck } from "@/components/ui/icons";
 import { nowMs } from "@/lib/time";
+import { dueLabel } from "@/lib/tasks";
 
 const DAY = 86_400_000;
 
@@ -144,7 +145,7 @@ export function WorkerDashboard({ user, site, sites }: { user: User; site?: Proj
                         </Link>
                         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-foreground/60">
                           {a.location && <span>{a.location.level} {a.location.zone} ·</span>}
-                          <span className={late ? "font-bold text-critical" : ""}>{late ? "Overdue" : `Due ${shortDate(a.dueDate)}`}</span>
+                          <span className={late ? "font-bold text-critical" : ""}>{dueLabel(a, now).text}</span>
                           {a.sentBack && <span className="font-bold text-status-critical">· Sent back</span>}
                         </p>
                       </div>

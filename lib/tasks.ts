@@ -1,5 +1,6 @@
 import type { CorrectiveAction, EvidenceRequirement, RiskLevel, User } from "@/lib/types";
 import type { Capabilities } from "@/lib/authz";
+import { dueTime, formatSpan } from "@/lib/fix-window";
 
 const DAY = 86_400_000;
 
@@ -27,6 +28,15 @@ export function daysLeft(a: CorrectiveAction, now: number) {
 }
 
 export function dueLabel(a: CorrectiveAction, now: number): { text: string; tone: "critical" | "warning" | "neutral" } {
+  // Fixes given an hour window (2h/5h/24h) count down in hours and minutes.
+  if (a.dueAt) {
+    const left = dueTime(a) - now;
+    if (left < 2 * DAY) {
+      return left < 0
+        ? { text: `${formatSpan(left)} over`, tone: "critical" }
+        : { text: `${formatSpan(left)} left`, tone: left < 3 * 3_600_000 ? "critical" : "warning" };
+    }
+  }
   const d = daysLeft(a, now);
   if (d < 0) return { text: `${Math.abs(d)}d overdue`, tone: "critical" };
   if (d === 0) return { text: "Due today", tone: "critical" };

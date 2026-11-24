@@ -7,6 +7,7 @@ import type {
   Certification,
   CheckIn,
   CheckInStatus,
+  DailyReport,
   ChecklistItem,
   ChecklistResponse,
   Company,
@@ -38,12 +39,12 @@ import type {
  * Cached on `globalThis` so dev-mode module reloads don't reseed it.
  */
 
-const globalForStore = globalThis as unknown as { __smartsafeStoreV8?: Store };
+const globalForStore = globalThis as unknown as { __smartsafeStoreV10?: Store };
 
-export const store: Store = globalForStore.__smartsafeStoreV8 ?? buildSeed(new Date());
+export const store: Store = globalForStore.__smartsafeStoreV10 ?? buildSeed(new Date());
 
-if (!globalForStore.__smartsafeStoreV8) {
-  globalForStore.__smartsafeStoreV8 = store;
+if (!globalForStore.__smartsafeStoreV10) {
+  globalForStore.__smartsafeStoreV10 = store;
 }
 
 function nextId(prefix: string) {
@@ -508,6 +509,8 @@ export function createCorrectiveAction(input: {
   assignedToId: string;
   assignedById?: string;
   dueDate: string;
+  /** Exact due time when a fix window (2h/5h/24h/7d) was picked. */
+  dueAt?: string;
 }): CorrectiveAction {
   const action: CorrectiveAction = {
     id: nextId("ca"),
@@ -521,6 +524,7 @@ export function createCorrectiveAction(input: {
     assignedToId: input.assignedToId,
     assignedById: input.assignedById,
     dueDate: input.dueDate,
+    dueAt: input.dueAt,
     status: "open",
     createdAt: new Date().toISOString(),
   };
@@ -713,6 +717,23 @@ export function updateIncidentStatus(id: string, status: IncidentStatus): Incide
 // screens. See docs/daily-check-in.md for the contract.
 
 /** Check-ins for a company, newest first. Filter by day (YYYY-MM-DD), site, person or status. */
+export function listDailyReports(companyId: string, filter: { day?: string; projectId?: string } = {}): DailyReport[] {
+  return newestFirst(
+    store.dailyReports.filter(
+      (r) => r.companyId === companyId && (!filter.day || r.day === filter.day) && (!filter.projectId || r.projectId === filter.projectId)
+    ),
+    "submittedAt"
+  );
+}
+
+/** One report per site per day: sending again replaces that day's report. */
+export function saveDailyReport(input: Omit<DailyReport, "id">): DailyReport {
+  store.dailyReports = store.dailyReports.filter((r) => !(r.projectId === input.projectId && r.day === input.day));
+  const report: DailyReport = { id: nextId("dr"), ...input };
+  store.dailyReports.push(report);
+  return report;
+}
+
 export function listCheckIns(
   companyId: string,
   filter: { day?: string; projectId?: string; userId?: string; status?: CheckInStatus } = {}
