@@ -39,12 +39,12 @@ import type {
  * Cached on `globalThis` so dev-mode module reloads don't reseed it.
  */
 
-const globalForStore = globalThis as unknown as { __smartsafeStoreV10?: Store };
+const globalForStore = globalThis as unknown as { __smartsafeStoreV11?: Store };
 
-export const store: Store = globalForStore.__smartsafeStoreV10 ?? buildSeed(new Date());
+export const store: Store = globalForStore.__smartsafeStoreV11 ?? buildSeed(new Date());
 
-if (!globalForStore.__smartsafeStoreV10) {
-  globalForStore.__smartsafeStoreV10 = store;
+if (!globalForStore.__smartsafeStoreV11) {
+  globalForStore.__smartsafeStoreV11 = store;
 }
 
 function nextId(prefix: string) {

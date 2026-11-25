@@ -12,6 +12,8 @@ import { NoSiteNotice } from "@/components/site/no-site-notice";
 import {
   IconAlertTriangle,
   IconArrowRight,
+  IconChevronLeft,
+  IconNavigate,
   IconFirstAid,
   IconFlag,
   IconHospital,
@@ -37,7 +39,7 @@ export default async function EmergencyPage({ searchParams }: { searchParams: Pr
   if (!site) {
     return (
       <div className="mx-auto max-w-2xl space-y-5">
-        <h1 className="text-3xl font-semibold tracking-tight">Emergency</h1>
+        <h1 className="disp text-[28px] leading-tight sm:text-3xl lg:text-4xl">Emergency</h1>
         <CallBar />
         <NoSiteNotice action="see your site's emergency information" />
       </div>
@@ -48,13 +50,143 @@ export default async function EmergencyPage({ searchParams }: { searchParams: Pr
   const aiders = firstAiders(site).filter((u) => u.id !== user.id);
   const contacts = siteContacts(site);
 
+  // A worker gets the dark, phone-first emergency screen from the design canvas (W11).
+  if (usesWorkingSite(user)) {
+    const caller = contacts.find((c) => c.user.phone)?.user;
+    const line = "border-b border-[#DCEBF7]/15";
+    return (
+      <div className="-mx-4 -mb-8 -mt-5 flex min-h-[100dvh] flex-col gap-6 bg-[#0B1F33] px-6 pb-7 pt-6 text-[#F4F7FA] sm:-mx-6 lg:mx-auto lg:my-0 lg:min-h-0 lg:max-w-xl lg:rounded-2xl lg:p-8">
+        <Link href="/dashboard" className="ds-back self-start" style={{ color: "#DCEBF7" }}>
+          <IconChevronLeft width={18} height={18} /> Back
+        </Link>
+        <header className="flex flex-col gap-2.5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#F7A29B]">{site.shortName} · works offline</span>
+          <h1 className="disp text-[44px] leading-none">Emergency</h1>
+        </header>
+
+        <div className="flex flex-col gap-2.5">
+          <a href="tel:911" className="ds-btn min-h-[60px] gap-2.5 bg-[#D92D20] text-lg text-white">
+            <IconPhone width={22} height={22} strokeWidth={2} /> Call 911
+          </a>
+          {e.sitePhone && (
+            <a href={telHref(e.sitePhone)} className="ds-btn min-h-[60px] border-[1.5px] border-[#DCEBF7]/50 text-lg text-white">
+              Site line · {e.sitePhone}
+            </a>
+          )}
+        </div>
+
+        <dl className="flex flex-col">
+          {e.siteAddress && (
+            <div className={`flex flex-col gap-1 py-4 ${line}`}>
+              <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9DB6D3]">Tell the dispatcher</dt>
+              <dd className="text-base font-medium">{e.siteAddress}</dd>
+            </div>
+          )}
+          <div className={`flex flex-col gap-1 py-4 ${line}`}>
+            <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9DB6D3]">Muster point</dt>
+            <dd className="text-base font-medium">{e.musterPoint ?? "Not set yet. Ask your supervisor where to gather."}</dd>
+          </div>
+          <div className={`flex items-center gap-3.5 py-4 ${line}`}>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9DB6D3]">Nearest ER</dt>
+              <dd className="text-base font-medium">{e.hospital?.name ?? "Not set yet. Call 911; they send help."}</dd>
+              {e.hospital && <dd className="text-sm text-[#C9DAEC]">{e.hospital.address}</dd>}
+            </div>
+            {e.hospital?.phone && (
+              <a href={telHref(e.hospital.phone)} aria-label="Call the ER" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#DCEBF7]/40">
+                <IconPhone width={18} height={18} strokeWidth={2} />
+              </a>
+            )}
+            {e.hospital && (
+              <a href={mapsHref(e.hospital.address)} target="_blank" rel="noreferrer" aria-label="Directions to the ER" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#DCEBF7]/40">
+                <IconNavigate width={18} height={18} />
+              </a>
+            )}
+          </div>
+          <div className="flex flex-col gap-1 py-4">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9DB6D3]">First aid</dt>
+            <dd className="text-base font-medium">{e.firstAidStation ?? "Ask your supervisor where the kit is."}</dd>
+            {aiders.length === 0 ? (
+              <dd className="text-sm text-[#C9DAEC]">No one on this crew has a current First Aid certificate on file.</dd>
+            ) : (
+              aiders.slice(0, 4).map((u) => (
+                <dd key={u.id} className="flex min-h-12 items-center gap-3">
+                  <span className="flex-1 text-sm text-[#C9DAEC]">
+                    <span className="font-medium text-white">{u.firstName} {u.lastName}</span> · first aider
+                  </span>
+                  {u.phone && (
+                    <a href={telHref(u.phone)} aria-label={`Call ${u.firstName}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#DCEBF7]/40">
+                      <IconPhone width={17} height={17} strokeWidth={2} />
+                    </a>
+                  )}
+                </dd>
+              ))
+            )}
+          </div>
+        </dl>
+
+        {/* Stop work: the four steps, and who to call. */}
+        <section aria-labelledby="stop-head" className="flex flex-col gap-3">
+          <h2 id="stop-head" className="border-b-2 border-[#F7A29B] pb-2.5 font-mono text-[11px] uppercase tracking-[0.08em] text-[#F7A29B]">
+            Stop work
+          </h2>
+          <ol className="flex flex-col gap-2.5">
+            {[
+              ["Stop", "Stop the job and warn the people around you."],
+              ["Make it safe", "Only if you can without putting yourself at risk."],
+              ["Call your supervisor", "Tell them what you saw and where."],
+              ["Report it", "So it gets fixed and doesn't happen again."],
+            ].map(([t, d], i) => (
+              <li key={t} className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#DCEBF7]/50 font-mono text-[11px]">{i + 1}</span>
+                <span className="text-[15px]">
+                  <span className="font-medium text-white">{t}.</span> <span className="text-[#C9DAEC]">{d}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          {contacts
+            .filter((c) => c.user.phone)
+            .slice(0, 2)
+            .map(({ user: c, role }) => (
+              <div key={c.id} className="flex min-h-14 items-center gap-3 border-b border-[#DCEBF7]/15">
+                <span className="flex-1 text-sm text-[#C9DAEC]">
+                  <span className="font-medium text-white">
+                    {c.firstName} {c.lastName}
+                  </span>{" "}
+                  · {role.toLowerCase()}
+                </span>
+                <a href={telHref(c.phone!)} aria-label={`Call ${c.firstName}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#DCEBF7]/40">
+                  <IconPhone width={17} height={17} strokeWidth={2} />
+                </a>
+              </div>
+            ))}
+        </section>
+
+        <div className="mt-auto flex flex-col gap-2.5">
+          {caller?.phone && (
+            <a href={telHref(caller.phone)} className="ds-btn ds-btn-yellow min-h-[60px] text-lg">
+              Stop work · call {caller.firstName}
+            </a>
+          )}
+          <p className="text-center text-[13px] text-[#C9DAEC]">Anyone can stop work that isn&apos;t safe. You will never be in trouble for it.</p>
+          {canReport && (
+            <Link href={incidents ? "/incidents/new" : `/hazards/new?project=${site.id}`} className="flex min-h-11 items-center justify-center text-[15px] font-medium text-[#DCEBF7]">
+              {incidents ? "Report an incident instead" : "Report a hazard instead"}
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <header>
         <p className="eyebrow flex items-center gap-1.5 text-status-critical">
           <IconSiren width={14} height={14} /> {site.shortName}
         </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Emergency</h1>
+        <h1 className="mt-1 disp text-[28px] leading-tight sm:text-3xl lg:text-4xl">Emergency</h1>
       </header>
 
       <CallBar sitePhone={e.sitePhone} />

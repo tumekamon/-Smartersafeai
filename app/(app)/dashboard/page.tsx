@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { getProject } from "@/lib/db";
 import { isSiteScoped, sitesFor } from "@/lib/scope";
-import { switchableSites, workingSite } from "@/lib/site-focus";
+import { workingSite } from "@/lib/site-focus";
 import { ManagerDashboard } from "@/components/dashboard/manager-dashboard";
 import { WorkerDashboard } from "@/components/dashboard/worker-dashboard";
 import { ClientDashboard } from "@/components/dashboard/client-dashboard";
@@ -26,7 +26,7 @@ export default async function DashboardPage({
   const scoped = isSiteScoped(user);
   const projectId = project && sites.some((s) => s.id === project) ? project : scoped ? sites[0]?.id : undefined;
   if (!capabilities.canViewOrgDashboard) {
-    return <WorkerDashboard user={user} site={await workingSite(user)} sites={switchableSites(user)} />;
+    return <WorkerDashboard user={user} site={await workingSite(user)} />;
   }
 
   return (

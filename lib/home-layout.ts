@@ -44,13 +44,16 @@ export const MANAGER_SECTIONS: { id: ManagerSectionId; label: string }[] = [
   { id: "projects", label: "Project health" },
 ];
 
+/**
+ * What an admin can switch on My Day. "hazard", "certs" and "recent" stay valid ids (saved
+ * layouts may hold them) but are no longer offered: Report lives in the tab bar, certificates
+ * due are a number in "today at a glance", and reports have their own tab. The check-in
+ * and "03 / Your site" always show.
+ */
 export const WORKER_SECTIONS: { id: WorkerSectionId; label: string }[] = [
-  { id: "hazard", label: "Report a hazard button" },
-  { id: "tiles", label: "Overdue / tasks / certs tiles" },
-  { id: "inspect", label: "Start an inspection" },
-  { id: "tasks", label: "My tasks" },
-  { id: "certs", label: "My certifications" },
-  { id: "recent", label: "My recent inspections" },
+  { id: "tiles", label: "Today at a glance (overdue, to do, checking, certs due)" },
+  { id: "tasks", label: "01 / Tasks" },
+  { id: "inspect", label: "02 / Checklists" },
 ];
 
 export const MODULES: { id: ModuleId; label: string }[] = [

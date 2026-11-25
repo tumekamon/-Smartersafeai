@@ -11,7 +11,7 @@ export function TopNav({ user, hidden = [], workBadge }: { user: NavUser; hidden
   const items = navItemsFor(user, hidden);
 
   return (
-    <nav aria-label="Main" className="hidden items-center gap-7 md:flex">
+    <nav aria-label="Main" className="hidden items-center gap-5 lg:flex xl:gap-7">
       {items.map((item) => {
         const active = isNavActive(item, pathname);
         const count = item.badgeKey === "work" ? workBadge : 0;

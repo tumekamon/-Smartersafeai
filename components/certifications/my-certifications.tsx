@@ -3,185 +3,110 @@ import type { Certification } from "@/lib/types";
 import { certificationSlots, type CertificationSlot } from "@/lib/certifications";
 import { certStatus } from "@/lib/metrics";
 import { withdrawCertificationAction } from "@/lib/actions/certifications";
-import { IconCheck, IconClock, IconEye, IconFileCheck, IconPlus, IconX } from "@/components/ui/icons";
 
 const DAY = 86_400_000;
 
 /** Certificate dates are calendar days: always with the year, never shifted by time zone. */
 const day = (iso: string) =>
-  new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).toLocaleDateString("en-US", {
-    month: "short",
+  new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).toLocaleDateString("en-GB", {
     day: "numeric",
+    month: "short",
     year: "numeric",
     timeZone: iso.length === 10 ? "UTC" : undefined,
   });
 
-type Tone = "good" | "warning" | "critical" | "info" | "neutral";
-const TONE_VAR: Record<Tone, string> = {
-  good: "var(--status-good)",
-  warning: "var(--status-warning)",
-  critical: "var(--status-critical)",
-  info: "var(--sidebar-accent)",
-  neutral: "var(--border)",
-};
+const uploadHref = (type: string) => `/settings/profile/certifications/new?type=${encodeURIComponent(type)}`;
 
-function validity(c: Certification, now: number): { tone: Tone; label: string } {
-  const s = certStatus(c.expiresOn, now);
-  const days = Math.round((Date.parse(c.expiresOn) - now) / DAY);
-  if (s === "expired") return { tone: "critical", label: `Expired ${Math.abs(days)}d ago` };
-  if (s === "expiring") return { tone: "warning", label: `${days}d left` };
-  return { tone: "good", label: "Valid" };
-}
-
-function DocLink({ cert }: { cert: Certification }) {
-  if (!cert.document) return <span className="text-xs text-foreground/45">Logged by your company</span>;
-  return (
-    <a
-      href={`/certificates/${cert.id}/file`}
-      target="_blank"
-      rel="noopener"
-      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-sidebar-accent hover:bg-surface-muted"
-    >
-      <IconEye width={15} height={15} /> View {cert.document.mimeType === "application/pdf" ? "PDF" : "photo"}
-    </a>
-  );
-}
-
+/** One certificate as a flat row (design canvas W12): name, one line of dates, a status tag. */
 function Slot({ slot, now }: { slot: CertificationSlot; now: number }) {
   const { current, pending, rejected, type } = slot;
-  const v = current ? validity(current, now) : null;
-  const tone: Tone = v?.tone ?? (pending ? "info" : "critical");
-  const needsRenewal = !!v && v.tone !== "good" && !pending;
-  const upload = `/settings/profile/certifications/new?type=${encodeURIComponent(type)}`;
+  const status = current ? certStatus(current.expiresOn, now) : undefined;
+  const days = current ? Math.round((Date.parse(current.expiresOn) - now) / DAY) : 0;
+
+  const tag = pending
+    ? { label: "Being checked", cls: "ds-tag-info" }
+    : status === "expired"
+      ? { label: "Expired", cls: "ds-tag-crit" }
+      : status === "expiring"
+        ? { label: `${days} ${days === 1 ? "day" : "days"}`, cls: "ds-tag-warn" }
+        : status === "current"
+          ? { label: "Current", cls: "ds-tag-good" }
+          : { label: "Not accepted", cls: "ds-tag-crit" };
+
+  const line = pending
+    ? `${current ? "Renewal sent" : "Uploaded"} ${day(pending.submittedAt!)} · valid to ${day(pending.expiresOn)}`
+    : current
+      ? `${status === "expired" ? "Expired" : "Expires"} ${day(current.expiresOn)}`
+      : rejected?.reviewNote
+        ? `“${rejected.reviewNote}”`
+        : "Upload it again";
+  const needsUpload = !pending && (status === "expired" || status === "expiring" || (!current && rejected));
+  const doc = (pending ?? current)?.document ? (pending ?? current) : undefined;
 
   return (
-    <li className="relative overflow-hidden rounded-2xl border border-border bg-surface">
-      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1" style={{ background: TONE_VAR[tone] }} />
-      <div className="p-4 pl-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-semibold leading-snug">{type}</p>
-            {current ? (
-              <p className="mt-0.5 text-xs text-foreground/55">
-                {day(current.issuedOn)} – {day(current.expiresOn)}
-                {current.issuer && ` · ${current.issuer}`}
-                {current.certificateNo && ` · No. ${current.certificateNo}`}
-              </p>
-            ) : (
-              <p className="mt-0.5 text-xs text-foreground/55">{slot.covers}</p>
-            )}
-          </div>
-          {v ? (
-            <span className={`badge shrink-0 badge-${v.tone}`}>{v.label}</span>
-          ) : pending ? (
-            <span className="badge badge-info shrink-0">In review</span>
-          ) : null}
-        </div>
-
-        {current && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <DocLink cert={current} />
-            {needsRenewal && (
-              <Link href={upload} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-foreground px-3 text-sm font-bold text-background">
-                Upload renewal
+    <li className="ds-row">
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <span className="text-base font-semibold">{type}</span>
+        <span className="text-sm text-body">{line}</span>
+        {(needsUpload || doc || pending) && (
+          <span className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium">
+            {needsUpload && (
+              <Link href={uploadHref(type)} className="text-brand hover:underline">
+                {current ? "Upload the renewal" : "Upload again"}
               </Link>
             )}
-          </div>
-        )}
-
-        {pending && (
-          <div className="mt-3 rounded-xl bg-surface-muted px-3 py-2.5 text-sm">
-            <p className="flex items-start gap-2">
-              <IconClock width={16} height={16} className="mt-0.5 shrink-0 text-sidebar-accent" />
-              <span>
-                <span className="font-semibold">{current ? "Renewal sent" : "Sent"} {day(pending.submittedAt!)}</span>
-                <span className="block text-foreground/60">Valid to {day(pending.expiresOn)} · waiting for your supervisor to check it</span>
-              </span>
-            </p>
-            <span className="mt-1.5 flex items-center gap-1 pl-5">
-              <DocLink cert={pending} />
+            {doc && (
+              <a href={`/certificates/${doc.id}/file`} target="_blank" rel="noopener" className="text-brand hover:underline">
+                View {doc.document!.mimeType === "application/pdf" ? "PDF" : "photo"}
+              </a>
+            )}
+            {pending && (
               <form action={withdrawCertificationAction}>
                 <input type="hidden" name="certificationId" value={pending.id} />
-                <button type="submit" className="min-h-9 rounded-lg px-2 text-sm font-semibold text-foreground/60 hover:bg-surface">
+                <button type="submit" className="text-body hover:underline">
                   Withdraw
                 </button>
               </form>
-            </span>
-          </div>
+            )}
+          </span>
         )}
-
-        {!pending && rejected && (
-          <div className="mt-3 rounded-xl border border-status-critical/25 bg-status-critical/5 px-3 py-2.5 text-sm">
-            <p className="flex items-center gap-1.5 font-semibold text-status-critical">
-              <IconX width={14} height={14} /> Not accepted
-            </p>
-            {rejected.reviewNote && <p className="mt-0.5 text-foreground/75">&ldquo;{rejected.reviewNote}&rdquo;</p>}
-            <Link href={upload} className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-foreground px-3 text-sm font-bold text-background">
-              Upload again
-            </Link>
-          </div>
-        )}
-      </div>
+      </span>
+      <span className={`ds-tag ${tag.cls} shrink-0 self-start`}>{tag.label}</span>
     </li>
   );
 }
 
 /**
- * The person's own certificates, on their profile. Everything counts only once
- * verified; uploads waiting for review and ones turned down are shown alongside.
+ * The person's own certificates (design canvas W12, "01 / My certificates"). Each counts
+ * only once verified; uploads being checked and ones turned down show alongside.
  */
 export function MyCertifications({ records, now, justSent }: { records: Certification[]; now: number; justSent?: boolean }) {
   const slots = certificationSlots(records);
   const held = slots.filter((s) => s.current || s.pending || s.rejected);
   const missing = slots.filter((s) => !s.current && !s.pending && !s.rejected);
-  const counts = {
-    valid: slots.filter((s) => s.current && certStatus(s.current.expiresOn, now) === "current").length,
-    due: slots.filter((s) => s.current && certStatus(s.current.expiresOn, now) !== "current").length,
-    review: slots.filter((s) => s.pending).length,
-  };
 
   return (
-    <section id="certs" className="scroll-mt-20 space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">My certifications</h2>
-          <p className="mt-0.5 text-sm text-foreground/60">Your training cards. Each upload is checked by your supervisor before it counts.</p>
-        </div>
-        <Link
-          href="/settings/profile/certifications/new"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-sidebar-accent px-4 text-sm font-bold text-white"
-        >
-          <IconPlus width={16} height={16} strokeWidth={2.4} /> Add certificate
-        </Link>
+    <section id="certs" aria-labelledby="certs-head" className="flex scroll-mt-20 flex-col">
+      <div className="ds-sec">
+        <h2 id="certs-head" className="eyebrow" style={{ color: "var(--foreground)" }}>
+          01 / My certificates
+        </h2>
+        <span className="eyebrow">{held.length}</span>
       </div>
 
       {justSent && (
-        <p role="status" className="flex items-center gap-2 rounded-xl bg-status-good/10 px-4 py-3 text-sm font-semibold text-status-good">
-          <IconCheck width={16} height={16} strokeWidth={2.6} /> Sent. Your supervisor will check it and it&apos;ll show as valid once accepted.
+        <p role="status" className="ds-note mt-4 text-[15px]">
+          <span className="eyebrow" style={{ color: "var(--brand)" }}>
+            Sent
+          </span>
+          Your supervisor checks it. It counts once it&apos;s accepted.
         </p>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { n: counts.valid, label: "Valid", color: "var(--status-good)" },
-          { n: counts.due, label: "Due / expired", color: counts.due ? "var(--status-critical)" : undefined },
-          { n: counts.review, label: "In review", color: counts.review ? "var(--sidebar-accent)" : undefined },
-        ].map((t) => (
-          <div key={t.label} className="card px-3 py-2.5">
-            <p className="text-2xl font-black tabular-nums" style={t.color ? { color: t.color } : undefined}>{t.n}</p>
-            <p className="text-xs font-medium text-foreground/55">{t.label}</p>
-          </div>
-        ))}
-      </div>
-
       {held.length === 0 ? (
-        <div className="card flex flex-col items-center gap-2 p-8 text-center">
-          <IconFileCheck width={28} height={28} className="text-foreground/40" />
-          <p className="font-semibold">No certificates on file yet</p>
-          <p className="text-sm text-foreground/55">Add your training cards so your supervisor can put you on the right work.</p>
-        </div>
+        <p className="ds-row text-[15px] text-body">No certificates on file yet. Add your training cards so you can be put on the right work.</p>
       ) : (
-        <ul className="space-y-2.5">
+        <ul>
           {held.map((s) => (
             <Slot key={s.type} slot={s} now={now} />
           ))}
@@ -189,26 +114,24 @@ export function MyCertifications({ records, now, justSent }: { records: Certific
       )}
 
       {missing.length > 0 && (
-        <div className="card p-4">
-          <p className="eyebrow mb-2">Not on file</p>
-          <ul className="divide-y divide-border">
-            {missing.map((s) => (
-              <li key={s.type} className="flex items-center justify-between gap-3 py-2">
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold">{s.type}</span>
-                  <span className="block truncate text-xs text-foreground/50">{s.covers}</span>
-                </span>
-                <Link
-                  href={`/settings/profile/certifications/new?type=${encodeURIComponent(s.type)}`}
-                  className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg px-2.5 text-sm font-semibold text-sidebar-accent hover:bg-surface-muted"
-                >
-                  <IconPlus width={14} height={14} /> Add
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul>
+          {missing.map((s) => (
+            <li key={s.type} className="ds-row">
+              <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                <span className="text-base font-semibold">{s.type}</span>
+                <span className="truncate text-sm text-body">Not on file · {s.covers}</span>
+              </span>
+              <Link href={uploadHref(s.type)} className="shrink-0 text-sm font-medium text-brand hover:underline">
+                Add
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
+
+      <Link href="/settings/profile/certifications/new" className="ds-btn ds-btn-outline mt-4 min-h-12 text-[15px]">
+        Add a certificate
+      </Link>
     </section>
   );
 }

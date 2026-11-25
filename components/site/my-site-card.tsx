@@ -31,7 +31,7 @@ export function MySiteCard({
   const permits = activePermits(project, now);
 
   return (
-    <section className="hero overflow-hidden rounded-2xl" aria-labelledby="my-site-title">
+    <section className="hero @container overflow-hidden" aria-labelledby="my-site-title">
       {sites.length > 1 && (
         <nav aria-label="Switch site" className="flex gap-1 overflow-x-auto border-b border-hero-tile-border p-1.5">
           {sites.map((s) => {
@@ -58,13 +58,13 @@ export function MySiteCard({
         </nav>
       )}
 
-      <div className="p-5 md:p-6">
+      <div className="p-4 @md:p-5 @2xl:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="hero-muted text-[11px] font-semibold uppercase tracking-[0.12em]">
               Your site{sites.length > 1 ? ` · ${sites.findIndex((s) => s.id === project.id) + 1} of ${sites.length}` : ""}
             </p>
-            <h2 id="my-site-title" className="mt-1 text-2xl font-bold leading-tight tracking-tight md:text-[28px]">
+            <h2 id="my-site-title" className="disp mt-1 text-[22px] leading-tight @2xl:text-[28px]">
               {project.shortName}
             </h2>
             <p className="hero-muted mt-1 flex items-center gap-1.5 text-sm">
@@ -91,7 +91,8 @@ export function MySiteCard({
           <Fact Icon={IconUsers} label="Crew" value={String(project.crewIds.length)} />
         </dl>
 
-        <div className="mt-5 grid gap-5 md:grid-cols-2 md:gap-6">
+        {/* Container query: two columns only when the card itself is wide (full page), not in the side column. */}
+        <div className="mt-5 grid gap-5 @2xl:grid-cols-2 @2xl:gap-6">
           <div>
             <h3 className="hero-muted mb-2 text-[11px] font-semibold uppercase tracking-[0.12em]">
               {contacts[0]?.role === "Safety manager" ? "Contact" : contacts.length > 1 ? "Your supervisors" : "Your supervisor"}

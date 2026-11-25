@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toJpeg } from "@/lib/client-image";
 import { newClientId, submitThroughOutbox } from "@/lib/outbox";
 import type { Project, RiskLevel } from "@/lib/types";
-import { IconArrowRight, IconCamera, IconCheck, IconMapPin, IconWifiOff } from "@/components/ui/icons";
+import { IconCamera, IconImage, IconWifiOff } from "@/components/ui/icons";
 
 const SEVERITY: { value: RiskLevel; label: string; color: string }[] = [
   { value: "low", label: "Low", color: "var(--chart-series-1)" },
@@ -18,6 +18,9 @@ const SEVERITY: { value: RiskLevel; label: string; color: string }[] = [
 type Site = Pick<Project, "id" | "shortName" | "levels" | "zones">;
 
 /**
+ * Laid out as the design canvas's "Report a hazard" (W04): 01 Photo, 02 Type,
+ * 03 How bad, 04 Where, then the yellow Send report pinned to the bottom.
+ *
  * Photo first, then three taps: what, how bad, where. Built for one hand and gloves.
  * The report is saved on the phone before it's sent, so with no signal it waits in the
  * outbox and goes out by itself later (lib/outbox.ts).
@@ -37,6 +40,7 @@ export function HazardReportForm({ sites, categories, initialSiteId, userId }: {
   const [category, setCategory] = useState("");
   const [risk, setRisk] = useState<RiskLevel | "">("");
   const [preview, setPreview] = useState<string | null>(null);
+  const [editWhere, setEditWhere] = useState(false);
 
   const pickSite = (id: string) => {
     const next = sites.find((s) => s.id === id);
@@ -98,124 +102,146 @@ export function HazardReportForm({ sites, categories, initialSiteId, userId }: {
 
   if (queued) {
     return (
-      <div className="card space-y-4 p-6 text-center">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-status-warning/15 text-status-warning">
-          <IconWifiOff width={26} height={26} />
-        </span>
-        <div>
-          <p className="text-lg font-bold">Saved on your phone</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-foreground/65">
-            There&apos;s no signal right now. Your report will send by itself as soon as there is. If the hazard is dangerous now, tell your supervisor in person or call them.
-          </p>
+      <div className="flex flex-col gap-5">
+        <div className="ds-note" role="status">
+          <span className="eyebrow flex items-center gap-1.5" style={{ color: "var(--brand)" }}>
+            <IconWifiOff width={14} height={14} /> Saved on this phone
+          </span>
+          <span className="text-[15px] leading-relaxed">
+            No signal right now. Your report sends by itself as soon as there is. If it&apos;s dangerous now, tell your supervisor in person or call them.
+          </span>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button type="button" onClick={reset} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-foreground text-[15px] font-bold text-background">
-            <IconCheck width={18} height={18} strokeWidth={2.4} /> Report another
-          </button>
-          <Link href="/emergency" className="flex min-h-12 items-center justify-center rounded-xl bg-surface text-[15px] font-bold ring-1 ring-border">
-            Call my supervisor
-          </Link>
-        </div>
+        <button type="button" onClick={reset} className="ds-btn ds-btn-primary w-full">
+          Report another
+        </button>
+        <Link href="/emergency" className="ds-btn ds-btn-outline w-full">
+          Emergency and who to call
+        </Link>
       </div>
     );
   }
 
-  return (
-    <form onSubmit={onSubmit} className="space-y-5">
-      <label
-        htmlFor="hazard-photo"
-        className="relative flex min-h-56 cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl bg-[#2b3340] text-white"
-      >
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Hazard photo" className="absolute inset-0 h-full w-full object-cover" />
-        ) : (
-          <>
-            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/15">
-              <IconCamera width={38} height={38} strokeWidth={1.8} />
-            </span>
-            <span className="text-lg font-bold">{preparing ? "Preparing photo…" : "Take a photo"}</span>
-          </>
-        )}
-        {preview && (
-          <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-4 py-2 text-sm font-semibold">Retake</span>
-        )}
-      </label>
-      <input
-        id="hazard-photo"
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        onChange={(e) => {
-          onPhoto(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
+  const tile = "flex h-[76px] w-[76px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-foreground/30 bg-surface text-xs font-medium text-body";
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-bold text-foreground/70">What is it?</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-[26px]">
+      <section className="flex flex-col gap-3">
+        <div className="ds-sec">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>01 / Photo</span>
+          <span className="eyebrow">{photo ? "1 of 1" : "Optional with a note"}</span>
+        </div>
+        <div className="flex gap-2">
+          {preview && (
+            <button type="button" onClick={() => { setPhoto(null); setPreview(null); }} className="group relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-lg" aria-label="Remove photo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="Hazard photo" className="h-full w-full object-cover" />
+              <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center text-[11px] font-medium text-white">Remove</span>
+            </button>
+          )}
+          <label htmlFor="hazard-camera" className={tile}>
+            {preparing ? (
+              <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <IconCamera width={20} height={20} strokeWidth={1.8} />
+            )}
+            {preview ? "Retake" : "Camera"}
+          </label>
+          <label htmlFor="hazard-gallery" className={tile}>
+            <IconImage width={20} height={20} strokeWidth={1.8} />
+            Gallery
+          </label>
+        </div>
+        {[
+          { id: "hazard-camera", capture: true },
+          { id: "hazard-gallery", capture: false },
+        ].map((i) => (
+          <input
+            key={i.id}
+            id={i.id}
+            type="file"
+            accept="image/*"
+            capture={i.capture ? "environment" : undefined}
+            className="sr-only"
+            onChange={(e) => {
+              onPhoto(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        ))}
+      </section>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="ds-sec mb-3 w-full">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>02 / Type</span>
+        </legend>
+        <div className="flex flex-wrap gap-2">
           {categories.map((c) => (
-            <TapOption key={c} name="category" value={c} checked={category === c} onChange={() => setCategory(c)}>
+            <label key={c} className="ds-chip">
+              <input type="radio" name="category" value={c} checked={category === c} onChange={() => setCategory(c)} className="sr-only" required />
               {c}
-            </TapOption>
+            </label>
           ))}
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-bold text-foreground/70">How serious?</legend>
-        <div className="grid grid-cols-4 gap-2">
+      <fieldset className="flex flex-col gap-3">
+        <legend className="ds-sec mb-3 w-full">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>03 / How bad</span>
+        </legend>
+        <div className="flex flex-wrap gap-2">
           {SEVERITY.map((s) => {
             const on = risk === s.value;
             return (
-              <label
-                key={s.value}
-                className="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 text-sm font-bold transition-colors"
-                style={{ background: on ? s.color : "var(--surface)", color: on ? "#fff" : "var(--foreground)", borderColor: on ? s.color : "var(--border)" }}
-              >
+              <label key={s.value} className="ds-chip" style={on ? { background: s.color, borderColor: s.color, color: "#fff" } : undefined}>
                 <input type="radio" name="risk" value={s.value} checked={on} onChange={() => setRisk(s.value)} className="sr-only" required />
-                <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: on ? "#fff" : s.color }} />
                 {s.label}
               </label>
             );
           })}
         </div>
+        <span className="text-[13px] text-body">Critical alerts your supervisor right away, then goes to review.</span>
       </fieldset>
 
-      <fieldset className="card space-y-3 p-4">
-        <legend className="sr-only">Where</legend>
-        <p className="flex items-center gap-2 text-sm font-bold text-foreground/70">
-          <IconMapPin width={18} height={18} />
-          Where?
-        </p>
-        {sites.length > 1 && (
-          <select
-            name="projectId"
-            value={siteId}
-            onChange={(e) => pickSite(e.target.value)}
-            aria-label="Site"
-            className="min-h-12 w-full rounded-xl border border-border bg-surface px-3 text-[15px] font-semibold"
-          >
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>{s.shortName}</option>
-            ))}
-          </select>
-        )}
-        {sites.length === 1 && <input type="hidden" name="projectId" value={siteId} />}
-        <div className="grid grid-cols-2 gap-2">
-          <select name="level" value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Level" className="min-h-12 rounded-xl border border-border bg-surface px-3 text-[15px] font-semibold">
-            {site?.levels.map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
-          <select name="zone" value={zone} onChange={(e) => setZone(e.target.value)} aria-label="Zone" className="min-h-12 rounded-xl border border-border bg-surface px-3 text-[15px] font-semibold">
-            {site?.zones.map((z) => <option key={z} value={z}>{z}</option>)}
-          </select>
+      <section className="flex flex-col">
+        <div className="ds-sec">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>04 / Where</span>
         </div>
-      </fieldset>
+        <input type="hidden" name="projectId" value={siteId} />
+        <input type="hidden" name="level" value={level} />
+        <input type="hidden" name="zone" value={zone} />
+        {editWhere ? (
+          <div className="flex flex-col gap-2.5 pt-3">
+            {sites.length > 1 && (
+              <select value={siteId} onChange={(e) => pickSite(e.target.value)} aria-label="Site" className="ds-field">
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>{s.shortName}</option>
+                ))}
+              </select>
+            )}
+            <div className="grid grid-cols-2 gap-2.5">
+              <select value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Level" className="ds-field">
+                {site?.levels.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              <select value={zone} onChange={(e) => setZone(e.target.value)} aria-label="Zone" className="ds-field">
+                {site?.zones.map((z) => <option key={z} value={z}>{z}</option>)}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setEditWhere(true)} className="flex min-h-[52px] items-center gap-3 border-b border-border text-left text-base font-medium">
+            <span className="min-w-0 flex-1 truncate">
+              {level} · {zone}
+              {sites.length > 1 && <span className="font-normal text-body"> · {site?.shortName}</span>}
+            </span>
+            <span className="text-sm text-brand">Change</span>
+          </button>
+        )}
+      </section>
 
-      <label className="block">
-        <span className="mb-2 block text-sm font-bold text-foreground/70">Anything to add? (optional)</span>
+      <label className="flex flex-col gap-2">
+        <span className="text-[15px] font-medium">
+          Anything to add? <span className="font-normal text-body">{photo ? "(optional)" : "(needed without a photo)"}</span>
+        </span>
         <input
           type="text"
           name="note"
@@ -223,33 +249,18 @@ export function HazardReportForm({ sites, categories, initialSiteId, userId }: {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. guardrail missing on stair 2"
-          className="min-h-12 w-full rounded-xl border border-border bg-surface px-3 text-[15px] outline-none focus:border-sidebar-accent"
+          className="ds-field"
         />
       </label>
 
       {error && <p className="form-error">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending || preparing || !category || !risk}
-        className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-foreground text-lg font-extrabold text-background disabled:opacity-40"
-      >
-        {pending ? "Sending…" : "Send report"}
-        {!pending && <IconArrowRight width={22} height={22} strokeWidth={2.4} />}
-      </button>
+      <footer className="ds-foot">
+        <button type="submit" disabled={pending || preparing || !category || !risk} className="ds-btn ds-btn-yellow w-full">
+          {pending ? "Sending…" : "Send report"}
+        </button>
+        <span className="ds-foot-hint">No signal? It saves on this phone and sends later.</span>
+      </footer>
     </form>
-  );
-}
-
-function TapOption({ name, value, checked, onChange, children }: { name: string; value: string; checked: boolean; onChange: () => void; children: React.ReactNode }) {
-  return (
-    <label
-      className={`flex min-h-14 cursor-pointer items-center justify-center rounded-2xl px-2 text-center text-[15px] font-bold ring-1 transition-colors ${
-        checked ? "bg-foreground text-background ring-foreground" : "bg-surface ring-border hover:bg-surface-muted"
-      }`}
-    >
-      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} className="sr-only" required />
-      {children}
-    </label>
   );
 }

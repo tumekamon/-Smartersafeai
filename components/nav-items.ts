@@ -57,6 +57,10 @@ export function navItemsFor(user: NavUser, hidden: ModuleId[] = []): NavItem[] {
       : { href: "/compliance", label: "Compliance", Icon: IconFileCheck, match: ["/compliance"] },
     { href: "/more", label: "More", Icon: IconMenu, match: ["/more", "/projects", "/incidents", "/settings", "/settings/home", "/settings/profile", "/settings/templates", "/settings/incident-form", "/settings/team", "/reports", "/my-reports", "/notifications", "/emergency"] },
   ];
+  // A route owned by a main tab (e.g. a worker's Reports) must not also light up More.
+  const owned = new Set(items.slice(0, -1).flatMap((i) => i.match));
+  const more = items[items.length - 1];
+  more.match = more.match.filter((m) => !owned.has(m));
   return hidden.includes("compliance") ? items.filter((i) => i.href !== "/compliance") : items;
 }
 

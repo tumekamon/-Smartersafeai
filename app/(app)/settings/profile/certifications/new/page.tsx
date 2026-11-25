@@ -5,6 +5,7 @@ import { listCertifications } from "@/lib/db";
 import { isCertificationType } from "@/lib/certifications";
 import { nowMs } from "@/lib/time";
 import { CertificateUploadForm } from "@/components/certifications/certificate-upload-form";
+import { IconChevronLeft } from "@/components/ui/icons";
 
 export default async function NewCertificatePage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const user = await getCurrentUser();
@@ -19,14 +20,11 @@ export default async function NewCertificatePage({ searchParams }: { searchParam
   const today = new Date(nowMs()).toISOString().slice(0, 10);
 
   return (
-    <div className="mx-auto max-w-xl space-y-5">
-      <div>
-        <Link href="/settings/profile#certs" className="text-sm font-medium text-foreground/60 hover:text-foreground">
-          ← My profile
-        </Link>
-        <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">Add a certificate</h1>
-        <p className="mt-1 text-sm text-foreground/60">Upload a training card or certificate. It counts once your supervisor has checked it.</p>
-      </div>
+    <div className="mx-auto flex max-w-xl flex-col gap-5">
+      <Link href="/settings/profile#certs" className="ds-back self-start">
+        <IconChevronLeft width={18} height={18} /> My profile
+      </Link>
+      <h1 className="disp text-[34px] leading-none">Add a certificate</h1>
       <CertificateUploadForm defaultType={type && isCertificationType(type) ? type : undefined} onFile={onFile} today={today} />
     </div>
   );

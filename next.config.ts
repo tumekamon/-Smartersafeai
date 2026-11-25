@@ -12,6 +12,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Let phones on the local network use the dev server (Wi-Fi LAN and Windows hotspot addresses).
+  allowedDevOrigins: ["192.168.0.159", "192.168.137.1"],
   // Certificate PDFs and photos are up to 4 MB (the default action limit is 1 MB).
   experimental: { serverActions: { bodySizeLimit: "5mb" } },
   async headers() {

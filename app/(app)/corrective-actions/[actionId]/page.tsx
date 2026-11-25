@@ -11,6 +11,7 @@ import { shortDate, shortDateTime } from "@/lib/format";
 import { nowMs } from "@/lib/time";
 import { updateCorrectiveActionStatusAction } from "@/lib/actions/corrective-actions";
 import { CompleteTaskForm } from "@/components/tasks/complete-task-form";
+import { WorkerTaskView } from "@/components/tasks/worker-task-view";
 import { SendBackForm } from "@/components/tasks/send-back-form";
 import { EvidenceViewer } from "@/components/review/evidence-viewer";
 import { Avatar } from "@/components/ui/avatar";
@@ -54,6 +55,25 @@ export default async function TaskPage({
     { label: "Closed", at: a.closedAt, on: a.status === "closed" },
   ];
   const current = steps.filter((s) => s.on).length; // 1-based index of the last done step
+
+  // A worker's own task gets the phone task screen from the design canvas (W07).
+  if (workerView) {
+    return (
+      <WorkerTaskView
+        task={a}
+        project={project}
+        assigner={assigner}
+        completer={completer}
+        sentBackBy={sentBackBy}
+        finding={finding}
+        evidence={evidence}
+        userId={user.id}
+        canComplete={mine && caps.canCompleteOwnActions && !caps.isReadOnly}
+        justSent={done === "1"}
+        now={now}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">

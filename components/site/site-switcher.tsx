@@ -61,23 +61,23 @@ export function SiteSwitcher({ sites, currentId }: { sites: SiteOption[]; curren
       </span>
       <span className="min-w-0 text-left">
         <span className="hidden text-[10px] font-semibold uppercase leading-none tracking-wider text-foreground/50 sm:block">Working site</span>
-        <span className="block max-w-[8.5rem] truncate text-[13px] font-bold leading-tight sm:max-w-[14rem] sm:mt-0.5">{current.shortName}</span>
+        <span className="block truncate text-[13px] font-bold leading-tight sm:mt-0.5 lg:max-w-[14rem]">{current.shortName}</span>
       </span>
     </>
   );
 
   if (!canSwitch) {
-    return <div className="flex min-h-10 items-center gap-2 rounded-xl px-2 py-1">{chip}</div>;
+    return <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-xl px-2 py-1">{chip}</div>;
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative min-w-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex min-h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface/60 py-1 pl-1.5 pr-3 transition-colors hover:bg-surface-muted"
+        className="flex min-h-10 min-w-0 max-w-full items-center gap-2 rounded-xl border border-border/60 bg-surface/60 py-1 pl-1.5 pr-3 transition-colors hover:bg-surface-muted"
       >
         {chip}
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className={`ml-1 shrink-0 text-foreground/50 transition-transform ${open ? "rotate-180" : ""}`}>

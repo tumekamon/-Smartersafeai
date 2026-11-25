@@ -2,84 +2,71 @@ import Link from "next/link";
 import { nowMs } from "@/lib/time";
 import { getCurrentUser } from "@/lib/dal";
 import { noticesFor, seenSince, type Notice, type NoticeTone } from "@/lib/notifications";
-import { timeAgo } from "@/lib/format";
 import { MarkSeen } from "@/components/notifications/mark-seen";
-import { IconAlertTriangle, IconArrowRight, IconBell, IconCamera, IconCheck, IconClipboardCheck, IconFileCheck } from "@/components/ui/icons";
+import { IconChevronLeft } from "@/components/ui/icons";
 
-const TONE: Record<NoticeTone, string> = {
-  critical: "bg-status-critical/12 text-status-critical",
-  warning: "bg-status-warning/15 text-status-warning",
-  good: "bg-status-good/15 text-status-good",
-  info: "bg-sidebar-accent/12 text-sidebar-accent",
+const DOT: Record<NoticeTone, string> = {
+  critical: "var(--status-critical)",
+  warning: "var(--status-warning)",
+  good: "var(--status-good)",
+  info: "var(--brand)",
 };
 
-const KIND_ICON = {
-  task: IconClipboardCheck,
-  "check-in": IconCamera,
-  certificate: IconFileCheck,
-  report: IconAlertTriangle,
-} as const;
+/** "09:50" today, "Sun" this week, else "12 Nov". */
+function stamp(iso: string, now: number) {
+  const d = new Date(iso);
+  const days = (now - d.getTime()) / 86_400_000;
+  if (d.toDateString() === new Date(now).toDateString()) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (days < 6) return d.toLocaleDateString("en-GB", { weekday: "short" });
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
 
-/** Everything that changed for the worker: tasks, check-in, certificates, their reports. */
+/** Everything that changed for the worker (design canvas W09): new on top, the rest after. */
 export default async function NotificationsPage() {
   const user = await getCurrentUser();
   const now = nowMs();
   const seen = seenSince(user, now);
   const notices = noticesFor(user, now);
   const isNew = (n: Notice) => n.at > seen;
-
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
   const groups = [
     { title: "New", items: notices.filter(isNew) },
-    { title: "Today", items: notices.filter((n) => !isNew(n) && Date.parse(n.at) >= startOfToday.getTime()) },
-    { title: "Earlier", items: notices.filter((n) => !isNew(n) && Date.parse(n.at) < startOfToday.getTime()) },
+    { title: "Earlier", items: notices.filter((n) => !isNew(n)) },
   ].filter((g) => g.items.length > 0);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-[22px]">
       <MarkSeen />
-      <header>
-        <p className="eyebrow">Last 30 days</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Notifications</h1>
-      </header>
+      <Link href="/dashboard" className="ds-back self-start">
+        <IconChevronLeft width={18} height={18} /> My Day
+      </Link>
+      <h1 className="disp text-[40px] leading-none">Notifications</h1>
 
       {notices.length === 0 ? (
-        <div className="card flex flex-col items-center gap-2 px-6 py-12 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-foreground/60">
-            <IconBell width={24} height={24} />
-          </span>
-          <p className="mt-1 font-bold">You&apos;re all caught up</p>
-          <p className="max-w-xs text-sm text-foreground/55">New tasks, check-in and certificate reviews, and updates on your reports show up here.</p>
-        </div>
+        <p className="border-t-2 border-brand py-5 text-[15px] leading-relaxed text-body">
+          You&apos;re all caught up. New tasks, reviews of your check-in and certificates, and updates on your reports show up here.
+        </p>
       ) : (
         groups.map((g) => (
-          <section key={g.title} aria-label={g.title}>
-            <h2 className="mb-2.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground/60">
-              {g.title === "New" && <span className="h-2 w-2 rounded-full bg-status-critical" />}
-              {g.title}
-              <span className="text-foreground/35">{g.items.length}</span>
-            </h2>
-            <ul className="card divide-y divide-border overflow-hidden p-0">
-              {g.items.map((n) => {
-                const Icon = n.tone === "good" ? IconCheck : KIND_ICON[n.kind];
-                return (
-                  <li key={n.id}>
-                    <Link href={n.href} className={`flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-muted ${isNew(n) ? "bg-sidebar-accent/[0.04]" : ""}`}>
-                      <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${TONE[n.tone]}`}>
-                        <Icon width={17} height={17} strokeWidth={2.2} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-semibold leading-snug">{n.title}</span>
-                        {n.body && <span className="mt-0.5 line-clamp-2 block text-sm text-foreground/60">{n.body}</span>}
-                        <span className="mt-1 block text-xs text-foreground/45">{timeAgo(Date.parse(n.at), now)}</span>
-                      </span>
-                      <IconArrowRight width={16} height={16} className="mt-2.5 shrink-0 text-foreground/35" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+          <section key={g.title} aria-label={g.title} className="flex flex-col">
+            <div className="ds-sec">
+              <h2 className="eyebrow" style={{ color: "var(--foreground)" }}>
+                {g.title}
+              </h2>
+              <span className="eyebrow">{g.items.length}</span>
+            </div>
+            {g.items.map((n) => {
+              const fresh = isNew(n);
+              return (
+                <Link key={n.id} href={n.href} className="group flex gap-3.5 border-b border-border py-4">
+                  <span aria-hidden="true" className="ds-dot mt-[7px]" style={{ background: fresh ? DOT[n.tone] : "color-mix(in srgb, var(--foreground) 22%, transparent)" }} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className={`text-base leading-snug group-hover:underline ${fresh ? "font-semibold" : "font-medium"}`}>{n.title}</span>
+                    {n.body && <span className="line-clamp-2 text-sm text-body">{n.body}</span>}
+                  </span>
+                  <span className="eyebrow shrink-0 pt-0.5">{stamp(n.at, now)}</span>
+                </Link>
+              );
+            })}
           </section>
         ))
       )}

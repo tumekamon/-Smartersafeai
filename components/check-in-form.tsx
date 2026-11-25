@@ -166,139 +166,159 @@ export function CheckInForm({ sites, ppe, workerName }: { sites: Site[]; ppe: st
 
   if (state?.ok) {
     return (
-      <div className="card flex flex-col items-center gap-3 p-8 text-center">
+      <div className="flex flex-col items-center gap-3 border-t-2 border-brand py-10 text-center">
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-status-good text-white">
           <IconCheck width={32} height={32} strokeWidth={2.6} />
         </span>
-        <p className="text-xl font-bold">Checked in</p>
-        <p className="text-sm text-foreground/60">Your supervisor will confirm it. Have a safe day.</p>
+        <p className="disp text-[28px]">Checked in</p>
+        <p className="text-[15px] text-body">Your supervisor will confirm it. Have a safe day.</p>
       </div>
     );
   }
 
+  // Laid out as the design canvas's "PPE check-in" (W03): 01 what you're wearing,
+  // 02 where you're working, then the live photo, and Check in pinned to the bottom.
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
-      {/* 1. Site + location */}
-      <section className="card space-y-3 p-4">
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-bold text-foreground/70">Site</span>
-          <select
-            value={siteId}
-            onChange={(e) => setChosenSiteId(e.target.value)}
-            className="min-h-12 w-full rounded-xl border border-border bg-surface px-3 text-base font-semibold"
-          >
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.shortName}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="flex items-start gap-2 text-sm">
-          <IconMapPin width={18} height={18} className="mt-0.5 shrink-0" />
+    <form onSubmit={onSubmit} className="flex flex-col gap-[22px]">
+      <fieldset className="flex flex-col">
+        <legend className="ds-sec w-full">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>01 / I&apos;m wearing</span>
+          <span className="eyebrow">
+            {ticked.length} of {ppe.length}
+          </span>
+        </legend>
+        {ppe.map((item) => {
+          const on = ticked.includes(item);
+          return (
+            <label key={item} className="flex min-h-[60px] cursor-pointer items-center gap-3.5 border-b border-border">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={on}
+                onChange={() => setTicked((t) => (on ? t.filter((x) => x !== item) : [...t, item]))}
+              />
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-[1.5px] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand ${
+                  on ? "border-brand bg-brand text-surface" : "border-foreground/30 bg-surface"
+                }`}
+              >
+                {on && <IconCheck width={16} height={16} strokeWidth={3} />}
+              </span>
+              <span className="text-base font-medium">{item}</span>
+            </label>
+          );
+        })}
+      </fieldset>
+
+      <section className="flex flex-col gap-3">
+        <div className="ds-sec">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>02 / Where are you working</span>
+        </div>
+        {sites.length > 1 ? (
+          <label className="flex min-h-[52px] items-center gap-3 border-b border-border">
+            <span className="sr-only">Site</span>
+            <select
+              value={siteId}
+              onChange={(e) => setChosenSiteId(e.target.value)}
+              className="min-w-0 flex-1 appearance-none bg-transparent text-base font-medium outline-none"
+            >
+              {sites.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.shortName}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden="true" className="text-sm text-brand">
+              Change
+            </span>
+          </label>
+        ) : (
+          <p className="flex min-h-[52px] items-center border-b border-border text-base font-medium">{site?.shortName}</p>
+        )}
+        <p className="flex items-start gap-2 text-sm font-medium">
+          <IconMapPin width={16} height={16} className="mt-0.5 shrink-0" />
           {gpsError ? (
-            <span className="font-semibold text-critical">{gpsError}</span>
+            <span className="tone-critical">{gpsError}</span>
           ) : !fix ? (
-            <span className="text-foreground/60">Finding your location…</span>
+            <span className="text-body">Finding your location…</span>
           ) : !gpsGood ? (
-            <span className="font-semibold text-critical">GPS is weak (±{Math.round(fix.accuracy)} m). Step outside or wait a moment.</span>
+            <span className="tone-critical">GPS is weak (±{Math.round(fix.accuracy)} m). Step outside or wait a moment.</span>
           ) : onSite === undefined ? (
-            <span className="text-foreground/70">Location found (±{Math.round(fix.accuracy)} m). This site has no boundary set, so it will be recorded but not checked.</span>
+            <span className="text-body">Location found (±{Math.round(fix.accuracy)} m). This site has no boundary set, so it is recorded but not checked.</span>
           ) : onSite ? (
-            <span className="font-semibold tone-good">On site · {formatDistance(distance!)} from the site centre</span>
+            <span className="tone-good">You&apos;re on site at {site?.shortName}</span>
           ) : (
-            <span className="font-semibold text-critical">You&apos;re {formatDistance(distance!)} from {site?.shortName}. You can check in once you&apos;re on site.</span>
+            <span className="tone-critical">
+              You&apos;re {formatDistance(distance!)} from {site?.shortName}. You can check in once you&apos;re on site.
+            </span>
           )}
         </p>
       </section>
 
-      {/* 2. Live camera */}
-      <section className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-[#2b3340] text-white">
-        {shot ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={shot.url} alt="Your check-in photo" className="absolute inset-0 h-full w-full object-cover" />
-        ) : cameraError ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <IconCamera width={38} height={38} strokeWidth={1.8} />
-            <p className="font-semibold">{cameraError}</p>
-          </div>
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            onLoadedData={() => setCameraReady(true)}
-            className={`absolute inset-0 h-full w-full object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
-          />
-        )}
-        <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-3 p-4">
+      <section className="flex flex-col gap-3">
+        <div className="ds-sec">
+          <span className="eyebrow" style={{ color: "var(--foreground)" }}>03 / Photo in your PPE</span>
+          <span className="eyebrow">{shot ? "Taken" : "Live camera"}</span>
+        </div>
+        <div className="relative mx-auto aspect-[3/4] w-full max-w-sm overflow-hidden rounded-xl bg-[#2b3340] text-white">
           {shot ? (
-            <button type="button" onClick={retake} className="min-h-12 rounded-full bg-black/60 px-6 font-semibold">
-              Retake
-            </button>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={shot.url} alt="Your check-in photo" className="absolute inset-0 h-full w-full object-cover" />
+          ) : cameraError ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+              <IconCamera width={34} height={34} strokeWidth={1.8} />
+              <p className="text-[15px] font-medium">{cameraError}</p>
+            </div>
           ) : (
-            !cameraError && (
-              <>
-                <button
-                  type="button"
-                  onClick={capture}
-                  disabled={!cameraReady}
-                  aria-label="Take photo"
-                  className="h-18 w-18 rounded-full border-4 border-white bg-white/30 disabled:opacity-40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
-                  className="absolute right-4 min-h-11 rounded-full bg-black/60 px-4 text-sm font-semibold"
-                >
-                  Flip
-                </button>
-              </>
-            )
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              onLoadedData={() => setCameraReady(true)}
+              className={`absolute inset-0 h-full w-full object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+            />
           )}
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-3 p-4">
+            {shot ? (
+              <button type="button" onClick={retake} className="min-h-11 rounded-full bg-black/60 px-6 font-semibold">
+                Retake
+              </button>
+            ) : (
+              !cameraError && (
+                <>
+                  <button
+                    type="button"
+                    onClick={capture}
+                    disabled={!cameraReady}
+                    aria-label="Take photo"
+                    className="h-16 w-16 rounded-full border-4 border-white bg-white/30 disabled:opacity-40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+                    className="absolute right-4 min-h-11 rounded-full bg-black/60 px-4 text-sm font-semibold"
+                  >
+                    Flip
+                  </button>
+                </>
+              )
+            )}
+          </div>
         </div>
+        {!shot && <p className="text-center text-[13px] text-body">Get head to boots in the picture so your PPE shows.</p>}
       </section>
-      {!shot && <p className="-mt-2 text-center text-sm text-foreground/60">Get your head to boots in the picture so your PPE shows.</p>}
 
-      {/* 3. PPE confirmation */}
-      <fieldset className="card p-4">
-        <legend className="px-1 text-sm font-bold text-foreground/70">I&apos;m wearing</legend>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {ppe.map((item) => {
-            const on = ticked.includes(item);
-            return (
-              <label
-                key={item}
-                className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl px-4 text-base font-semibold ring-1 ${
-                  on ? "bg-foreground text-background ring-foreground" : "bg-surface ring-border"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={on}
-                  onChange={() => setTicked((t) => (on ? t.filter((x) => x !== item) : [...t, item]))}
-                />
-                <span className={`flex h-6 w-6 items-center justify-center rounded-md ${on ? "bg-background text-foreground" : "ring-1 ring-border"}`}>
-                  {on && <IconCheck width={16} height={16} strokeWidth={3} />}
-                </span>
-                {item}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+      {state?.error && <p className="form-error">{state.error}</p>}
 
-      {state?.error && <p className="rounded-xl bg-status-critical px-4 py-3 text-sm font-semibold text-white">{state.error}</p>}
-
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="min-h-14 w-full rounded-2xl bg-foreground text-lg font-extrabold text-background disabled:opacity-40"
-      >
-        {pending ? "Sending…" : "Check in"}
-      </button>
+      <footer className="ds-foot">
+        <button type="submit" disabled={!canSubmit} className="ds-btn ds-btn-primary w-full">
+          {pending ? "Sending…" : "Check in"}
+        </button>
+        <span className="ds-foot-hint">
+          {!allPpe ? "Tick everything you're wearing. Missing an item? Tell your supervisor before you start." : !shot ? "Take the photo to check in." : "Your supervisor confirms it."}
+        </span>
+      </footer>
     </form>
   );
 }

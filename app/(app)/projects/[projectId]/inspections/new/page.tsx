@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { listTemplates } from "@/lib/db";
 import { accessibleProject } from "@/lib/scope";
 import { InspectionForm } from "@/components/inspection-form";
+import { isPlainWorker } from "@/components/nav-items";
 
 export default async function NewInspectionPage({
   params,
@@ -24,16 +24,11 @@ export default async function NewInspectionPage({
     redirect(`/projects/${projectId}`);
   }
 
+  // A worker starts checklists from My Day, so that's where back goes (design canvas W05).
+  const back = isPlainWorker(user) ? { href: "/dashboard", label: "My Day" } : { href: `/projects/${projectId}`, label: project.shortName };
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <Link href={`/projects/${projectId}`} className="text-xs font-medium text-sidebar-accent">
-          ← {project.shortName}
-        </Link>
-        <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">New inspection</h1>
-        <p className="mt-1 text-sm text-foreground/60">{project.name}</p>
-      </div>
-      <InspectionForm project={project} templates={listTemplates(user.companyId)} initialTemplateId={templateId} />
+    <div className="mx-auto max-w-xl">
+      <InspectionForm project={project} templates={listTemplates(user.companyId)} initialTemplateId={templateId} back={back} />
     </div>
   );
 }

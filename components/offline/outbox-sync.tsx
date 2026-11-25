@@ -81,7 +81,7 @@ export function OutboxSync({ userId }: { userId: string }) {
   return (
     <div
       role="status"
-      className="fixed inset-x-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 space-y-2 print:hidden md:inset-x-auto md:bottom-6 md:right-6 md:w-96"
+      className="fixed inset-x-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 space-y-2 print:hidden lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-96"
     >
       {failed.map((i) => (
         <div key={i.clientId} className="flex items-start gap-3 rounded-2xl border border-status-critical/30 bg-surface p-3 shadow-xl">

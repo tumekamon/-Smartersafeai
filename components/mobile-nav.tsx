@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ModuleId } from "@/lib/home-layout";
-import { isNavActive, navItemsFor, type NavUser } from "@/components/nav-items";
+import { isNavActive, isPlainWorker, navItemsFor, type NavUser } from "@/components/nav-items";
 import { IconPlus } from "@/components/ui/icons";
+
+/** A worker's four tab screens. Every other worker screen is a step with its own back link and action (design canvas). */
+const WORKER_TAB_ROOTS = new Set(["/dashboard", "/corrective-actions", "/my-reports", "/more"]);
 
 /**
  * Phone tab bar (design canvas, every phone screen): two tabs, the yellow Report
@@ -25,6 +28,7 @@ export function MobileNav({
   const pathname = usePathname();
   const items = navItemsFor(user, hidden);
   const [first, second, ...rest] = items;
+  if (isPlainWorker(user) && !WORKER_TAB_ROOTS.has(pathname)) return null;
 
   const tab = (item: (typeof items)[number]) => {
     const active = isNavActive(item, pathname);
@@ -50,20 +54,29 @@ export function MobileNav({
   };
 
   return (
+    <>
+    {/* Keeps the end of the page clear of the fixed bar. */}
+    <div aria-hidden="true" className="h-24 shrink-0 lg:hidden" />
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 grid items-center border-t border-border bg-surface px-2 pb-[max(env(safe-area-inset-bottom),10px)] pt-1 print:hidden md:hidden"
-      style={{ gridTemplateColumns: `repeat(${items.length + (canReport ? 1 : 0)}, minmax(0, 1fr))` }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface px-2 pb-[max(env(safe-area-inset-bottom),10px)] pt-1 print:hidden lg:hidden"
     >
-      {first && tab(first)}
-      {second && tab(second)}
-      {canReport && (
-        <Link href="/hazards/new" aria-label="Report a hazard" className="report-pill justify-self-center">
-          <IconPlus width={18} height={18} strokeWidth={2.4} />
-          Report
-        </Link>
-      )}
-      {rest.map(tab)}
+      {/* Capped width so the tabs stay within thumb reach on tablets. */}
+      <div
+        className="mx-auto grid max-w-xl items-center"
+        style={{ gridTemplateColumns: `repeat(${items.length + (canReport ? 1 : 0)}, minmax(0, 1fr))` }}
+      >
+        {first && tab(first)}
+        {second && tab(second)}
+        {canReport && (
+          <Link href="/hazards/new" aria-label="Report a hazard" className="report-pill justify-self-center">
+            <IconPlus width={18} height={18} strokeWidth={2.4} />
+            Report
+          </Link>
+        )}
+        {rest.map(tab)}
+      </div>
     </nav>
+    </>
   );
 }

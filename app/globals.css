@@ -142,6 +142,8 @@ html[data-theme="dark"] .tenant-theme {
     --surface: #131722;
     --surface-muted: #1a1f2c;
     --border: #252b3a;
+    --body-text: #aab4c3;
+    --muted-text: #8e9aab;
 
     --sidebar-bg: #0b0e17;
     --sidebar-border: transparent;
@@ -192,6 +194,8 @@ html[data-theme="dark"] .tenant-theme {
   --surface: #131722;
   --surface-muted: #1a1f2c;
   --border: #252b3a;
+  --body-text: #aab4c3;
+  --muted-text: #8e9aab;
 
   --sidebar-bg: #0b0e17;
   --sidebar-border: transparent;
@@ -300,6 +304,7 @@ body {
   padding: 0 0.125rem;
   font-size: 15px;
   font-weight: 500;
+  white-space: nowrap;
   color: #c9daec;
   border-bottom: 3px solid transparent;
 }
@@ -555,4 +560,192 @@ body {
 .toggle-option:has(input:focus-visible) {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+
+/*
+ * Worker screens kit, from the design canvas (W01–W15): numbered sections on a 2px
+ * safety-blue rule, flat rows on hairlines, pill buttons, pill chips, mono status tags.
+ * In @layer components so Tailwind utilities can still override them.
+ */
+@layer components {
+  .ds-sec {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand);
+  }
+  .ds-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ds-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--brand);
+  }
+  .ds-title {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: 36px;
+    line-height: 1.02;
+  }
+  .ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 54px;
+    padding: 0 22px;
+    border-radius: 9999px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .ds-btn:disabled {
+    opacity: 0.45;
+  }
+  /* Text on brand uses the surface colour: white in light, near-black on the light blue of dark mode. */
+  .ds-btn-primary {
+    background: var(--brand);
+    color: var(--surface);
+  }
+  .ds-btn-outline {
+    border: 1.5px solid var(--brand);
+    color: var(--brand);
+  }
+  .ds-btn-yellow {
+    background: var(--hivis);
+    color: var(--ink);
+  }
+  .ds-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    border: 1.5px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+    background: var(--surface);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ds-chip[aria-current="page"],
+  .ds-chip[aria-pressed="true"],
+  .ds-chip:has(input:checked) {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: var(--surface);
+  }
+  .ds-chip:has(input:focus-visible) {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  .ds-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .ds-tag-info {
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+  }
+  .ds-tag-good {
+    color: var(--status-good);
+    background: color-mix(in srgb, var(--status-good) 13%, var(--surface));
+  }
+  .ds-tag-warn {
+    color: var(--status-warning);
+    background: color-mix(in srgb, var(--status-warning) 15%, var(--surface));
+  }
+  .ds-tag-crit {
+    color: var(--status-critical);
+    background: color-mix(in srgb, var(--status-critical) 12%, var(--surface));
+  }
+  .ds-tag-neutral {
+    color: var(--body-text);
+    background: var(--surface-muted);
+  }
+  .ds-field {
+    width: 100%;
+    min-height: 52px;
+    border: 1.5px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+    border-radius: 8px;
+    padding: 0 14px;
+    background: var(--surface);
+    font-size: 16px;
+    outline: none;
+  }
+  .ds-field:focus {
+    border-color: var(--brand);
+  }
+  textarea.ds-field {
+    padding: 12px 14px;
+  }
+  .ds-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+  /* The tint box: "Sent back to you" and other notes the worker must read. */
+  .ds-note {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+  }
+  /* Primary action pinned to the bottom of a phone screen, above the home indicator. */
+  .ds-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    margin: 0 -1rem;
+    padding: 12px 1rem calc(16px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--background);
+    border-top: 1px solid var(--border);
+  }
+  @media (min-width: 40rem) {
+    .ds-foot {
+      margin: 0 -1.5rem;
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .ds-foot {
+      position: static;
+      margin: 0;
+      padding: 8px 0 0;
+      border-top: 0;
+    }
+  }
+  .ds-foot-hint {
+    font-size: 13px;
+    text-align: center;
+    color: var(--body-text);
+  }
 }

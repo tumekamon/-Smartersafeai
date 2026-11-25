@@ -56,3 +56,29 @@ export const tasksOnly = (user: User, caps: Capabilities) =>
 export function photoProof(a: CorrectiveAction): EvidenceRequirement {
   return a.proof ?? (a.source === "manual" ? "optional" : "required");
 }
+
+/**
+ * The short mono countdown on task rows (design canvas: "1h 40m", "6h over", "3d").
+ * Hour windows count down in hours; longer ones in days.
+ */
+export function countdown(a: CorrectiveAction, now: number): { text: string; tone: "critical" | "warning" | "neutral" } {
+  if (a.dueAt) {
+    const left = dueTime(a) - now;
+    if (Math.abs(left) < 2 * DAY) {
+      if (left < 0) return { text: `${formatSpan(left)} over`, tone: "critical" };
+      return { text: formatSpan(left), tone: left < 3 * 3_600_000 ? "critical" : "warning" };
+    }
+  }
+  const d = daysLeft(a, now);
+  if (d < 0) return { text: `${-d}d over`, tone: "critical" };
+  if (d === 0) return { text: "Today", tone: "critical" };
+  return { text: `${d}d`, tone: d <= 3 ? "warning" : "neutral" };
+}
+
+/** Row dot colour: red for high and critical, amber for medium, blue for low (design canvas). */
+export const PRIORITY_DOT: Record<RiskLevel, string> = {
+  critical: "var(--status-critical)",
+  high: "var(--status-critical)",
+  medium: "var(--status-warning)",
+  low: "var(--brand)",
+};

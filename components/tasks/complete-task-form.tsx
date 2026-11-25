@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toJpeg } from "@/lib/client-image";
 import { listOutbox, newClientId, OUTBOX_EVENT, submitThroughOutbox } from "@/lib/outbox";
@@ -22,12 +22,21 @@ export function CompleteTaskForm({
   userId,
   onBehalfOf,
   proof,
+  variant = "card",
+  before,
+  checker,
 }: {
   taskId: string;
   taskLabel: string;
   userId: string;
   onBehalfOf?: string;
   proof: EvidenceRequirement;
+  /** "worker": the phone task screen layout from the design canvas (W07). */
+  variant?: "card" | "worker";
+  /** Worker layout: the hazard photo shown beside the proof photo. */
+  before?: ReactNode;
+  /** Worker layout: who checks the fix, by first name. */
+  checker?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -108,6 +117,101 @@ export function CompleteTaskForm({
       setPending(false);
     }
   };
+
+  // The worker's task screen (design canvas W07): Before | After side by side, a note,
+  // and "Mark fixed" pinned to the bottom of the phone.
+  if (variant === "worker") {
+    if (queued) {
+      return (
+        <div className="ds-note" role="status">
+          <span className="eyebrow flex items-center gap-1.5" style={{ color: "var(--brand)" }}>
+            <IconWifiOff width={14} height={14} /> Saved on this phone
+          </span>
+          <span className="text-[15px] leading-relaxed">No signal right now. Your fix sends by itself as soon as there is, and {checker ?? "your supervisor"} checks it then.</span>
+        </div>
+      );
+    }
+    const tile = "flex h-28 w-full flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg";
+    return (
+      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+        <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onPick} />
+        {(before || proof !== "disabled") && (
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="eyebrow">Before</span>
+              {before ?? <span className={`${tile} bg-surface-muted text-[13px] text-body`}>No photo</span>}
+            </div>
+            {proof !== "disabled" && (
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className="eyebrow">After</span>
+                {photo ? (
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo.url} alt="Photo of the fix" className={`${tile} bg-black object-cover`} />
+                    <button
+                      type="button"
+                      onClick={() => setPhoto(null)}
+                      className="absolute bottom-1.5 right-1.5 min-h-8 rounded-full bg-black/65 px-3 text-xs font-semibold text-white"
+                    >
+                      Retake
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={preparing}
+                    className={`${tile} border-[1.5px] border-dashed border-foreground/30 bg-surface text-sm font-medium text-brand`}
+                  >
+                    {preparing ? (
+                      <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <IconCamera width={22} height={22} strokeWidth={1.8} />
+                    )}
+                    {preparing ? "Preparing…" : proof === "required" ? "Add proof photo" : "Add photo (optional)"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {photoError && <p className="text-sm font-medium tone-critical">{photoError}</p>}
+
+        <label className="flex flex-col gap-2">
+          <span className="text-[15px] font-medium">
+            What did you do? {!noteRequired && <span className="font-normal text-body">(optional)</span>}
+          </span>
+          <textarea
+            name="note"
+            rows={2}
+            maxLength={500}
+            required={noteRequired}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={proof === "required" ? "e.g. Swapped the cord for a new one and tagged the old one out." : "e.g. Briefed the crew at the 7:00 toolbox talk."}
+            className="ds-field resize-none"
+          />
+        </label>
+
+        {error && (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        )}
+
+        <footer className="ds-foot">
+          <button
+            type="submit"
+            disabled={pending || preparing || (proof === "required" ? !photo : noteRequired && !note.trim())}
+            className="ds-btn ds-btn-primary w-full"
+          >
+            {pending ? "Sending…" : "Mark fixed"}
+          </button>
+          <span className="ds-foot-hint">{checker ?? "Your supervisor"} checks it before it counts as done.</span>
+        </footer>
+      </form>
+    );
+  }
 
   if (queued) {
     return (
