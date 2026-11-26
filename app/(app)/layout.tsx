@@ -9,6 +9,9 @@ import { MobileNav } from "@/components/mobile-nav";
 import { OutboxSync } from "@/components/offline/outbox-sync";
 import { unreadCount } from "@/lib/notifications";
 import { isPlainWorker } from "@/components/nav-items";
+import { WorkerShell } from "@/components/worker/worker-shell";
+import { certSummary } from "@/lib/worker-summary";
+import { nowMs } from "@/lib/time";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -43,6 +46,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const canReport = caps.canSubmitInspections;
   // Worker phone screens follow the design canvas: no top bar, each screen carries its own header.
   const worker = isPlainWorker(navUser);
+  const tenant = company ? (brandVars(company.primaryColor) as React.CSSProperties) : undefined;
+
+  // A field worker gets their own frame: a sidebar on large screens, the tab bar below.
+  if (worker) {
+    return (
+      <div className="tenant-theme" style={tenant}>
+        <WorkerShell
+          user={user}
+          navUser={navUser}
+          hidden={hidden}
+          siteSwitch={siteSwitch}
+          siteId={current?.id}
+          taskBadge={workBadge}
+          unread={unreadCount(user)}
+          certsDue={certSummary(user, nowMs()).due.length}
+          extras={<OutboxSync userId={user.id} />}
+          menu={{
+            site: current,
+            sites: switchableSites(user),
+            incidents: !hidden.includes("incidents"),
+          }}
+        >
+          {children}
+        </WorkerShell>
+      </div>
+    );
+  }
 
   // Mobile first: one column, a navy top bar, the tab bar at the bottom on phones and
   // tablets (below lg). Desktop is the same work on a bigger screen, tabs in the top bar.
@@ -59,7 +89,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         canReport={canReport}
         siteSwitch={siteSwitch}
         unread={usesWorkingSite(user) ? unreadCount(user) : undefined}
-        phoneHidden={worker}
       />
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-8 pt-5 sm:px-6 md:pt-8 lg:px-8 lg:pb-12 lg:pt-10">{children}</main>
       {!caps.isReadOnly && <OutboxSync userId={user.id} />}

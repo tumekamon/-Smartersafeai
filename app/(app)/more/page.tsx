@@ -2,10 +2,8 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { getCapabilities } from "@/lib/authz";
 import { moduleVisible } from "@/lib/home-layout";
-import { getCompany, listCertifications, listIncidents } from "@/lib/db";
-import { certStatus } from "@/lib/metrics";
+import { getCompany, listIncidents } from "@/lib/db";
 import { nowMs } from "@/lib/time";
-import { switchSiteAction } from "@/lib/actions/site";
 import { sitesFor } from "@/lib/scope";
 import { switchableSites, usesWorkingSite, workingSite, workingSiteIds } from "@/lib/site-focus";
 import { isOpenReport, myReports } from "@/lib/my-reports";
@@ -14,10 +12,11 @@ import { isPlainWorker } from "@/components/nav-items";
 import { logout } from "@/lib/actions/auth";
 import { getTheme } from "@/lib/theme";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WorkerMenu } from "@/components/worker/worker-menu";
+import { certSummary } from "@/lib/worker-summary";
 import {
   IconAlertTriangle,
   IconBell,
-  IconChevronRight,
   IconCamera,
   IconSiren,
   IconFileText,
@@ -107,105 +106,28 @@ export default async function MorePage() {
 }
 
 /**
- * A worker's More (design canvas W14): Emergency first, in red; then what's about the
- * site (report an incident, the working site) and what's about them (profile and
- * certificates, notifications, appearance, sign out), as flat rows.
+ * A worker's menu as a page (desktop; on phones the More tab opens the same menu as a
+ * sheet). Same contents: who you are, Emergency, shortcuts, working site, settings.
  */
 async function WorkerMore({ user }: { user: Awaited<ReturnType<typeof getCurrentUser>> }) {
   const now = nowMs();
   const site = await workingSite(user);
-  const sites = switchableSites(user);
-  const unread = unreadCount(user, now);
-  const certs = listCertifications(user.companyId).filter((c) => c.userId === user.id);
-  const expired = certs.filter((c) => certStatus(c.expiresOn, now) === "expired").length;
-  const expiring = certs.filter((c) => certStatus(c.expiresOn, now) === "expiring").length;
-  const incidents = moduleVisible(getCompany(user.companyId), user, "incidents");
-  const chevron = <IconChevronRight width={18} height={18} className="shrink-0 text-muted" />;
-  const row = "flex min-h-14 items-center gap-3.5 border-b border-border text-base";
-
+  const data = {
+    user,
+    site,
+    sites: switchableSites(user),
+    certsDue: certSummary(user, now).due.length,
+    unread: unreadCount(user, now),
+    incidents: moduleVisible(getCompany(user.companyId), user, "incidents"),
+    theme: await getTheme(),
+  };
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-3 lg:pt-0">
-      <h1 className="disp text-[40px] leading-none">More</h1>
-
-      <Link href="/emergency" className="flex min-h-[60px] items-center gap-3.5 rounded-xl bg-[#B42318] px-[18px] text-white">
-        <IconAlertTriangle width={22} height={22} strokeWidth={2} />
-        <span className="flex-1 text-[17px] font-semibold">Emergency</span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#FDE8E7]">911 · site line · ER</span>
-      </Link>
-
-      <section aria-label="On site" className="flex flex-col">
-        <div className="ds-sec">
-          <h2 className="eyebrow" style={{ color: "var(--foreground)" }}>On site</h2>
-        </div>
-        {site && (
-          <Link href={`/projects/${site.id}`} className={row}>
-            <span className="flex-1">Site details</span>
-            <span className="text-sm text-body">Levels, crew, permits</span>
-            {chevron}
-          </Link>
-        )}
-        {incidents && (
-          <Link href="/incidents/new" className={row}>
-            <span className="flex-1">Report an incident</span>
-            {chevron}
-          </Link>
-        )}
-        {incidents && (
-          <Link href="/incidents" className={row}>
-            <span className="flex-1">Incident log</span>
-            {chevron}
-          </Link>
-        )}
-        {sites.length <= 1 ? (
-          <div className={row}>
-            <span className="flex-1">Working site</span>
-            <span className="text-sm text-body">{site?.shortName ?? "None yet"}</span>
-          </div>
-        ) : (
-          sites.map((s) => (
-            <form key={s.id} action={switchSiteAction}>
-              <input type="hidden" name="projectId" value={s.id} />
-              <input type="hidden" name="redirectTo" value="/more" />
-              <button type="submit" disabled={s.id === site?.id} className={`${row} w-full text-left`}>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate">{s.shortName}</span>
-                  <span className="truncate text-sm text-body">{s.location}</span>
-                </span>
-                {s.id === site?.id ? <span className="ds-tag ds-tag-info">Working here</span> : <span className="text-sm font-medium text-brand">Switch</span>}
-              </button>
-            </form>
-          ))
-        )}
-      </section>
-
-      <section aria-label="You" className="flex flex-col">
-        <div className="ds-sec">
-          <h2 className="eyebrow" style={{ color: "var(--foreground)" }}>You</h2>
-        </div>
-        <Link href="/settings/profile" className={row}>
-          <span className="flex-1">My profile and certificates</span>
-          {expired > 0 ? (
-            <span className="ds-tag ds-tag-crit">{expired} expired</span>
-          ) : expiring > 0 ? (
-            <span className="ds-tag ds-tag-warn">{expiring} due</span>
-          ) : (
-            chevron
-          )}
-        </Link>
-        <Link href="/notifications" className={row}>
-          <span className="flex-1">Notifications</span>
-          {unread > 0 ? <span className="ds-tag ds-tag-info">{unread} new</span> : chevron}
-        </Link>
-        <div className={row}>
-          <span className="flex-1">Appearance</span>
-          <ThemeToggle theme={await getTheme()} />
-        </div>
-        <form action={logout}>
-          <button type="submit" className={`${row} w-full text-left tone-critical`}>
-            Sign out
-          </button>
-        </form>
-      </section>
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <header className="flex flex-col gap-1.5">
+        <span className="eyebrow">Settings and shortcuts</span>
+        <h1 className="disp text-[32px] leading-tight sm:text-[36px]">Menu</h1>
+      </header>
+      <WorkerMenu variant="page" data={data} />
     </div>
   );
 }
